@@ -1,1 +1,39 @@
-// TODO: Step 3 — Move Invoice from models.dart
+import 'package:flutter/material.dart';
+import '../../app/app_theme.dart';
+import 'enums.dart';
+
+class Invoice {
+  final String id;
+  final String invoiceNumber;
+  final String description;
+  final String playerName;
+  final double amount;
+  final InvoiceStatus status;
+  final DateTime dueDate;
+
+  const Invoice({
+    required this.id,
+    required this.invoiceNumber,
+    required this.description,
+    required this.playerName,
+    required this.amount,
+    required this.status,
+    required this.dueDate,
+  });
+
+  Color get statusColor {
+    switch (status) {
+      case InvoiceStatus.paid: return AppColors.success;
+      case InvoiceStatus.pending: return AppColors.warning;
+      case InvoiceStatus.overdue: return AppColors.error;
+    }
+  }
+
+  String get statusLabel {
+    switch (status) {
+      case InvoiceStatus.paid: return 'Paid';
+      case InvoiceStatus.pending: return 'Pending';
+      case InvoiceStatus.overdue: return 'Overdue';
+    }
+  }
+}
