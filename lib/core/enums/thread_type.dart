@@ -1,1 +1,1 @@
-// TODO: Step 4 — Move ThreadType from models.dart
+enum ThreadType { team, direct, announcement }

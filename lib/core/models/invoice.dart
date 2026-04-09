@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../app/app_theme.dart';
-import 'enums.dart';
+import '../enums/invoice_status.dart';
 
 class Invoice {
   final String id;

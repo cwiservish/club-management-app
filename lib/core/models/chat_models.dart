@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'enums.dart';
+import '../enums/thread_type.dart';
+import '../enums/message_type.dart';
 
 class ChatThread {
   final String id;

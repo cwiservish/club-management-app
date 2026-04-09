@@ -1,14 +1,8 @@
-// Temporary home for all enums.
-// Step 4 will split these into individual files under core/enums/.
-
-enum EventType { game, practice, other }
-
-enum MemberRole { player, staff }
-
-enum PlayerPosition { goalkeeper, defender, midfielder, forward }
-
-enum ThreadType { team, direct, announcement }
-
-enum MessageType { text, image, file, announcement }
-
-enum InvoiceStatus { paid, pending, overdue }
+// Re-exported from core/enums/. Do not import this file in new code.
+// Use: import 'package:playbook365/core/enums/...dart';
+export '../enums/event_type.dart';
+export '../enums/member_role.dart';
+export '../enums/player_position.dart';
+export '../enums/thread_type.dart';
+export '../enums/message_type.dart';
+export '../enums/invoice_status.dart';

@@ -1,1 +1,1 @@
-// TODO: Step 4 — Move EventType from models.dart
+enum EventType { game, practice, other }

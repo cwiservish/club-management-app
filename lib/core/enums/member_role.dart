@@ -1,1 +1,1 @@
-// TODO: Step 4 — Move MemberRole from models.dart
+enum MemberRole { player, staff }

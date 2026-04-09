@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../app/app_theme.dart';
-import 'enums.dart';
+import '../enums/member_role.dart';
+import '../enums/player_position.dart';
 
 class RosterMember {
   final String id;

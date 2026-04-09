@@ -1,1 +1,1 @@
-// TODO: Step 4 — Move MessageType from models.dart
+enum MessageType { text, image, file, announcement }

@@ -1,1 +1,1 @@
-// TODO: Step 4 — UserRole enum (parent, athlete, coach, admin)
+enum UserRole { parent, athlete, coach, admin }

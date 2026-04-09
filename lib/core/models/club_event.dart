@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../app/app_theme.dart';
-import 'enums.dart';
+import '../enums/event_type.dart';
 
 class ClubEvent {
   final String id;
