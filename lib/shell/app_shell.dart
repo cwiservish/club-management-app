@@ -1,1 +1,39 @@
-// TODO: Step 11 — Move from screens/app_shell.dart, update to GoRouter shell route
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../core/widgets/shared_widgets.dart';
+import '../features/messages/providers/unread_count_provider.dart';
+
+/// Playbook365 — App Shell
+///
+/// Root widget for the [StatefulShellRoute.indexedStack] builder.
+/// Owns the bottom navigation bar and forwards tab-switch gestures
+/// back to GoRouter's [StatefulNavigationShell].
+///
+/// The Messages badge count is read from [unreadCountProvider] so it
+/// updates automatically whenever the provider's value changes.
+
+class AppShell extends ConsumerWidget {
+  final StatefulNavigationShell navigationShell;
+
+  const AppShell({super.key, required this.navigationShell});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCount = ref.watch(unreadCountProvider);
+
+    return Scaffold(
+      body: navigationShell,
+      bottomNavigationBar: AppBottomNavBar(
+        currentIndex: navigationShell.currentIndex,
+        messagesBadgeCount: unreadCount,
+        onTap: (index) => navigationShell.goBranch(
+          index,
+          // Tapping the active tab again pops to the branch's initial route.
+          initialLocation: index == navigationShell.currentIndex,
+        ),
+      ),
+    );
+  }
+}

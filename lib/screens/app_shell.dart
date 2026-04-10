@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import 'home_screen.dart';
 import 'schedule_screen.dart';

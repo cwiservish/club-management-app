@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/widgets/shared_widgets.dart';
+import '../shell/app_shell.dart';
 import '../screens/home_screen.dart';
 import '../screens/schedule_screen.dart';
 import '../screens/roster_screen.dart';
@@ -44,7 +43,7 @@ final GoRouter appRouter = GoRouter(
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
-          _AppShell(navigationShell: navigationShell),
+          AppShell(navigationShell: navigationShell),
       branches: [
         // ── Tab 0: Home ──────────────────────────────────────────────────────
         StatefulShellBranch(
@@ -146,25 +145,3 @@ final GoRouter appRouter = GoRouter(
   ],
 );
 
-// ─── Shell Widget (bottom nav) ────────────────────────────────────────────────
-// TODO: Step 11 — replace with full shell/app_shell.dart
-
-class _AppShell extends StatelessWidget {
-  final StatefulNavigationShell navigationShell;
-
-  const _AppShell({required this.navigationShell});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: navigationShell.currentIndex,
-        onTap: (index) => navigationShell.goBranch(
-          index,
-          initialLocation: index == navigationShell.currentIndex,
-        ),
-      ),
-    );
-  }
-}
