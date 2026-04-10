@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/app_theme.dart';
+import '../../../app/app_theme.dart';
 import '../../statistics/pages/statistics_page.dart';
 import '../../photos/pages/photos_page.dart';
 import '../../files/pages/files_page.dart';
@@ -167,8 +167,8 @@ class MoreScreen extends StatelessWidget {
                   InkWell(
                     onTap: item.onTap,
                     borderRadius: BorderRadius.vertical(
-                      top: isFirst ? const Radius.circular(AppRadius.lg) : Radius.zero,
-                      bottom: isLast ? const Radius.circular(AppRadius.lg) : Radius.zero,
+                      top: isFirst ?  Radius.circular(AppRadius.lg) : Radius.zero,
+                      bottom: isLast ?  Radius.circular(AppRadius.lg) : Radius.zero,
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(

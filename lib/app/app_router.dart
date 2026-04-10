@@ -1,20 +1,22 @@
 import 'package:go_router/go_router.dart';
 
+import '../features/files/pages/files_page.dart';
+import '../features/home/pages/home_page.dart';
+import '../features/invoicing/pages/invoicing_page.dart';
+import '../features/messages/pages/messages_page.dart';
+import '../features/more/pages/more_page.dart';
+import '../features/notifications/pages/notification_prefs_page.dart';
+import '../features/photos/pages/photos_page.dart';
+import '../features/registration/pages/registration_page.dart';
+import '../features/roster/pages/attendance_history_page.dart';
+import '../features/roster/pages/roster_page.dart';
+import '../features/schedule/pages/event_detail_page.dart';
+import '../features/schedule/pages/schedule_page.dart';
+import '../features/statistics/pages/statistics_page.dart';
+import '../features/team/pages/team_detail_page.dart';
+import '../features/tracking/pages/tracking_page.dart';
 import '../shell/app_shell.dart';
-import '../screens/home_screen.dart';
-import '../screens/schedule_screen.dart';
-import '../screens/roster_screen.dart';
-import '../screens/messages_screens.dart';
-import '../screens/more_screen.dart';
-import '../screens/team_event_screens.dart' show TeamDetailScreen, EventDetailScreen;
-import '../screens/statistics_screen.dart';
-import '../screens/photos_screen.dart';
-import '../screens/files_screen.dart';
-import '../screens/invoicing_screen.dart';
-import '../screens/registration_screen.dart';
-import '../screens/notification_prefs_screen.dart';
-import '../screens/tracking_screen.dart';
-import '../screens/player_attendance_screen.dart';
+
 
 // ─── Route Paths ──────────────────────────────────────────────────────────────
 

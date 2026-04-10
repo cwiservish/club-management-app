@@ -12,7 +12,7 @@ class Playbook365App extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Playbook365',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
+      theme: AppTheme.dark,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
       routerConfig: appRouter,
