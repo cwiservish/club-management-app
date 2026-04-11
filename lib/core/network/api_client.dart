@@ -7,16 +7,17 @@ import 'api_endpoints.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/error_interceptor.dart';
 import 'interceptors/logging_interceptor.dart';
+import 'models/api_response.dart';
 import 'token_storage.dart';
 
 // ─── ApiClient ────────────────────────────────────────────────────────────────
 
-/// Pure transport layer — sends HTTP requests and returns decoded JSON.
+/// Pure transport layer — sends HTTP requests and returns [ApiResponse].
 ///
 /// Responsibilities:
 ///   - Execute GET / POST / PUT / PATCH / DELETE via Dio
-///   - Unwrap the API envelope  `{ success, message, data }` → return `data`
-///   - Convert [DioException] → typed [ApiException] (via [ErrorInterceptor])
+///   - Wrap the raw response in [ApiResponse] — exposes data, message, success
+///   - Convert [DioException] → [NetworkException] (via [ErrorInterceptor])
 ///   - Forward [CancelToken] from the calling service
 ///
 /// What it does NOT do:
@@ -27,16 +28,16 @@ import 'token_storage.dart';
 /// Usage in a service:
 /// ```dart
 /// // List
-/// final json = await _client.get(ApiEndpoints.roster) as List;
-/// return json.map((e) => RosterMember.fromJson(e as Map<String, dynamic>)).toList();
+/// final res = await _client.get(ApiEndpoints.roster);
+/// return (res.data as List).map((e) => RosterMember.fromJson(e)).toList();
 ///
 /// // Single object
-/// final json = await _client.get(ApiEndpoints.rosterMember(id)) as Map<String, dynamic>;
-/// return RosterMember.fromJson(json);
+/// final res = await _client.get(ApiEndpoints.rosterMember(id));
+/// return RosterMember.fromJson(res.data as Map<String, dynamic>);
 ///
 /// // Create
-/// final json = await _client.post(ApiEndpoints.events, body: payload) as Map<String, dynamic>;
-/// return ClubEvent.fromJson(json);
+/// final res = await _client.post(ApiEndpoints.events, body: payload);
+/// return ClubEvent.fromJson(res.data as Map<String, dynamic>);
 /// ```
 class ApiClient {
   const ApiClient(this._dio);
@@ -45,22 +46,20 @@ class ApiClient {
 
   // ─── GET ──────────────────────────────────────────────────────────────────
 
-  /// Returns the decoded `data` value from the API envelope.
-  /// Callers cast to `Map<String, dynamic>` or `List` as appropriate.
-  Future<dynamic> get(
+  Future<ApiResponse> get(
     String path, {
     Map<String, dynamic>? queryParameters,
     CancelToken? cancelToken,
     Options? options,
   }) async {
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _dio.get<Map<String, dynamic>>(
         path,
         queryParameters: queryParameters,
         cancelToken: cancelToken,
         options: options,
       );
-      return _unwrap(response.data);
+      return ApiResponse.fromJson(response.data!);
     } on DioException catch (e) {
       throw _extractException(e);
     }
@@ -68,20 +67,20 @@ class ApiClient {
 
   // ─── POST ─────────────────────────────────────────────────────────────────
 
-  Future<dynamic> post(
+  Future<ApiResponse> post(
     String path, {
     Object? body,
     CancelToken? cancelToken,
     Options? options,
   }) async {
     try {
-      final response = await _dio.post<dynamic>(
+      final response = await _dio.post<Map<String, dynamic>>(
         path,
         data: body,
         cancelToken: cancelToken,
         options: options,
       );
-      return _unwrap(response.data);
+      return ApiResponse.fromJson(response.data!);
     } on DioException catch (e) {
       throw _extractException(e);
     }
@@ -89,20 +88,20 @@ class ApiClient {
 
   // ─── PUT ──────────────────────────────────────────────────────────────────
 
-  Future<dynamic> put(
+  Future<ApiResponse> put(
     String path, {
     Object? body,
     CancelToken? cancelToken,
     Options? options,
   }) async {
     try {
-      final response = await _dio.put<dynamic>(
+      final response = await _dio.put<Map<String, dynamic>>(
         path,
         data: body,
         cancelToken: cancelToken,
         options: options,
       );
-      return _unwrap(response.data);
+      return ApiResponse.fromJson(response.data!);
     } on DioException catch (e) {
       throw _extractException(e);
     }
@@ -110,20 +109,20 @@ class ApiClient {
 
   // ─── PATCH ────────────────────────────────────────────────────────────────
 
-  Future<dynamic> patch(
+  Future<ApiResponse> patch(
     String path, {
     Object? body,
     CancelToken? cancelToken,
     Options? options,
   }) async {
     try {
-      final response = await _dio.patch<dynamic>(
+      final response = await _dio.patch<Map<String, dynamic>>(
         path,
         data: body,
         cancelToken: cancelToken,
         options: options,
       );
-      return _unwrap(response.data);
+      return ApiResponse.fromJson(response.data!);
     } on DioException catch (e) {
       throw _extractException(e);
     }
@@ -151,21 +150,9 @@ class ApiClient {
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
-  /// Unwraps the standard API envelope.
-  /// If the response has a `data` key, returns its value.
-  /// Otherwise returns the raw body as-is (handles non-standard endpoints).
-  dynamic _unwrap(dynamic body) {
-    if (body is Map<String, dynamic> && body.containsKey('data')) {
-      return body['data'];
-    }
-    return body;
-  }
-
-  /// Extracts the [NetworkException] placed by [ErrorInterceptor].
   NetworkException _extractException(DioException e) {
     final error = e.error;
     if (error is NetworkException) return error;
-    // Fallback — should not happen if ErrorInterceptor is in the chain.
     return const NetworkException('Something went wrong.');
   }
 }
@@ -175,7 +162,7 @@ class ApiClient {
 /// Interceptor order:
 ///   1. [AuthInterceptor]    — attaches Bearer token; clears it on 401
 ///   2. [LoggingInterceptor] — pretty-prints in debug mode only
-///   3. [ErrorInterceptor]   — DioException → ApiException (must be last)
+///   3. [ErrorInterceptor]   — DioException → NetworkException (must be last)
 final apiClientProvider = Provider<ApiClient>((ref) {
   final timeout = Duration(seconds: EnvironmentConfig.timeoutSeconds);
 

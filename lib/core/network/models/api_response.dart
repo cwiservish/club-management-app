@@ -1,25 +1,13 @@
-/// Standard envelope that the Playbook365 API wraps all responses in:
-///
-/// Single item:
+/// Unwrapped response from the Playbook365 API envelope:
 /// ```json
 /// { "success": true, "message": "OK", "data": { ... } }
-/// ```
-///
-/// List:
-/// ```json
 /// { "success": true, "data": [ ... ] }
 /// ```
 ///
-/// Paginated list:
-/// ```json
-/// {
-///   "success": true,
-///   "data": [ ... ],
-///   "meta": { "page": 1, "perPage": 20, "total": 200, "lastPage": 10 }
-/// }
-/// ```
-class ApiResponse<T> {
-  final T data;
+/// [data] is the raw value of the `data` key — could be a Map, List, or null.
+/// Each feature's service is responsible for casting and mapping it.
+class ApiResponse {
+  final dynamic data;
   final String? message;
   final bool success;
 
@@ -29,17 +17,11 @@ class ApiResponse<T> {
     this.message,
   });
 
-  /// Parses the raw JSON map from Dio's [response.data].
-  ///
-  /// [fromData] converts the inner `data` field to [T].
-  factory ApiResponse.fromJson(
-    Map<String, dynamic> json,
-    T Function(dynamic data) fromData,
-  ) {
+  factory ApiResponse.fromJson(Map<String, dynamic> json) {
     return ApiResponse(
       success: (json['success'] as bool?) ?? true,
       message: json['message'] as String?,
-      data: fromData(json['data'] ?? json),
+      data: json['data'],
     );
   }
 
