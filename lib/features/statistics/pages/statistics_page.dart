@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/statistics_data.dart';
+import '../providers/statistics_provider.dart';
 
-class StatisticsScreen extends StatefulWidget {
+class StatisticsScreen extends ConsumerStatefulWidget {
   const StatisticsScreen({super.key});
 
   @override
-  State<StatisticsScreen> createState() => _StatisticsScreenState();
+  ConsumerState<StatisticsScreen> createState() => _StatisticsScreenState();
 }
 
-class _StatisticsScreenState extends State<StatisticsScreen>
+class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tab;
 
@@ -25,6 +28,8 @@ class _StatisticsScreenState extends State<StatisticsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final async = ref.watch(statisticsProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
@@ -37,50 +42,33 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           tabs: const [Tab(text: 'Team'), Tab(text: 'Players')],
         ),
       ),
-      body: TabBarView(
-        controller: _tab,
-        children: [
-          _buildTeamStats(),
-          _buildPlayerStats(),
-        ],
+      body: async.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error: $e')),
+        data: (data) => TabBarView(
+          controller: _tab,
+          children: [
+            _buildTeamStats(data.teamCards),
+            _buildPlayerStats(data.players),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTeamStats() {
+  Widget _buildTeamStats(List<TeamStatCard> cards) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _statCard('Season Record', [
-          _statRow('Wins', '8', const Color(0xFF10B981)),
-          _statRow('Losses', '2', const Color(0xFFEF4444)),
-          _statRow('Draws', '1', const Color(0xFFF59E0B)),
-          _statRow('Win Rate', '73%', const Color(0xFF1A56DB)),
-        ]),
-        const SizedBox(height: 16),
-        _statCard('Goals', [
-          _statRow('Scored', '27', const Color(0xFF10B981)),
-          _statRow('Conceded', '11', const Color(0xFFEF4444)),
-          _statRow('Difference', '+16', const Color(0xFF1A56DB)),
-          _statRow('Per Game Avg', '2.45', const Color(0xFF8B5CF6)),
-        ]),
-        const SizedBox(height: 16),
-        _statCard('Discipline', [
-          _statRow('Yellow Cards', '9', const Color(0xFFF59E0B)),
-          _statRow('Red Cards', '1', const Color(0xFFEF4444)),
-        ]),
+        for (int i = 0; i < cards.length; i++) ...[
+          if (i > 0) const SizedBox(height: 16),
+          _statCard(cards[i]),
+        ],
       ],
     );
   }
 
-  Widget _buildPlayerStats() {
-    const players = [
-      ('James Miller', '#9 FWD', 9, 4, 3),
-      ('Oliver Davis', '#10 MID', 5, 8, 0),
-      ('Lucas Wilson', '#11 FWD', 6, 3, 1),
-      ('Henry Thomas', '#6 MID', 4, 6, 0),
-      ('Ethan Brown', '#5 DEF', 2, 2, 1),
-    ];
+  Widget _buildPlayerStats(List<PlayerStat> players) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -124,66 +112,70 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           ),
         ),
         const SizedBox(height: 8),
-        ...players.map((p) => Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2))
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(p.$1,
-                            style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF111827))),
-                        Text(p.$2,
-                            style: const TextStyle(
-                                fontSize: 11, color: Color(0xFF9CA3AF))),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                      child: Text('${p.$3}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF10B981)))),
-                  Expanded(
-                      child: Text('${p.$4}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A56DB)))),
-                  Expanded(
-                      child: Text('${p.$5}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFFF59E0B)))),
-                ],
-              ),
-            )),
+        ...players.map((p) => _buildPlayerRow(p)),
       ],
     );
   }
 
-  Widget _statCard(String title, List<Widget> rows) {
+  Widget _buildPlayerRow(PlayerStat p) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(p.name,
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111827))),
+                Text(p.position,
+                    style: const TextStyle(
+                        fontSize: 11, color: Color(0xFF9CA3AF))),
+              ],
+            ),
+          ),
+          Expanded(
+              child: Text('${p.goals}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF10B981)))),
+          Expanded(
+              child: Text('${p.assists}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A56DB)))),
+          Expanded(
+              child: Text('${p.yellowCards}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFF59E0B)))),
+        ],
+      ),
+    );
+  }
+
+  Widget _statCard(TeamStatCard card) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -199,29 +191,31 @@ class _StatisticsScreenState extends State<StatisticsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
+          Text(card.title,
               style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF111827))),
           const SizedBox(height: 14),
-          ...rows,
+          ...card.stats.map((s) => _statRow(s)),
         ],
       ),
     );
   }
 
-  Widget _statRow(String label, String value, Color color) {
+  Widget _statRow(TeamStat s) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
+          Text(s.label,
               style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
-          Text(value,
+          Text(s.value,
               style: TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w700, color: color)),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(s.colorValue))),
         ],
       ),
     );
