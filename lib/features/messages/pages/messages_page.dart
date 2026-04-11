@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../core/models/chat_models.dart';
 import '../../../core/enums/thread_type.dart';
 import '../../../core/enums/message_type.dart';
+import '../providers/messages_provider.dart';
 
 const _blue = Color(0xFF1A56DB);
 const _green = Color(0xFF10B981);
@@ -18,138 +20,6 @@ const _gray400 = Color(0xFF9CA3AF);
 const _gray500 = Color(0xFF6B7280);
 const _gray700 = Color(0xFF374151);
 const _gray900 = Color(0xFF111827);
-
-// ─── Sample Data ──────────────────────────────────────────────────────────────
-
-DateTime _ts(int hoursAgo, int minsAgo) =>
-    DateTime.now().subtract(Duration(hours: hoursAgo, minutes: minsAgo));
-
-final List<ChatThread> _threads = [
-  ChatThread(
-    id: 't1',
-    name: 'U14 Boys — Team Chat',
-    lastMessage: 'Coach: Remember warm-up at 9:30 tomorrow!',
-    lastMessageTime: _ts(0, 10),
-    unreadCount: 3,
-    isPinned: true,
-    type: ThreadType.team,
-    avatarColor: _blue,
-    avatarInitials: 'U14',
-  ),
-  ChatThread(
-    id: 't2',
-    name: 'Club Announcements',
-    lastMessage: 'Spring tournament registration closes Friday.',
-    lastMessageTime: _ts(1, 0),
-    unreadCount: 1,
-    isPinned: true,
-    type: ThreadType.announcement,
-    avatarColor: _amber,
-    avatarInitials: '📢',
-  ),
-  ChatThread(
-    id: 't3',
-    name: 'Carlos Martinez',
-    lastMessage: 'See you at practice 👍',
-    lastMessageTime: _ts(2, 30),
-    type: ThreadType.direct,
-    avatarColor: _blue,
-    avatarInitials: 'CM',
-    isOnline: true,
-  ),
-  ChatThread(
-    id: 't4',
-    name: 'Sarah Johnson',
-    lastMessage: 'Can you send the lineup for Saturday?',
-    lastMessageTime: _ts(5, 0),
-    unreadCount: 2,
-    type: ThreadType.direct,
-    avatarColor: _purple,
-    avatarInitials: 'SJ',
-  ),
-  ChatThread(
-    id: 't5',
-    name: 'Coaching Staff',
-    lastMessage: 'Confirmed: Field 3 is booked.',
-    lastMessageTime: _ts(24, 0),
-    type: ThreadType.team,
-    avatarColor: _green,
-    avatarInitials: 'CS',
-  ),
-  ChatThread(
-    id: 't6',
-    name: 'Oliver Davis',
-    lastMessage: 'Ill be there!',
-    lastMessageTime: _ts(26, 0),
-    type: ThreadType.direct,
-    avatarColor: Color(0xFF0EA5E9),
-    avatarInitials: 'OD',
-    isOnline: true,
-  ),
-  ChatThread(
-    id: 't7',
-    name: 'James Miller',
-    lastMessage: 'Thanks coach',
-    lastMessageTime: _ts(48, 0),
-    isMuted: true,
-    type: ThreadType.direct,
-    avatarColor: Color(0xFFF97316),
-    avatarInitials: 'JM',
-  ),
-];
-
-final List<ChatMessage> _messages = [
-  ChatMessage(
-    id: 'm1', senderId: 'coach',
-    senderName: 'Carlos Martinez', senderInitials: 'CM',
-    senderColor: _blue,
-    text: 'Hey team! Quick reminder about tomorrows game vs Riverside FC.',
-    type: MessageType.text, timestamp: _ts(2, 40), isMe: false,
-  ),
-  ChatMessage(
-    id: 'm2', senderId: 'coach',
-    senderName: 'Carlos Martinez', senderInitials: 'CM',
-    senderColor: _blue,
-    text: 'Please arrive at the field by 9:30 AM for warm-up. Game kicks off at 10:00.',
-    type: MessageType.text, timestamp: _ts(2, 39), isMe: false,
-  ),
-  ChatMessage(
-    id: 'm3', senderId: 'me',
-    senderName: 'You', senderInitials: 'JD',
-    senderColor: Color(0xFF0EA5E9),
-    text: 'Got it coach! Will be there early 💪',
-    type: MessageType.text, timestamp: _ts(2, 35), isMe: true, isRead: true,
-  ),
-  ChatMessage(
-    id: 'm4', senderId: 'sarah',
-    senderName: 'Sarah Johnson', senderInitials: 'SJ',
-    senderColor: _purple,
-    text: 'Ive attached the match day lineup.',
-    type: MessageType.text, timestamp: _ts(2, 20), isMe: false,
-  ),
-  ChatMessage(
-    id: 'm5', senderId: 'sarah',
-    senderName: 'Sarah Johnson', senderInitials: 'SJ',
-    senderColor: _purple,
-    fileName: 'Lineup_Mar29.pdf', fileSize: '245 KB',
-    type: MessageType.file, timestamp: _ts(2, 19), isMe: false,
-  ),
-  ChatMessage(
-    id: 'm6', senderId: 'me',
-    senderName: 'You', senderInitials: 'JD',
-    senderColor: Color(0xFF0EA5E9),
-    text: 'Thanks! Looking good 👌',
-    type: MessageType.text, timestamp: _ts(2, 10), isMe: true,
-    isRead: true, reactionEmoji: '👍',
-  ),
-  ChatMessage(
-    id: 'm7', senderId: 'coach',
-    senderName: 'Carlos Martinez', senderInitials: 'CM',
-    senderColor: _blue,
-    text: 'Remember warm-up at 9:30 tomorrow!',
-    type: MessageType.text, timestamp: _ts(0, 10), isMe: false,
-  ),
-];
 
 // ─── Time Helpers ──────────────────────────────────────────────────────────────
 
@@ -189,17 +59,16 @@ String _daySeparator(DateTime dt) {
 // Messages Screen
 // ══════════════════════════════════════════════════════════════════════════════
 
-class MessagesScreen extends StatefulWidget {
+class MessagesScreen extends ConsumerStatefulWidget {
   const MessagesScreen({super.key});
 
   @override
-  State<MessagesScreen> createState() => _MessagesScreenState();
+  ConsumerState<MessagesScreen> createState() => _MessagesScreenState();
 }
 
-class _MessagesScreenState extends State<MessagesScreen>
+class _MessagesScreenState extends ConsumerState<MessagesScreen>
     with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
-  String _searchQuery = '';
   late TabController _tabController;
 
   @override
@@ -215,39 +84,24 @@ class _MessagesScreenState extends State<MessagesScreen>
     super.dispose();
   }
 
-  List<ChatThread> get _filtered {
-    final q = _searchQuery.toLowerCase();
-    final tab = _tabController.index;
-    return _threads.where((t) {
-      final matchSearch = q.isEmpty ||
-          t.name.toLowerCase().contains(q) ||
-          t.lastMessage.toLowerCase().contains(q);
-      final matchTab = tab == 0 ||
-          (tab == 1 && t.type == ThreadType.team) ||
-          (tab == 2 && t.type == ThreadType.direct);
-      return matchSearch && matchTab;
-    }).toList();
-  }
-
-  int get _totalUnread =>
-      _threads.fold(0, (sum, t) => sum + t.unreadCount);
-
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(messagesProvider);
+
     return Scaffold(
       backgroundColor: _gray50,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildSearchBar(),
+            _buildHeader(state),
+            _buildSearchBar(state),
             _buildTabBar(),
-            Expanded(child: _buildThreadList()),
+            Expanded(child: _buildThreadList(state)),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showNewMessageSheet,
+        onPressed: () => _showNewMessageSheet(state),
         backgroundColor: _blue,
         foregroundColor: Colors.white,
         shape:
@@ -257,7 +111,7 @@ class _MessagesScreenState extends State<MessagesScreen>
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(MessagesState state) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -268,13 +122,13 @@ class _MessagesScreenState extends State<MessagesScreen>
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: _gray900)),
-          if (_totalUnread > 0) ...[
+          if (state.totalUnread > 0) ...[
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                   color: _red, borderRadius: BorderRadius.circular(12)),
-              child: Text('$_totalUnread',
+              child: Text('${state.totalUnread}',
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -292,22 +146,22 @@ class _MessagesScreenState extends State<MessagesScreen>
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(MessagesState state) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: TextField(
         controller: _searchController,
-        onChanged: (v) => setState(() => _searchQuery = v),
+        onChanged: (v) => ref.read(messagesProvider.notifier).setSearch(v),
         decoration: InputDecoration(
           hintText: 'Search messages…',
           hintStyle: const TextStyle(color: _gray400, fontSize: 14),
           prefixIcon: const Icon(Icons.search, color: _gray400, size: 20),
-          suffixIcon: _searchQuery.isNotEmpty
+          suffixIcon: state.searchQuery.isNotEmpty
               ? GestureDetector(
                   onTap: () {
                     _searchController.clear();
-                    setState(() => _searchQuery = '');
+                    ref.read(messagesProvider.notifier).setSearch('');
                   },
                   child: const Icon(Icons.close, color: _gray400, size: 18),
                 )
@@ -330,12 +184,13 @@ class _MessagesScreenState extends State<MessagesScreen>
       color: Colors.white,
       child: TabBar(
         controller: _tabController,
-        onTap: (_) => setState(() {}),
+        onTap: (i) => ref.read(messagesProvider.notifier).setTab(i),
         labelColor: _blue,
         unselectedLabelColor: _gray400,
         indicatorColor: _blue,
         indicatorWeight: 2.5,
-        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        labelStyle:
+            const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
         unselectedLabelStyle:
             const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
         tabs: const [
@@ -347,8 +202,8 @@ class _MessagesScreenState extends State<MessagesScreen>
     );
   }
 
-  Widget _buildThreadList() {
-    final threads = _filtered;
+  Widget _buildThreadList(MessagesState state) {
+    final threads = state.filtered;
     final pinned = threads.where((t) => t.isPinned).toList();
     final others = threads.where((t) => !t.isPinned).toList();
 
@@ -366,7 +221,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                     fontWeight: FontWeight.w500)),
             const SizedBox(height: 6),
             Text(
-              _searchQuery.isNotEmpty
+              state.searchQuery.isNotEmpty
                   ? 'Try a different search'
                   : 'Tap the compose button to start',
               style: const TextStyle(color: _gray400, fontSize: 13),
@@ -451,8 +306,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                         Text(_relativeTime(thread.lastMessageTime),
                             style: TextStyle(
                                 fontSize: 12,
-                                color:
-                                    thread.hasUnread ? _blue : _gray400,
+                                color: thread.hasUnread ? _blue : _gray400,
                                 fontWeight: thread.hasUnread
                                     ? FontWeight.w600
                                     : FontWeight.normal)),
@@ -525,7 +379,8 @@ class _MessagesScreenState extends State<MessagesScreen>
               : Text(thread.avatarInitials,
                   style: TextStyle(
                       color: thread.avatarColor,
-                      fontSize: thread.type == ThreadType.team ? 12 : 14,
+                      fontSize:
+                          thread.type == ThreadType.team ? 12 : 14,
                       fontWeight: FontWeight.w700)),
         ),
         if (thread.type == ThreadType.direct)
@@ -553,14 +408,15 @@ class _MessagesScreenState extends State<MessagesScreen>
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 1.5),
               ),
-              child: const Icon(Icons.group, size: 9, color: Colors.white),
+              child:
+                  const Icon(Icons.group, size: 9, color: Colors.white),
             ),
           ),
       ],
     );
   }
 
-  void _showNewMessageSheet() {
+  void _showNewMessageSheet(MessagesState state) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -578,8 +434,7 @@ class _MessagesScreenState extends State<MessagesScreen>
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                  color: _gray100,
-                  borderRadius: BorderRadius.circular(2)),
+                  color: _gray100, borderRadius: BorderRadius.circular(2)),
             ),
             const Padding(
               padding: EdgeInsets.all(16),
@@ -615,7 +470,7 @@ class _MessagesScreenState extends State<MessagesScreen>
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(16),
-                children: _threads
+                children: state.threads
                     .where((t) => t.type == ThreadType.direct)
                     .map((t) => ListTile(
                           leading: CircleAvatar(
@@ -655,19 +510,26 @@ class _MessagesScreenState extends State<MessagesScreen>
 // Chat Detail Screen
 // ══════════════════════════════════════════════════════════════════════════════
 
-class ChatDetailScreen extends StatefulWidget {
+class ChatDetailScreen extends ConsumerStatefulWidget {
   final ChatThread thread;
   const ChatDetailScreen({super.key, required this.thread});
 
   @override
-  State<ChatDetailScreen> createState() => _ChatDetailScreenState();
+  ConsumerState<ChatDetailScreen> createState() => _ChatDetailScreenState();
 }
 
-class _ChatDetailScreenState extends State<ChatDetailScreen> {
+class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
   bool _showAttachMenu = false;
-  final List<ChatMessage> _localMessages = List.from(_messages);
+  late List<ChatMessage> _localMessages;
+
+  @override
+  void initState() {
+    super.initState();
+    _localMessages =
+        List.from(ref.read(messagesProvider).messages);
+  }
 
   @override
   void dispose() {
@@ -1046,7 +908,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: ['👍', '❤️', '😂', '😮', '😢', '🙏']
@@ -1061,8 +924,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             const Divider(height: 1, color: _gray100),
             _menuItem(Icons.reply_outlined, 'Reply', _gray700),
             _menuItem(Icons.content_copy_outlined, 'Copy', _gray700),
-            if (msg.isMe)
-              _menuItem(Icons.delete_outline, 'Delete', _red),
+            if (msg.isMe) _menuItem(Icons.delete_outline, 'Delete', _red),
           ],
         ),
       ),
@@ -1166,7 +1028,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 style: const TextStyle(fontSize: 14, color: _gray900),
                 decoration: const InputDecoration(
                   hintText: 'Message…',
-                  hintStyle: TextStyle(color: _gray400, fontSize: 14),
+                  hintStyle:
+                      TextStyle(color: _gray400, fontSize: 14),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(
                       horizontal: 16, vertical: 10),
@@ -1323,10 +1186,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _menuItem(Icons.search, 'Search in Conversation', _gray700),
+            _menuItem(Icons.notifications_outlined, 'Mute Notifications',
+                _gray700),
             _menuItem(
-                Icons.notifications_outlined, 'Mute Notifications', _gray700),
-            _menuItem(Icons.push_pin_outlined, 'Pin Conversation', _gray700),
-            _menuItem(Icons.delete_outline, 'Delete Conversation', _red),
+                Icons.push_pin_outlined, 'Pin Conversation', _gray700),
+            _menuItem(
+                Icons.delete_outline, 'Delete Conversation', _red),
           ],
         ),
       ),
