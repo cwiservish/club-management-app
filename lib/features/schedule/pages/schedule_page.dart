@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/club_event.dart';
-import '../../../core/models/sample_data.dart';
 import '../../../core/enums/event_type.dart';
+import '../providers/schedule_provider.dart';
 
 const _blue = Color(0xFF1A56DB);
 const _green = Color(0xFF10B981);
@@ -14,56 +15,32 @@ const _gray500 = Color(0xFF6B7280);
 const _gray700 = Color(0xFF374151);
 const _gray900 = Color(0xFF111827);
 
-class ScheduleScreen extends StatefulWidget {
+class ScheduleScreen extends ConsumerWidget {
   const ScheduleScreen({super.key});
 
   @override
-  State<ScheduleScreen> createState() => _ScheduleScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(scheduleProvider);
+    final notifier = ref.read(scheduleProvider.notifier);
 
-class _ScheduleScreenState extends State<ScheduleScreen> {
-  DateTime _selectedDate = DateTime(2026, 3, 25);
-  DateTime _displayMonth = DateTime(2026, 3, 1);
-  EventType? _filter;
-  bool _monthView = false;
-
-  List<ClubEvent> get _filteredEvents {
-    return sampleEvents
-        .where((e) => _filter == null || e.type == _filter)
-        .toList()
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-  }
-
-  List<ClubEvent> _eventsForDate(DateTime date) {
-    return _filteredEvents.where((e) =>
-        e.dateTime.year == date.year &&
-        e.dateTime.month == date.month &&
-        e.dateTime.day == date.day).toList();
-  }
-
-  List<DateTime> get _weekDays {
-    final monday =
-        _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
-    return List.generate(7, (i) => monday.add(Duration(days: i)));
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _gray50,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildViewToggle(),
-            if (_monthView) _buildMonthGrid() else _buildWeekStrip(),
-            _buildFilterChips(),
-            Expanded(child: _buildEventList()),
+            _buildHeader(state, notifier),
+            _buildViewToggle(state, notifier),
+            if (state.monthView)
+              _buildMonthGrid(state, notifier)
+            else
+              _buildWeekStrip(state, notifier),
+            _buildFilterChips(state, notifier),
+            Expanded(child: _buildEventList(context, state)),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddEventSheet,
+        onPressed: () => _showAddEventSheet(context),
         backgroundColor: _blue,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -72,9 +49,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ScheduleState state, ScheduleNotifier notifier) {
     final monthLabel =
-        '${_monthName(_displayMonth.month)} ${_displayMonth.year}';
+        '${_monthName(state.displayMonth.month)} ${state.displayMonth.year}';
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -89,10 +66,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           Row(
             children: [
               GestureDetector(
-                onTap: () => setState(() {
-                  _displayMonth = DateTime(
-                      _displayMonth.year, _displayMonth.month - 1, 1);
-                }),
+                onTap: notifier.prevMonth,
                 child: const Icon(Icons.chevron_left, color: _gray500),
               ),
               const SizedBox(width: 4),
@@ -103,10 +77,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       color: _gray700)),
               const SizedBox(width: 4),
               GestureDetector(
-                onTap: () => setState(() {
-                  _displayMonth = DateTime(
-                      _displayMonth.year, _displayMonth.month + 1, 1);
-                }),
+                onTap: notifier.nextMonth,
                 child: const Icon(Icons.chevron_right, color: _gray500),
               ),
             ],
@@ -116,15 +87,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  Widget _buildViewToggle() {
+  Widget _buildViewToggle(ScheduleState state, ScheduleNotifier notifier) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Row(
         children: [
-          _toggleBtn('Week', !_monthView, () => setState(() => _monthView = false)),
+          _toggleBtn('Week', !state.monthView, () => notifier.setMonthView(false)),
           const SizedBox(width: 8),
-          _toggleBtn('Month', _monthView, () => setState(() => _monthView = true)),
+          _toggleBtn('Month', state.monthView, () => notifier.setMonthView(true)),
         ],
       ),
     );
@@ -149,8 +120,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  Widget _buildWeekStrip() {
-    final days = _weekDays;
+  Widget _buildWeekStrip(ScheduleState state, ScheduleNotifier notifier) {
+    final days = state.weekDays;
     const dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     return Container(
       color: Colors.white,
@@ -159,16 +130,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(7, (i) {
           final day = days[i];
-          final isSelected = day.day == _selectedDate.day &&
-              day.month == _selectedDate.month &&
-              day.year == _selectedDate.year;
+          final isSelected = day.day == state.selectedDate.day &&
+              day.month == state.selectedDate.month &&
+              day.year == state.selectedDate.year;
           final isToday = day.day == DateTime.now().day &&
               day.month == DateTime.now().month &&
               day.year == DateTime.now().year;
-          final hasEvents = _eventsForDate(day).isNotEmpty;
+          final hasEvents = state.eventsForDate(day).isNotEmpty;
 
           return GestureDetector(
-            onTap: () => setState(() => _selectedDate = day),
+            onTap: () => notifier.selectDate(day),
             child: Column(
               children: [
                 Text(dayNames[i],
@@ -218,10 +189,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  Widget _buildMonthGrid() {
-    final firstDay = DateTime(_displayMonth.year, _displayMonth.month, 1);
+  Widget _buildMonthGrid(ScheduleState state, ScheduleNotifier notifier) {
+    final firstDay =
+        DateTime(state.displayMonth.year, state.displayMonth.month, 1);
     final daysInMonth =
-        DateTime(_displayMonth.year, _displayMonth.month + 1, 0).day;
+        DateTime(state.displayMonth.year, state.displayMonth.month + 1, 0).day;
     final startOffset = (firstDay.weekday - 1) % 7;
     const headers = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -258,20 +230,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               if (index < startOffset) return const SizedBox();
               final dayNum = index - startOffset + 1;
               final date = DateTime(
-                  _displayMonth.year, _displayMonth.month, dayNum);
-              final isSelected = date.day == _selectedDate.day &&
-                  date.month == _selectedDate.month &&
-                  date.year == _selectedDate.year;
+                  state.displayMonth.year, state.displayMonth.month, dayNum);
+              final isSelected = date.day == state.selectedDate.day &&
+                  date.month == state.selectedDate.month &&
+                  date.year == state.selectedDate.year;
               final isToday = date.day == DateTime.now().day &&
                   date.month == DateTime.now().month &&
                   date.year == DateTime.now().year;
-              final hasEvents = _eventsForDate(date).isNotEmpty;
+              final hasEvents = state.eventsForDate(date).isNotEmpty;
 
               return GestureDetector(
-                onTap: () => setState(() {
-                  _selectedDate = date;
-                  _monthView = false;
-                }),
+                onTap: () {
+                  notifier.selectDate(date);
+                  notifier.setMonthView(false);
+                },
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
@@ -320,7 +292,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  Widget _buildFilterChips() {
+  Widget _buildFilterChips(ScheduleState state, ScheduleNotifier notifier) {
     final chips = [
       (null, 'All', _blue),
       (EventType.game, 'Games', _blue),
@@ -335,11 +307,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: chips.map((chip) {
-            final isActive = _filter == chip.$1;
+            final isActive = state.filter == chip.$1;
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: GestureDetector(
-                onTap: () => setState(() => _filter = chip.$1),
+                onTap: () => notifier.setFilter(chip.$1),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   padding: const EdgeInsets.symmetric(
@@ -366,9 +338,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  Widget _buildEventList() {
+  Widget _buildEventList(BuildContext context, ScheduleState state) {
     final Map<String, List<ClubEvent>> grouped = {};
-    for (final e in _filteredEvents) {
+    for (final e in state.filtered) {
       final key =
           '${e.dateTime.year}-${e.dateTime.month}-${e.dateTime.day}';
       grouped.putIfAbsent(key, () => []).add(e);
@@ -409,7 +381,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           children: [
             _buildDateHeader(date),
             const SizedBox(height: 8),
-            ...events.map(_buildEventCard),
+            ...events.map((e) => _buildEventCard(context, e)),
             const SizedBox(height: 8),
           ],
         );
@@ -439,12 +411,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  Widget _buildEventCard(ClubEvent event) {
+  Widget _buildEventCard(BuildContext context, ClubEvent event) {
     final timeStr = _formatTime(event.dateTime);
     final endStr = _formatTime(event.endTime);
 
     return GestureDetector(
-      onTap: () => _showEventDetail(event),
+      onTap: () => _showEventDetail(context, event),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
@@ -580,7 +552,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  void _showEventDetail(ClubEvent event) {
+  void _showEventDetail(BuildContext context, ClubEvent event) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -616,7 +588,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             color: event.backgroundColor,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(event.icon, color: event.color, size: 24),
+                          child:
+                              Icon(event.icon, color: event.color, size: 24),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -679,7 +652,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: _blue,
                               side: const BorderSide(color: _blue),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
                         ),
@@ -693,7 +667,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _blue,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8)),
                             ),
@@ -726,14 +701,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  void _showAddEventSheet() {
+  void _showAddEventSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => Padding(
-        padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: const BoxDecoration(
@@ -780,7 +755,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               const SizedBox(height: 8),
               Row(
                 children: EventType.values.map((t) {
-                  // Use a temporary ClubEvent-like helper for colors/icons
                   final color = t == EventType.game
                       ? _blue
                       : t == EventType.practice
@@ -811,7 +785,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         decoration: BoxDecoration(
                           color: bg,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: color.withOpacity(0.3)),
+                          border:
+                              Border.all(color: color.withOpacity(0.3)),
                         ),
                         child: Column(
                           children: [
@@ -878,7 +853,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              borderSide:
+                  const BorderSide(color: Color(0xFFE5E7EB)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -892,7 +868,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   String _monthName(int m) {
     const names = [
-      '', 'January', 'February', 'March', 'April', 'May', 'June',
+      '',
+      'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     return names[m];
@@ -900,7 +877,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   String _dayName(int weekday) {
     const names = [
-      '', 'Monday', 'Tuesday', 'Wednesday',
+      '',
+      'Monday', 'Tuesday', 'Wednesday',
       'Thursday', 'Friday', 'Saturday', 'Sunday'
     ];
     return names[weekday];
