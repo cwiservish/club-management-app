@@ -5,6 +5,26 @@ Figma source: https://www.figma.com/make/d1kr0jsnxg9hbQfsuMBHAw/Club-Management-
 
 ---
 
+
+core/network/
+api_endpoints.dart              ← all route constants, never hardcode strings in services
+token_storage.dart              ← TokenNotifier / authTokenProvider (JWT in memory)
+cancel_token_registry.dart      ← named CancelToken lifecycle, call cancelAll() in dispose()
+models/
+api_exception.dart            ← sealed hierarchy: Network / Auth / Forbidden / NotFound
+/ Validation / Server / Cancelled / Parse / Generic
+api_response.dart             ← ApiResponse<T> + PaginatedApiResponse<T> + PaginationMeta
+interceptors/
+auth_interceptor.dart         ← injects Bearer token; triggers setToken(null) on 401
+Options.skipAuth() extension for public endpoints
+logging_interceptor.dart      ← pretty request/response/error logs, debug-only
+redacts Authorization header value
+error_interceptor.dart        ← DioException → typed ApiException (must be last in chain)
+api_client.dart                 ← ApiClient + apiClientProvider (Riverpod Provider)
+get / getList / getPaginated / post / put / patch / delete / upload
+
+
+
 ## Project Structure
 
 ```
