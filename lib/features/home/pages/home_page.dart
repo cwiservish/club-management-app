@@ -1,80 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/home_data.dart';
+import '../providers/home_provider.dart';
 
-// Local data models (home-screen specific, not shared)
-class _UpcomingEvent {
-  final String title;
-  final String subtitle;
-  final String date;
-  final String time;
-  final String type;
-
-  const _UpcomingEvent({
-    required this.title,
-    required this.subtitle,
-    required this.date,
-    required this.time,
-    required this.type,
-  });
-}
-
-class _TeamAnnouncement {
-  final String message;
-  final String author;
-  final String timeAgo;
-  final String avatarInitials;
-
-  const _TeamAnnouncement({
-    required this.message,
-    required this.author,
-    required this.timeAgo,
-    required this.avatarInitials,
-  });
-}
-
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  static const _events = [
-    _UpcomingEvent(
-      title: 'vs. Riverside FC',
-      subtitle: 'U14 Boys — Home Game',
-      date: 'Sat, Mar 29',
-      time: '10:00 AM',
-      type: 'game',
-    ),
-    _UpcomingEvent(
-      title: 'Team Practice',
-      subtitle: 'U14 Boys — Field 3',
-      date: 'Wed, Mar 26',
-      time: '5:30 PM',
-      type: 'practice',
-    ),
-    _UpcomingEvent(
-      title: 'vs. Eagles SC',
-      subtitle: 'U14 Boys — Away Game',
-      date: 'Sat, Apr 5',
-      time: '2:00 PM',
-      type: 'game',
-    ),
-  ];
-
-  static const _announcements = [
-    _TeamAnnouncement(
-      message: 'Reminder: Bring your shin guards and cleats to practice tomorrow.',
-      author: 'Coach Martinez',
-      timeAgo: '2h ago',
-      avatarInitials: 'CM',
-    ),
-    _TeamAnnouncement(
-      message: 'Registration deadline for the spring tournament is this Friday!',
-      author: 'Club Admin',
-      timeAgo: '1d ago',
-      avatarInitials: 'CA',
-    ),
-  ];
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final homeAsync = ref.watch(homeProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       body: SafeArea(
@@ -82,27 +17,31 @@ class HomeScreen extends StatelessWidget {
           children: [
             _buildHeader(),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    _buildTeamBanner(),
-                    const SizedBox(height: 24),
-                    _buildQuickStats(),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader('Upcoming Events'),
-                    const SizedBox(height: 12),
-                    ..._events.map(_buildEventCard),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader('Announcements'),
-                    const SizedBox(height: 12),
-                    ..._announcements.map(_buildAnnouncementCard),
-                    const SizedBox(height: 24),
-                    _buildQuickActions(),
-                    const SizedBox(height: 24),
-                  ],
+              child: homeAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error: $e')),
+                data: (data) => SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      _buildTeamBanner(data.stats),
+                      const SizedBox(height: 24),
+                      _buildQuickStats(data.stats),
+                      const SizedBox(height: 24),
+                      _buildSectionHeader('Upcoming Events'),
+                      const SizedBox(height: 12),
+                      ...data.events.map(_buildEventCard),
+                      const SizedBox(height: 24),
+                      _buildSectionHeader('Announcements'),
+                      const SizedBox(height: 12),
+                      ...data.announcements.map(_buildAnnouncementCard),
+                      const SizedBox(height: 24),
+                      _buildQuickActions(),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -173,7 +112,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTeamBanner() {
+  Widget _buildTeamBanner(HomeStats stats) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -201,16 +140,16 @@ class HomeScreen extends StatelessWidget {
                     color: Colors.white, size: 24),
               ),
               const SizedBox(width: 12),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('U14 Boys Premier',
-                      style: TextStyle(
+                  Text(stats.teamName,
+                      style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
                           fontSize: 16)),
-                  Text('Spring Season 2025',
-                      style: TextStyle(
+                  Text(stats.season,
+                      style: const TextStyle(
                           color: Color(0xFFBFDBFE), fontSize: 13)),
                 ],
               ),
@@ -219,8 +158,7 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () {},
                 style: TextButton.styleFrom(
                   backgroundColor: Colors.white.withOpacity(0.15),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8)),
                 ),
@@ -235,13 +173,13 @@ class HomeScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _bannerStat('8', 'Wins'),
+              _bannerStat('${stats.wins}', 'Wins'),
               Container(width: 1, height: 32, color: Colors.white24),
-              _bannerStat('2', 'Losses'),
+              _bannerStat('${stats.losses}', 'Losses'),
               Container(width: 1, height: 32, color: Colors.white24),
-              _bannerStat('1', 'Draw'),
+              _bannerStat('${stats.draws}', 'Draw'),
               Container(width: 1, height: 32, color: Colors.white24),
-              _bannerStat('3rd', 'Rank'),
+              _bannerStat(stats.rank, 'Rank'),
             ],
           ),
         ],
@@ -263,20 +201,20 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickStats() {
+  Widget _buildQuickStats(HomeStats stats) {
     return Row(
       children: [
         Expanded(
-            child: _statCard(Icons.people_outline, '18', 'Players',
-                const Color(0xFF10B981))),
+            child: _statCard(Icons.people_outline, '${stats.playerCount}',
+                'Players', const Color(0xFF10B981))),
         const SizedBox(width: 12),
         Expanded(
-            child: _statCard(Icons.calendar_today_outlined, '3', 'This Week',
-                const Color(0xFFF59E0B))),
+            child: _statCard(Icons.calendar_today_outlined,
+                '${stats.eventsThisWeek}', 'This Week', const Color(0xFFF59E0B))),
         const SizedBox(width: 12),
         Expanded(
-            child: _statCard(Icons.chat_bubble_outline, '5', 'Messages',
-                const Color(0xFF8B5CF6))),
+            child: _statCard(Icons.chat_bubble_outline,
+                '${stats.messageCount}', 'Messages', const Color(0xFF8B5CF6))),
       ],
     );
   }
@@ -336,11 +274,10 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEventCard(_UpcomingEvent event) {
+  Widget _buildEventCard(HomeEvent event) {
     final isGame = event.type == 'game';
     final color = isGame ? const Color(0xFF1A56DB) : const Color(0xFF10B981);
-    final bgColor =
-        isGame ? const Color(0xFFEFF6FF) : const Color(0xFFECFDF5);
+    final bgColor = isGame ? const Color(0xFFEFF6FF) : const Color(0xFFECFDF5);
     final icon = isGame ? Icons.sports_soccer : Icons.fitness_center;
 
     return Container(
@@ -411,7 +348,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAnnouncementCard(_TeamAnnouncement a) {
+  Widget _buildAnnouncementCard(HomeAnnouncement a) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
