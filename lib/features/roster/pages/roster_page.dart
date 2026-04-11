@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/models/roster_member.dart';
-import '../../../core/models/sample_data.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/enums/member_role.dart';
+import '../../../core/models/roster_member.dart';
+import '../providers/roster_provider.dart';
 
 const _blue = Color(0xFF1A56DB);
 const _green = Color(0xFF10B981);
@@ -16,18 +17,15 @@ const _gray500 = Color(0xFF6B7280);
 const _gray700 = Color(0xFF374151);
 const _gray900 = Color(0xFF111827);
 
-class RosterScreen extends StatefulWidget {
+class RosterScreen extends ConsumerStatefulWidget {
   const RosterScreen({super.key});
 
   @override
-  State<RosterScreen> createState() => _RosterScreenState();
+  ConsumerState<RosterScreen> createState() => _RosterScreenState();
 }
 
-class _RosterScreenState extends State<RosterScreen> {
+class _RosterScreenState extends ConsumerState<RosterScreen> {
   final _searchController = TextEditingController();
-  String _searchQuery = '';
-  MemberRole? _roleFilter;
-  bool _gridView = true;
 
   @override
   void dispose() {
@@ -35,34 +33,22 @@ class _RosterScreenState extends State<RosterScreen> {
     super.dispose();
   }
 
-  List<RosterMember> get _filtered {
-    return sampleRoster.where((m) {
-      final matchRole = _roleFilter == null || m.role == _roleFilter;
-      final q = _searchQuery.toLowerCase();
-      final matchSearch = q.isEmpty ||
-          m.fullName.toLowerCase().contains(q) ||
-          (m.staffTitle?.toLowerCase().contains(q) ?? false) ||
-          m.positionFull.toLowerCase().contains(q) ||
-          (m.jerseyNumber?.toString().contains(q) ?? false);
-      return matchRole && matchSearch;
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final members = _filtered;
-    final staff = members.where((m) => m.role == MemberRole.staff).toList();
-    final players = members.where((m) => m.role == MemberRole.player).toList();
+    final state = ref.watch(rosterProvider);
+    final filtered = state.filtered;
+    final staff = filtered.where((m) => m.role == MemberRole.staff).toList();
+    final players = filtered.where((m) => m.role == MemberRole.player).toList();
 
     return Scaffold(
       backgroundColor: _gray50,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildSearchBar(),
-            _buildFilterRow(),
-            Expanded(child: _buildList(staff, players)),
+            _buildHeader(state),
+            _buildSearchBar(state),
+            _buildFilterRow(state),
+            Expanded(child: _buildList(state, staff, players)),
           ],
         ),
       ),
@@ -76,7 +62,7 @@ class _RosterScreenState extends State<RosterScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(RosterState state) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -103,14 +89,13 @@ class _RosterScreenState extends State<RosterScreen> {
           ),
           const SizedBox(width: 8),
           GestureDetector(
-            onTap: () => setState(() => _gridView = !_gridView),
+            onTap: () => ref.read(rosterProvider.notifier).toggleView(),
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                  color: _gray100,
-                  borderRadius: BorderRadius.circular(8)),
+                  color: _gray100, borderRadius: BorderRadius.circular(8)),
               child: Icon(
-                _gridView ? Icons.view_list_outlined : Icons.grid_view,
+                state.gridView ? Icons.view_list_outlined : Icons.grid_view,
                 size: 20,
                 color: _gray500,
               ),
@@ -121,22 +106,22 @@ class _RosterScreenState extends State<RosterScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(RosterState state) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: TextField(
         controller: _searchController,
-        onChanged: (v) => setState(() => _searchQuery = v),
+        onChanged: (v) => ref.read(rosterProvider.notifier).setSearch(v),
         decoration: InputDecoration(
           hintText: 'Search by name, position, #…',
           hintStyle: const TextStyle(color: _gray400, fontSize: 14),
           prefixIcon: const Icon(Icons.search, color: _gray400, size: 20),
-          suffixIcon: _searchQuery.isNotEmpty
+          suffixIcon: state.searchQuery.isNotEmpty
               ? GestureDetector(
                   onTap: () {
                     _searchController.clear();
-                    setState(() => _searchQuery = '');
+                    ref.read(rosterProvider.notifier).setSearch('');
                   },
                   child: const Icon(Icons.close, color: _gray400, size: 18),
                 )
@@ -154,13 +139,17 @@ class _RosterScreenState extends State<RosterScreen> {
     );
   }
 
-  Widget _buildFilterRow() {
+  Widget _buildFilterRow(RosterState state) {
+    final total = state.allMembers.length;
+    final playerCount =
+        state.allMembers.where((m) => m.role == MemberRole.player).length;
+    final staffCount =
+        state.allMembers.where((m) => m.role == MemberRole.staff).length;
+
     final chips = [
-      (null, 'All (${sampleRoster.length})'),
-      (MemberRole.player,
-          'Players (${sampleRoster.where((m) => m.role == MemberRole.player).length})'),
-      (MemberRole.staff,
-          'Staff (${sampleRoster.where((m) => m.role == MemberRole.staff).length})'),
+      (null, 'All ($total)'),
+      (MemberRole.player, 'Players ($playerCount)'),
+      (MemberRole.staff, 'Staff ($staffCount)'),
     ];
 
     return Container(
@@ -168,14 +157,16 @@ class _RosterScreenState extends State<RosterScreen> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Row(
         children: chips.map((chip) {
-          final isActive = _roleFilter == chip.$1;
+          final isActive = state.roleFilter == chip.$1;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
-              onTap: () => setState(() => _roleFilter = chip.$1),
+              onTap: () =>
+                  ref.read(rosterProvider.notifier).setFilter(chip.$1),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
                   color: isActive ? _blue.withOpacity(0.1) : _gray100,
                   borderRadius: BorderRadius.circular(20),
@@ -198,8 +189,9 @@ class _RosterScreenState extends State<RosterScreen> {
     );
   }
 
-  Widget _buildList(List<RosterMember> staff, List<RosterMember> players) {
-    if (_filtered.isEmpty) {
+  Widget _buildList(
+      RosterState state, List<RosterMember> staff, List<RosterMember> players) {
+    if (state.filtered.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -213,7 +205,7 @@ class _RosterScreenState extends State<RosterScreen> {
                     fontWeight: FontWeight.w500)),
             const SizedBox(height: 6),
             Text(
-              _searchQuery.isNotEmpty
+              state.searchQuery.isNotEmpty
                   ? 'Try a different search'
                   : 'Tap + to add a member',
               style: const TextStyle(color: _gray400, fontSize: 13),
@@ -229,13 +221,19 @@ class _RosterScreenState extends State<RosterScreen> {
         if (staff.isNotEmpty) ...[
           _sectionHeader('Staff', staff.length),
           const SizedBox(height: 8),
-          if (_gridView) _buildGrid(staff) else ...staff.map(_buildListTile),
+          if (state.gridView)
+            _buildGrid(staff)
+          else
+            ...staff.map(_buildListTile),
           const SizedBox(height: 16),
         ],
         if (players.isNotEmpty) ...[
           _sectionHeader('Players', players.length),
           const SizedBox(height: 8),
-          if (_gridView) _buildGrid(players) else ...players.map(_buildListTile),
+          if (state.gridView)
+            _buildGrid(players)
+          else
+            ...players.map(_buildListTile),
         ],
       ],
     );
@@ -382,7 +380,8 @@ class _RosterScreenState extends State<RosterScreen> {
                   style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: member.role == MemberRole.staff ? _purple : _blue),
+                      color:
+                          member.role == MemberRole.staff ? _purple : _blue),
                   textAlign: TextAlign.center),
             ),
             const SizedBox(height: 10),
@@ -580,8 +579,8 @@ class _RosterScreenState extends State<RosterScreen> {
                 bottom: -4,
                 right: -8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: _blue,
                     borderRadius: BorderRadius.circular(8),
@@ -696,8 +695,7 @@ class _RosterScreenState extends State<RosterScreen> {
             style: TextStyle(
                 fontSize: 22, fontWeight: FontWeight.w800, color: color)),
         const SizedBox(height: 2),
-        Text(label,
-            style: const TextStyle(fontSize: 11, color: _gray500)),
+        Text(label, style: const TextStyle(fontSize: 11, color: _gray500)),
       ],
     );
   }
@@ -792,8 +790,8 @@ class _RosterScreenState extends State<RosterScreen> {
                     Icon(r.$1, size: 15, color: _gray400),
                     const SizedBox(width: 10),
                     Text(r.$2,
-                        style: const TextStyle(
-                            fontSize: 14, color: _gray700)),
+                        style:
+                            const TextStyle(fontSize: 14, color: _gray700)),
                   ],
                 ),
               )),
