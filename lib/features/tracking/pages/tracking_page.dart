@@ -1,30 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/tracking_item.dart';
+import '../providers/tracking_provider.dart';
 
-class TrackingScreen extends StatelessWidget {
+class TrackingScreen extends ConsumerWidget {
   const TrackingScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(trackingProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(title: const Text('Tracking')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _trackCard('Season Goals', 27, 40, const Color(0xFF10B981)),
-          const SizedBox(height: 12),
-          _trackCard('Training Sessions', 18, 24, const Color(0xFF1A56DB)),
-          const SizedBox(height: 12),
-          _trackCard('Team Attendance', 88, 100, const Color(0xFF8B5CF6)),
-          const SizedBox(height: 12),
-          _trackCard('Tournament Points', 25, 36, const Color(0xFFF59E0B)),
-        ],
+      body: async.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error: $e')),
+        data: (items) => ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            for (int i = 0; i < items.length; i++) ...[
+              if (i > 0) const SizedBox(height: 12),
+              _TrackCard(item: items[i]),
+            ],
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _trackCard(String label, int current, int total, Color color) {
-    final pct = current / total;
+class _TrackCard extends StatelessWidget {
+  final TrackingItem item;
+  const _TrackCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = item.current / item.total;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -43,14 +55,16 @@ class TrackingScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label,
+              Text(item.label,
                   style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF111827))),
-              Text('$current / $total',
+              Text('${item.current} / ${item.total}',
                   style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700, color: color)),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: item.color)),
             ],
           ),
           const SizedBox(height: 12),
@@ -60,7 +74,7 @@ class TrackingScreen extends StatelessWidget {
               value: pct,
               minHeight: 10,
               backgroundColor: const Color(0xFFF3F4F6),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
+              valueColor: AlwaysStoppedAnimation<Color>(item.color),
             ),
           ),
           const SizedBox(height: 8),
