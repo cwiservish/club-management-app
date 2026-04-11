@@ -30,6 +30,22 @@ class AppUser {
   bool get isParent => role == UserRole.parent;
   bool get isAthlete => role == UserRole.athlete;
 
+  factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
+        id: json['id'] as String,
+        displayName: json['displayName'] as String,
+        email: json['email'] as String,
+        role: UserRole.values.byName(json['role'] as String),
+        teamId: json['teamId'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'displayName': displayName,
+        'email': email,
+        'role': role.name,
+        'teamId': teamId,
+      };
+
   AppUser copyWith({
     String? id,
     String? displayName,

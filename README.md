@@ -1,5 +1,7 @@
 # Playbook365 — Flutter Club Management App
 
+Latest Flutter SDK -> 3.38.5
+
 Converted from Figma Make design file by Claude.
 Figma source: https://www.figma.com/make/d1kr0jsnxg9hbQfsuMBHAw/Club-Management-App
 

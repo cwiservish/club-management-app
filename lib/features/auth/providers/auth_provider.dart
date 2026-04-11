@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/enums/user_role.dart';
-import '../models/user_model.dart';
+import '../../../core/models/user_model.dart';
 
 /// Sample authenticated user — matches the "Jamie Davis / Parent" persona
 /// used throughout the design. Replace with real auth once backend is wired.
