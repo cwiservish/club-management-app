@@ -1,3 +1,5 @@
+import '../config/environment_config.dart';
+
 /// All Playbook365 API endpoint paths.
 ///
 /// Keep every path here — never hardcode strings in services.
@@ -13,7 +15,7 @@ abstract final class ApiEndpoints {
 
   // ─── Base ──────────────────────────────────────────────────────────────────
 
-  static const String baseUrl = 'https://api.playbook365.com/v1';
+  static final String baseUrl = EnvironmentConfig.baseUrl;
 
   // ─── Auth ──────────────────────────────────────────────────────────────────
 

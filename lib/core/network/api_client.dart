@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/environment_config.dart';
 import '../exceptions/network_exception.dart';
 import 'api_endpoints.dart';
 import 'interceptors/auth_interceptor.dart';
@@ -176,12 +177,14 @@ class ApiClient {
 ///   2. [LoggingInterceptor] — pretty-prints in debug mode only
 ///   3. [ErrorInterceptor]   — DioException → ApiException (must be last)
 final apiClientProvider = Provider<ApiClient>((ref) {
+  final timeout = Duration(seconds: EnvironmentConfig.timeoutSeconds);
+
   final dio = Dio(
     BaseOptions(
       baseUrl: ApiEndpoints.baseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
+      connectTimeout: timeout,
+      receiveTimeout: timeout,
+      sendTimeout: timeout,
       headers: const {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -196,7 +199,7 @@ final apiClientProvider = Provider<ApiClient>((ref) {
         ref.read(authTokenProvider.notifier).setToken(null);
       },
     ),
-    LoggingInterceptor(),
+    if (EnvironmentConfig.enableLogging) LoggingInterceptor(),
     ErrorInterceptor(),
   ]);
 
