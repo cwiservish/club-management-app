@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/common_providers/current_user_provider.dart';
+import '../../core/models/chat_models.dart';
+import '../../core/models/club_event.dart';
 import '../../features/splash/pages/splash_page.dart';
 import '../../features/files/pages/files_page.dart';
 import '../../features/home/pages/home_page.dart';
@@ -15,6 +17,7 @@ import '../../features/registration/pages/registration_page.dart';
 import '../../features/roster/pages/attendance_history_page.dart';
 import '../../features/roster/pages/roster_page.dart';
 import '../../features/schedule/pages/event_detail_page.dart';
+import '../../features/schedule/pages/event_form_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
 import '../../features/statistics/pages/statistics_page.dart';
 import '../../features/team/pages/team_detail_page.dart';
@@ -43,8 +46,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: listenable,
-    observers: [_AppRouterObserver()],
     redirect: (context, state) {
+      debugPrint('[Router] → ${state.matchedLocation}');
       final userState = ref.read(currentUserProvider);
 
       if (userState.isLoading) {
@@ -84,7 +87,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: AppRoutes.scheduleEventDetail,
-                    builder: (context, state) => const EventDetailScreen(),
+                    builder: (context, state) =>
+                        EventDetailScreen(event: state.extra as ClubEvent),
+                  ),
+                  GoRoute(
+                    path: AppRoutes.scheduleEventForm,
+                    builder: (context, state) =>
+                        EventFormScreen(event: state.extra as ClubEvent?),
                   ),
                 ],
               ),
@@ -113,6 +122,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.messages,
                 builder: (context, state) => const MessagesScreen(),
+                routes: [
+                  GoRoute(
+                    path: AppRoutes.messagesChatDetail,
+                    builder: (context, state) =>
+                        ChatDetailScreen(thread: state.extra as ChatThread),
+                  ),
+                ],
               ),
             ],
           ),
@@ -166,16 +182,3 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-// ─── Observer ─────────────────────────────────────────────────────────────────
-
-class _AppRouterObserver extends NavigatorObserver {
-  @override
-  void didPush(Route route, Route? previousRoute) {
-    debugPrint('[Router] → ${route.settings.name}');
-  }
-
-  @override
-  void didReplace({Route? newRoute, Route? oldRoute}) {
-    debugPrint('[Router] → ${newRoute?.settings.name}');
-  }
-}

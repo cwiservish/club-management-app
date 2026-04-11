@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/app_routes.dart';
 import '../../../core/models/club_event.dart';
 import '../../../core/models/sample_data.dart';
 import '../../../core/models/team_season.dart';
 import '../../../core/enums/event_type.dart';
-import '../../schedule/pages/event_detail_page.dart';
 
 // ─── Local colour palette ─────────────────────────────────────────────────────
 
@@ -404,10 +405,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
             ),
           ),
           TextButton(
-            onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => EventDetailScreen(event: next))),
+            onPressed: () => context.push(
+                '/schedule/${AppRoutes.scheduleEventDetail}',
+                extra: next),
             child: const Text('Details',
                 style: TextStyle(
                     fontSize: 12,
@@ -536,9 +536,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
 
   Widget _scheduleEventTile(ClubEvent event) {
     return GestureDetector(
-      onTap: () => Navigator.push(context,
-          MaterialPageRoute(
-              builder: (_) => EventDetailScreen(event: event))),
+      onTap: () => context.push(
+          '/schedule/${AppRoutes.scheduleEventDetail}',
+          extra: event),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),

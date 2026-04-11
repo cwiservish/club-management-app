@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/app_routes.dart';
 import '../../../core/models/club_event.dart';
 import '../../../core/models/sample_data.dart';
 import '../../../core/enums/event_type.dart';
-import 'event_form_page.dart';
 
 // ─── Local colour palette ─────────────────────────────────────────────────────
 
@@ -105,9 +106,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       actions: [
         IconButton(
           icon: const Icon(Icons.edit_outlined, color: Colors.white),
-          onPressed: () => Navigator.push(context,
-              MaterialPageRoute(
-                  builder: (_) => EventFormScreen(event: event))),
+          onPressed: () => context.push(
+              '/schedule/${AppRoutes.scheduleEventForm}',
+              extra: event),
         ),
         IconButton(
           icon: const Icon(Icons.more_vert, color: Colors.white),
@@ -389,10 +390,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => EventFormScreen(event: event))),
+            onPressed: () => context.push(
+                '/schedule/${AppRoutes.scheduleEventForm}',
+                extra: event),
             icon: const Icon(Icons.edit_outlined, size: 16),
             label: const Text('Edit Event'),
             style: OutlinedButton.styleFrom(

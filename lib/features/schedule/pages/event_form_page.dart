@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/models/club_event.dart';
 import '../../../core/enums/event_type.dart';
@@ -575,14 +576,14 @@ class _EventFormScreenState extends State<EventFormScreen> {
             'Are you sure you want to delete this event? This cannot be undone.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => context.pop(),
             child: const Text('Cancel',
                 style: TextStyle(color: _gray500)),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
-              Navigator.maybePop(context);
+              context.pop(); // close dialog
+              if (context.canPop()) context.pop(); // close form
             },
             child: const Text('Delete',
                 style: TextStyle(

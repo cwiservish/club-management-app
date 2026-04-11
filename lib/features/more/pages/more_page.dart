@@ -1,15 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/app_routes.dart';
 import '../../../app/app_theme.dart';
-import '../../statistics/pages/statistics_page.dart';
-import '../../photos/pages/photos_page.dart';
-import '../../files/pages/files_page.dart';
-import '../../tracking/pages/tracking_page.dart';
-import '../../invoicing/pages/invoicing_page.dart';
-import '../../registration/pages/registration_page.dart';
-import '../../notifications/pages/notification_prefs_page.dart';
-import '../../roster/pages/attendance_history_page.dart';
-import '../../team/pages/team_detail_page.dart';
 
 /// Playbook365 — More Screen
 /// Hub screen for all secondary features accessible from the bottom nav More tab.
@@ -34,33 +27,33 @@ class MoreScreen extends StatelessWidget {
                     const SizedBox(height: AppSpacing.xl),
                     _buildSection(context, 'Team Management', [
                       _Item(Icons.sports_soccer, 'Team Detail', AppColors.primary,
-                          () => _push(context, const TeamDetailScreen())),
+                          () => context.push('/more/${AppRoutes.moreTeamDetail}')),
                       _Item(Icons.bar_chart_outlined, 'Statistics', AppColors.success,
-                          () => _push(context, const StatisticsScreen())),
+                          () => context.push('/more/${AppRoutes.moreStatistics}')),
                       _Item(Icons.people_outline, 'Player Attendance', AppColors.purple,
-                          () => _push(context, const PlayerAttendanceScreen())),
+                          () => context.push('/roster/${AppRoutes.rosterAttendance}')),
                       _Item(Icons.track_changes_outlined, 'Tracking', AppColors.warning,
-                          () => _push(context, const TrackingScreen())),
+                          () => context.push('/more/${AppRoutes.moreTracking}')),
                     ]),
                     const SizedBox(height: AppSpacing.lg),
                     _buildSection(context, 'Media & Files', [
                       _Item(Icons.photo_library_outlined, 'Photos', AppColors.sky,
-                          () => _push(context, const PhotosScreen())),
+                          () => context.push('/more/${AppRoutes.morePhotos}')),
                       _Item(Icons.folder_outlined, 'Files', AppColors.warning,
-                          () => _push(context, const FilesScreen())),
+                          () => context.push('/more/${AppRoutes.moreFiles}')),
                     ]),
                     const SizedBox(height: AppSpacing.lg),
                     _buildSection(context, 'Finance & Admin', [
                       _Item(Icons.receipt_long_outlined, 'Invoicing', AppColors.success,
-                          () => _push(context, const InvoicingScreen())),
+                          () => context.push('/more/${AppRoutes.moreInvoicing}')),
                       _Item(Icons.badge_outlined, 'Registration & Insurance', AppColors.primary,
-                          () => _push(context, const RegistrationScreen())),
+                          () => context.push('/more/${AppRoutes.moreRegistration}')),
                     ]),
                     const SizedBox(height: AppSpacing.lg),
                     _buildSection(context, 'Settings', [
                       _Item(Icons.notifications_outlined, 'Notification Preferences',
                           AppColors.purple,
-                          () => _push(context, const NotificationPrefsScreen())),
+                          () => context.push('/more/${AppRoutes.moreNotifications}')),
                       _Item(Icons.person_outline, 'Edit Profile', AppColors.gray500, () {}),
                       _Item(Icons.help_outline, 'Help & Support', AppColors.gray500, () {}),
                       _Item(Icons.logout, 'Sign Out', AppColors.error, () {}),
@@ -77,9 +70,6 @@ class MoreScreen extends StatelessWidget {
       ),
     );
   }
-
-  void _push(BuildContext context, Widget screen) =>
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
 
   Widget _buildHeader() {
     return Container(

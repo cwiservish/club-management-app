@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/router/app_routes.dart';
 import '../../../core/models/chat_models.dart';
 import '../../../core/enums/thread_type.dart';
 import '../../../core/enums/message_type.dart';
@@ -410,10 +413,9 @@ class _MessagesScreenState extends State<MessagesScreen>
       ),
       confirmDismiss: (_) async => false,
       child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => ChatDetailScreen(thread: thread)),
+        onTap: () => context.push(
+          '/messages/${AppRoutes.messagesChatDetail}',
+          extra: thread,
         ),
         child: Container(
           color: thread.hasUnread ? const Color(0xFFFAFBFF) : Colors.white,
@@ -632,12 +634,11 @@ class _MessagesScreenState extends State<MessagesScreen>
                                   fontWeight: FontWeight.w600,
                                   color: _gray900)),
                           onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        ChatDetailScreen(thread: t)));
+                            context.pop();
+                            context.push(
+                              '/messages/${AppRoutes.messagesChatDetail}',
+                              extra: t,
+                            );
                           },
                         ))
                     .toList(),
