@@ -1,27 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/notification_prefs_provider.dart';
 
-class NotificationPrefsScreen extends StatefulWidget {
+class NotificationPrefsScreen extends ConsumerWidget {
   const NotificationPrefsScreen({super.key});
 
   @override
-  State<NotificationPrefsScreen> createState() =>
-      _NotificationPrefsScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final prefs = ref.watch(notifPrefsProvider);
+    final notifier = ref.read(notifPrefsProvider.notifier);
 
-class _NotificationPrefsScreenState extends State<NotificationPrefsScreen> {
-  final Map<String, bool> _prefs = {
-    'Game Reminders': true,
-    'Practice Reminders': true,
-    'New Messages': true,
-    'RSVP Requests': true,
-    'Team Announcements': true,
-    'Invoice Reminders': false,
-    'Photo Uploads': false,
-    'File Shares': true,
-  };
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(title: const Text('Notification Preferences')),
@@ -29,18 +17,26 @@ class _NotificationPrefsScreenState extends State<NotificationPrefsScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           _prefGroup('Events',
-              ['Game Reminders', 'Practice Reminders', 'RSVP Requests']),
+              ['Game Reminders', 'Practice Reminders', 'RSVP Requests'],
+              prefs, notifier),
           const SizedBox(height: 16),
-          _prefGroup('Communication', ['New Messages', 'Team Announcements']),
+          _prefGroup('Communication', ['New Messages', 'Team Announcements'],
+              prefs, notifier),
           const SizedBox(height: 16),
           _prefGroup('Finance & Files',
-              ['Invoice Reminders', 'Photo Uploads', 'File Shares']),
+              ['Invoice Reminders', 'Photo Uploads', 'File Shares'],
+              prefs, notifier),
         ],
       ),
     );
   }
 
-  Widget _prefGroup(String title, List<String> keys) {
+  Widget _prefGroup(
+    String title,
+    List<String> keys,
+    Map<String, bool> prefs,
+    NotifPrefsNotifier notifier,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -80,9 +76,8 @@ class _NotificationPrefsScreenState extends State<NotificationPrefsScreen> {
                                   fontSize: 14, color: Color(0xFF374151))),
                         ),
                         Switch(
-                          value: _prefs[e.value] ?? false,
-                          onChanged: (v) =>
-                              setState(() => _prefs[e.value] = v),
+                          value: prefs[e.value] ?? false,
+                          onChanged: (_) => notifier.toggle(e.value),
                           activeColor: const Color(0xFF1A56DB),
                         ),
                       ],
