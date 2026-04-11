@@ -1,24 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/photos_provider.dart';
 
-class PhotosScreen extends StatefulWidget {
+class PhotosScreen extends ConsumerWidget {
   const PhotosScreen({super.key});
 
   @override
-  State<PhotosScreen> createState() => _PhotosScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(photosProvider);
+    final notifier = ref.read(photosProvider.notifier);
 
-class _PhotosScreenState extends State<PhotosScreen> {
-  int _selectedAlbum = 0;
-
-  final _albums = const [
-    'All Photos',
-    'vs. Riverside FC',
-    'Practice Mar 25',
-    'Spring 2026',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
@@ -37,11 +28,11 @@ class _PhotosScreenState extends State<PhotosScreen> {
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: _albums.length,
+              itemCount: state.albums.length,
               itemBuilder: (_, i) {
-                final isActive = i == _selectedAlbum;
+                final isActive = i == state.selectedAlbumIndex;
                 return GestureDetector(
-                  onTap: () => setState(() => _selectedAlbum = i),
+                  onTap: () => notifier.selectAlbum(i),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     margin: const EdgeInsets.only(right: 8),
@@ -53,7 +44,7 @@ class _PhotosScreenState extends State<PhotosScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      _albums[i],
+                      state.albums[i].name,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -73,7 +64,7 @@ class _PhotosScreenState extends State<PhotosScreen> {
                 crossAxisSpacing: 2,
                 mainAxisSpacing: 2,
               ),
-              itemCount: 21,
+              itemCount: state.selectedAlbum.photoCount,
               itemBuilder: (_, i) => _PhotoTile(index: i),
             ),
           ),
