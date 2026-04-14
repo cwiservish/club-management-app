@@ -13,14 +13,13 @@ class AppColors {
   static const Color lightBg = Color(0xFFFFFFFF);
   static const Color lightCard = Color(0xFFF4F4F4);
   static const Color lightBorder = Color(0xFFE5E5E5);
-  static const Color lightAccent = Color(0xFF008CFF);
   static const Color lightTextPrimary = Color(0xFF20242A);
   static const Color lightTextSecondary = Color(0x9920242A); // 0.6 opacity
 
   static const Color pending = Color(0xFF4B5563);
 
   // ── Primary ───────────────────────────────────────────────────────────────
-  static const Color primary = Color(0xFF1A56DB);
+  static const Color primary = Color(0xFF008CFF);
   static const Color primaryDark = Color(0xFF1E3A8A);
   static const Color primaryLight = Color(0xFFEFF6FF);
   static const Color primaryMid = Color(0xFFBFDBFE);

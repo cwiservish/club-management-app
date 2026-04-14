@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/app_text_styles.dart';
 
 class HomeMenuItem extends StatelessWidget {
   final String title;
 
-  const HomeMenuItem({
-    super.key,
-    required this.title,
-  });
+  const HomeMenuItem({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
@@ -27,8 +23,7 @@ class HomeMenuItem extends StatelessWidget {
         children: [
           Text(
             title,
-            style: textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w400,
+            style: AppTextStyles.body16.copyWith(
               color: colorScheme.onSurface,
             ),
           ),

@@ -3,106 +3,46 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/club_event.dart';
 
-/// Three possible RSVP states shown on the card.
 enum RsvpStatus { accepted, declined, unknown }
 
 class ScheduleEventCard extends StatelessWidget {
   final ClubEvent event;
-
-  /// Explicit override; when null the status is derived from [event].
   final RsvpStatus? rsvpStatus;
 
-  const ScheduleEventCard({
-    super.key,
-    required this.event,
-    this.rsvpStatus,
-  });
-
-  // ─── Helpers ────────────────────────────────────────────────────────────────
+  const ScheduleEventCard({super.key, required this.event, this.rsvpStatus});
 
   RsvpStatus _deriveStatus() {
     if (event.rsvpYes.isNotEmpty) return RsvpStatus.accepted;
-    if (event.rsvpNo.isNotEmpty) return RsvpStatus.declined;
+    if (event.rsvpNo.isNotEmpty)  return RsvpStatus.declined;
     return RsvpStatus.unknown;
   }
 
-  String _getShortDayName(int weekday) {
-    switch (weekday) {
-      case DateTime.monday:    return 'MON';
-      case DateTime.tuesday:   return 'TUE';
-      case DateTime.wednesday: return 'WED';
-      case DateTime.thursday:  return 'THU';
-      case DateTime.friday:    return 'FRI';
-      case DateTime.saturday:  return 'SAT';
-      case DateTime.sunday:    return 'SUN';
-      default:                 return '';
-    }
+  String _shortDay(int weekday) => const {
+        DateTime.monday:    'MON',
+        DateTime.tuesday:   'TUE',
+        DateTime.wednesday: 'WED',
+        DateTime.thursday:  'THU',
+        DateTime.friday:    'FRI',
+        DateTime.saturday:  'SAT',
+        DateTime.sunday:    'SUN',
+      }[weekday] ??
+      '';
+
+  String _fmtTime(DateTime t) {
+    final h = t.hour > 12 ? t.hour - 12 : (t.hour == 0 ? 12 : t.hour);
+    final m = t.minute.toString().padLeft(2, '0');
+    return '$h:$m ${t.hour >= 12 ? 'PM' : 'AM'}';
   }
-
-  String _formatTime(DateTime time) {
-    final hour =
-        time.hour > 12 ? time.hour - 12 : (time.hour == 0 ? 12 : time.hour);
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute $period';
-  }
-
-  // ─── RSVP indicator ─────────────────────────────────────────────────────────
-
-  Widget _buildRsvpBox(RsvpStatus status, ColorScheme colorScheme) {
-    final Color bgColor;
-    final Widget icon;
-
-    switch (status) {
-      case RsvpStatus.accepted:
-        bgColor = const Color(0xFF0ACB97); // Figma spec: #0ACB97 green
-        icon = const Icon(Icons.check, color: AppColors.white, size: 18);
-      case RsvpStatus.declined:
-        bgColor = const Color(0xFFFF5858); // Figma spec: #FF5858 red
-        icon = const Icon(Icons.close, color: AppColors.white, size: 18);
-      case RsvpStatus.unknown:
-        bgColor = colorScheme.surfaceContainer; // #D9D9D9 light / #4E5663 dark
-        icon = Text(
-          '?',
-          style: AppTextStyles.titleMedium.copyWith(
-            color: colorScheme.onSurface,
-            fontSize: 18,
-          ),
-        );
-    }
-
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: colorScheme.outline, width: 1),
-      ),
-      alignment: Alignment.center,
-      child: icon,
-    );
-  }
-
-  // ─── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final theme       = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme   = theme.textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
     final status      = rsvpStatus ?? _deriveStatus();
+    final card        = colorScheme.surfaceContainerHighest;
+    final sep         = colorScheme.surface;
 
-    final dayNum  = event.dateTime.day.toString();
-    final dayName = _getShortDayName(event.dateTime.weekday);
-    final timeRange =
-        '${_formatTime(event.dateTime)} - ${_formatTime(event.endTime)}';
-
-    // The card uses colorScheme.surfaceContainerHighest (#F4F4F4 light / #2B3038 dark)
-    // with white separators between columns (colorScheme.surface).
     return Container(
-      // White "gap" row between cards — 9 px top + 9 px bottom = 18 px spacing
-      color: colorScheme.surface,
+      color: sep,
       padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 18),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -110,76 +50,61 @@ class ScheduleEventCard extends StatelessWidget {
           height: 85,
           child: Row(
             children: [
-              // ── Date column ─────────────────────────────────────────────────
-              Container(
+              // Date column
+              _Col(
                 width: 67,
-                color: colorScheme.surfaceContainerHighest,
-                alignment: Alignment.center,
+                color: card,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      dayNum,
-                      style: textTheme.titleLarge?.copyWith(
-                        fontSize: 23,
-                        fontWeight: FontWeight.w700,
+                      '${event.dateTime.day}',
+                      style: AppTextStyles.dateNumber.copyWith(
                         color: colorScheme.onSurface,
-                        height: 1.1,
                       ),
                     ),
                     Text(
-                      dayName,
-                      style: textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w500,
+                      _shortDay(event.dateTime.weekday),
+                      style: AppTextStyles.labelSmall.copyWith(
                         color: colorScheme.onSurface,
-                        height: 1.2,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
+              Container(width: 1, color: sep),
 
-              // 1 px white column separator
-              Container(width: 1, color: colorScheme.surface),
-
-              // ── Event details column ─────────────────────────────────────────
+              // Details column
               Expanded(
                 child: Container(
-                  color: colorScheme.surfaceContainerHighest,
+                  color: card,
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 10),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Time range — bodyLarge weight
                       Text(
-                        timeRange,
-                        style: textTheme.bodyLarge?.copyWith(
+                        '${_fmtTime(event.dateTime)} - ${_fmtTime(event.endTime)}',
+                        style: AppTextStyles.body16.copyWith(
                           color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w400,
-                          height: 1.3,
                         ),
                       ),
                       const SizedBox(height: 2),
-                      // Event title
                       Text(
                         event.title,
-                        style: textTheme.bodyMedium?.copyWith(
+                        style: AppTextStyles.body14.copyWith(
                           color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w400,
-                          height: 1.3,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
-                      // Location
                       Text(
                         event.location,
-                        style: textTheme.bodySmall?.copyWith(
+                        style: AppTextStyles.bodySmall.copyWith(
                           color: colorScheme.onSurface,
-                          height: 1.3,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -188,21 +113,78 @@ class ScheduleEventCard extends StatelessWidget {
                   ),
                 ),
               ),
+              Container(width: 1, color: sep),
 
-              // 1 px white column separator
-              Container(width: 1, color: colorScheme.surface),
-
-              // ── RSVP column ─────────────────────────────────────────────────
-              Container(
+              // RSVP column
+              _Col(
                 width: 55,
-                color: colorScheme.surfaceContainerHighest,
-                alignment: Alignment.center,
-                child: _buildRsvpBox(status, colorScheme),
+                color: card,
+                child: _RsvpBox(status: status, colorScheme: colorScheme),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+class _Col extends StatelessWidget {
+  final double width;
+  final Color color;
+  final Widget child;
+  const _Col({required this.width, required this.color, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      color: color,
+      alignment: Alignment.center,
+      child: child,
+    );
+  }
+}
+
+class _RsvpBox extends StatelessWidget {
+  final RsvpStatus status;
+  final ColorScheme colorScheme;
+  const _RsvpBox({required this.status, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    late final Color bg;
+    late final Widget child;
+
+    switch (status) {
+      case RsvpStatus.accepted:
+        bg    = const Color(0xFF0ACB97);
+        child = const Icon(Icons.check, color: AppColors.white, size: 16);
+      case RsvpStatus.declined:
+        bg    = const Color(0xFFFF5858);
+        child = const Icon(Icons.close, color: AppColors.white, size: 16);
+      case RsvpStatus.unknown:
+        bg    = colorScheme.surfaceContainer;
+        child = Text(
+          '?',
+          style: AppTextStyles.titleMedium.copyWith(
+            color: colorScheme.onSurface,
+          ),
+        );
+    }
+
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: colorScheme.outline),
+      ),
+      alignment: Alignment.center,
+      child: child,
     );
   }
 }

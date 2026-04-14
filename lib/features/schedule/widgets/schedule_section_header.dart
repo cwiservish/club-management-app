@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 
 class ScheduleSectionHeader extends StatelessWidget {
@@ -17,7 +16,7 @@ class ScheduleSectionHeader extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: 29,
-      color: AppColors.lightAccent,
+      color: colorScheme.primary,
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(

@@ -129,6 +129,22 @@ class AppTextStyles {
     color: AppColors.gray700,
   );
 
+  static const TextStyle body16 = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    color: AppColors.gray900,
+    height: 1.3,
+  );
+
+  static const TextStyle body14 = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: AppColors.gray700,
+    height: 1.3,
+  );
+
   static const TextStyle bodySmall = TextStyle(
     fontFamily: fontFamily,
     fontSize: 13,
@@ -156,5 +172,22 @@ class AppTextStyles {
     fontSize: 11,
     fontWeight: FontWeight.w500,
     color: AppColors.gray400,
+  );
+
+  // Small bold label — Sort, Edit, action links (11px w600)
+  static const TextStyle overline = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    color: AppColors.gray500,
+  );
+
+  // Schedule day number column (23px w700)
+  static const TextStyle dateNumber = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 23,
+    fontWeight: FontWeight.w700,
+    color: AppColors.gray900,
+    height: 1.1,
   );
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/app_text_styles.dart';
 
 class TeamInfoCard extends StatelessWidget {
   final String teamName;
@@ -12,9 +13,7 @@ class TeamInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
@@ -36,7 +35,7 @@ class TeamInfoCard extends StatelessWidget {
             child: Center(
               child: Text(
                 'P',
-                style: textTheme.headlineMedium?.copyWith(
+                style: AppTextStyles.headlineMedium.copyWith(
                   fontWeight: FontWeight.w900,
                   fontStyle: FontStyle.italic,
                   color: colorScheme.onSurfaceVariant,
@@ -51,16 +50,14 @@ class TeamInfoCard extends StatelessWidget {
             children: [
               Text(
                 teamName,
-                style: textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w400,
+                style: AppTextStyles.body16.copyWith(
                   color: colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 record,
-                style: textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w400,
+                style: AppTextStyles.body14.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
