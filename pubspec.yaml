@@ -15,6 +15,7 @@ dependencies:
   go_router: ^17.2.0
   dio: ^5.7.0
   flutter_secure_storage: ^9.2.2
+  flutter_svg: ^2.2.4
 
   # UI helpers
   # cached_network_image: ^3.3.0
@@ -36,6 +37,7 @@ flutter:
     - config/env.dev.json
     - config/env.staging.json
     - config/env.prod.json
+    - assets/svgs/
 
   # Uncomment and add font files under assets/fonts/ to use Inter
   # fonts:

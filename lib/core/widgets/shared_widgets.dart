@@ -3,6 +3,8 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../../app/theme/app_theme.dart';
 import '../models/roster_member.dart';
+import '../constants/app_assets.dart';
+import 'custom_svg_icon.dart';
 
 /// Playbook365 — Shared Reusable Widgets
 
@@ -21,33 +23,27 @@ class AppBottomNavBar extends StatelessWidget {
   });
 
   static const _items = [
-    (Icons.home_rounded, 'Home'),
-    (Icons.calendar_month_rounded, 'Schedule'),
-    (Icons.person_rounded, 'Roster'),
-    (Icons.forum_rounded, 'Messages'),
+    (AppAssets.homeIcon, 'Home'),
+    (AppAssets.scheduleIcon, 'Schedule'),
+    (AppAssets.rosterIcon, 'Roster'),
+    (AppAssets.messageIcon, 'Messages'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.darkBg : AppColors.lightBg;
-    final activeColor = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final inactiveColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final activeBg = isDark ? AppColors.darkCard : const Color(0xFFF0F0F0);
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    const activeBgColor = Color(0xFFF4F4F4);
+    const inactiveBgColor = Color(0xFFFFFFFF);
+    const activeColor = Color(0xFF008CFF);
+    const inactiveColor = Color(0xFF20242A);
 
     return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: borderColor, width: 0.5),
-        ),
-      ),
+      color: Colors.white,
       child: Row(
         children: List.generate(_items.length, (i) {
           final isActive = i == currentIndex;
           final item = _items[i];
           final color = isActive ? activeColor : inactiveColor;
-          final background = isActive ? activeBg : bgColor;
+          final background = isActive ? activeBgColor : inactiveBgColor;
 
           return Expanded(
             child: GestureDetector(
@@ -61,7 +57,7 @@ class AppBottomNavBar extends StatelessWidget {
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        Icon(item.$1, color: color, size: 28),
+                        CustomSvgIcon(assetPath: item.$1, color: color, size: 24),
                         if (i == 3 && messagesBadgeCount > 0)
                           Positioned(
                             top: -5,
@@ -70,13 +66,13 @@ class AppBottomNavBar extends StatelessWidget {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 12),
                     Text(
                       item.$2,
                       style: TextStyle(
                         color: color,
                         fontSize: 12,
-                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: FontWeight.w500,
                         fontFamily: 'Inter',
                       ),
                     ),
