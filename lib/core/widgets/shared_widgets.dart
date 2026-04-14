@@ -179,8 +179,6 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 const Spacer(),
                 Icon(Icons.add_box_rounded, color: textColor, size: 24),
-                const SizedBox(width: 16),
-                Icon(Icons.more_vert, color: textColor, size: 24),
               ],
             ),
           ),

@@ -6,22 +6,13 @@ import '../../core/common_providers/current_user_provider.dart';
 import '../../core/models/chat_models.dart';
 import '../../core/models/club_event.dart';
 import '../../features/splash/pages/splash_page.dart';
-import '../../features/files/pages/files_page.dart';
 import '../../features/home/pages/home_page.dart';
-import '../../features/invoicing/pages/invoicing_page.dart';
 import '../../features/messages/pages/messages_page.dart';
-import '../../features/more/pages/more_page.dart';
-import '../../features/notifications/pages/notification_prefs_page.dart';
-import '../../features/photos/pages/photos_page.dart';
-import '../../features/registration/pages/registration_page.dart';
 import '../../features/roster/pages/attendance_history_page.dart';
 import '../../features/roster/pages/roster_page.dart';
 import '../../features/schedule/pages/event_detail_page.dart';
 import '../../features/schedule/pages/event_form_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
-import '../../features/statistics/pages/statistics_page.dart';
-import '../../features/team/pages/team_detail_page.dart';
-import '../../features/tracking/pages/tracking_page.dart';
 import '../../shell/app_shell.dart';
 import 'app_routes.dart';
 
@@ -136,45 +127,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // ── More sub-pages (accessible via push, not a shell tab) ──────────────
-      GoRoute(
-        path: AppRoutes.more,
-        builder: (context, state) => const MoreScreen(),
-        routes: [
-          GoRoute(
-            path: AppRoutes.moreStatistics,
-            builder: (context, state) => const StatisticsScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.morePhotos,
-            builder: (context, state) => const PhotosScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.moreFiles,
-            builder: (context, state) => const FilesScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.moreInvoicing,
-            builder: (context, state) => const InvoicingScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.moreRegistration,
-            builder: (context, state) => const RegistrationScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.moreNotifications,
-            builder: (context, state) => const NotificationPrefsScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.moreTracking,
-            builder: (context, state) => const TrackingScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.moreTeamDetail,
-            builder: (context, state) => const TeamDetailScreen(),
-          ),
-        ],
-      ),
     ],
   );
 });
