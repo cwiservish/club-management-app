@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../app/router/app_routes.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import '../widgets/team_info_card.dart';
 import '../widgets/home_menu_item.dart';
@@ -13,12 +15,12 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const AppHeader(),
+             AppHeader(),
             Expanded(
               child: SingleChildScrollView(
                 child: Container(
                   color: Theme.of(context).colorScheme.surface,
-                  child: const Column(
+                  child: Column(
                     children: [
                       SizedBox(height: 24),
                       Padding(
@@ -30,7 +32,12 @@ class HomeScreen extends StatelessWidget {
                               record: 'Record: 13-9-3',
                             ),
                             SizedBox(height: 24),
-                            HomeMenuItem(title: 'Photos'),
+                            HomeMenuItem(
+                              title: 'Photos',
+                              onTap: () => context.push(
+                                '${AppRoutes.home}/${AppRoutes.homeEvents}',
+                              ),
+                            ),
                             SizedBox(height: 12),
                             HomeMenuItem(title: 'Statistics'),
                             SizedBox(height: 12),

@@ -6,6 +6,7 @@ import '../../core/common_providers/current_user_provider.dart';
 import '../../core/models/chat_models.dart';
 import '../../core/models/club_event.dart';
 import '../../features/splash/pages/splash_page.dart';
+import '../../features/home/pages/events_page.dart';
 import '../../features/home/pages/home_page.dart';
 import '../../features/messages/pages/messages_page.dart';
 import '../../features/roster/pages/attendance_history_page.dart';
@@ -65,6 +66,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.home,
                 builder: (context, state) => const HomeScreen(),
+                routes: [
+                  GoRoute(
+                    path: AppRoutes.homeEvents,
+                    builder: (context, state) => const EventsScreen(),
+                  ),
+                ],
               ),
             ],
           ),
