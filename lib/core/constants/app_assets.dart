@@ -11,4 +11,7 @@ class AppAssets {
   static const String scheduleIcon = 'assets/svgs/schedule_icon.svg';
   static const String rosterIcon = 'assets/svgs/roster_icon.svg';
   static const String messageIcon = 'assets/svgs/message_icon.svg';
+
+  // Other SVGs
+  static const String plusIcon = 'assets/svgs/plus_icon.svg';
 }

@@ -118,113 +118,82 @@ class _Badge extends StatelessWidget {
 
 // ─── App Header ───────────────────────────────────────────────────────────────
 
-class AppHeader extends StatelessWidget implements PreferredSizeWidget {
-  final bool showSubHeader;
-  final String subHeaderTitle;
-  final VoidCallback? onBack;
-
-  const AppHeader({
-    super.key,
-    this.showSubHeader = true,
-    this.subHeaderTitle = 'Home',
-    this.onBack,
-  });
+class AppHeader extends StatelessWidget {
+  const AppHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.darkBg : AppColors.lightBg;
-    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final dropdownBg = isDark ? AppColors.darkCard : AppColors.lightCard;
-    final accentColor = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    const textColor = Color(0xFF20242A);
+    const borderColor = Color(0xFFD1D1D1);
+    const pillBgColor = Color(0xFFF4F4F4);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Main Header
-        Container(
-          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top, bottom: 8),
-          color: bgColor,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Icon(Icons.person_outline, color: textColor, size: 28),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: dropdownBg,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        '12 Girls ECNL RL',
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(Icons.keyboard_arrow_down, color: textColor.withOpacity(0.7), size: 18),
-                    ],
-                  ),
+    return Container(
+      height: 53,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: borderColor, width: 1.0),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const CustomSvgIcon(
+            assetPath: AppAssets.rosterIcon,
+            color: textColor,
+            size: 24,
+          ),
+          const SizedBox(width: 34),
+          const Spacer(),
+          Container(
+            height: 37,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: pillBgColor,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0D101828), // rgba(16, 24, 40, 0.05)
+                  offset: Offset(0, 1),
+                  blurRadius: 2,
                 ),
-                const Spacer(),
-                Icon(Icons.add_box_rounded, color: textColor, size: 24),
               ],
             ),
-          ),
-        ),
-        // Sub Header
-        if (showSubHeader)
-          Container(
-            height: 44,
-            color: bgColor,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                GestureDetector(
-                  onTap: onBack,
-                  child: Row(
-                    children: [
-                      Icon(Icons.arrow_back_ios, color: textColor.withOpacity(0.5), size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        subHeaderTitle,
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
                 Text(
-                  'Edit',
+                  '12 Girls ECNL RL',
                   style: TextStyle(
-                    color: accentColor,
-                    fontSize: 15,
+                    color: textColor,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Inter',
+                    height: 1.25,
                   ),
                 ),
+                SizedBox(width: 8),
+                Icon(Icons.keyboard_arrow_down, color: textColor, size: 20),
               ],
             ),
           ),
-        Divider(height: 1, thickness: 0.5, color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-      ],
+          const Spacer(),
+          const CustomSvgIcon(
+            assetPath: AppAssets.plusIcon,
+            color: textColor,
+            size: 18,
+          ),
+          const SizedBox(width: 16),
+          const Icon(
+            Icons.more_vert,
+            color: textColor,
+            size: 28,
+          ),
+        ],
+      ),
     );
   }
-
-  @override
-  Size get preferredSize => Size.fromHeight(showSubHeader ? 104 : 60);
 }
 
 // ─── Section Header ───────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import '../../../core/models/chat_models.dart';
 import '../../../core/enums/thread_type.dart';
 import '../../../core/enums/message_type.dart';
 import '../providers/messages_provider.dart';
+import '../../../core/widgets/shared_widgets.dart';
 
 const _blue = Color(0xFF1A56DB);
 const _green = Color(0xFF10B981);
@@ -93,7 +94,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen>
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(state),
+            const AppHeader(),
             _buildSearchBar(state),
             _buildTabBar(),
             Expanded(child: _buildThreadList(state)),
@@ -111,40 +112,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen>
     );
   }
 
-  Widget _buildHeader(MessagesState state) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          const Text('Messages',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: _gray900)),
-          if (state.totalUnread > 0) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                  color: _red, borderRadius: BorderRadius.circular(12)),
-              child: Text('${state.totalUnread}',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
-            ),
-          ],
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.group_add_outlined, color: _gray500),
-            onPressed: () {},
-            tooltip: 'New Group',
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildSearchBar(MessagesState state) {
     return Container(

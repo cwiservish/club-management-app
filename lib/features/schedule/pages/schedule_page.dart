@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/club_event.dart';
 import '../../../core/enums/event_type.dart';
 import '../providers/schedule_provider.dart';
+import '../../../core/widgets/shared_widgets.dart';
 
 const _blue = Color(0xFF1A56DB);
 const _green = Color(0xFF10B981);
@@ -28,7 +29,7 @@ class ScheduleScreen extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(state, notifier),
+            const AppHeader(),
             _buildViewToggle(state, notifier),
             if (state.monthView)
               _buildMonthGrid(state, notifier)
@@ -49,43 +50,6 @@ class ScheduleScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(ScheduleState state, ScheduleNotifier notifier) {
-    final monthLabel =
-        '${_monthName(state.displayMonth.month)} ${state.displayMonth.year}';
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          const Text('Schedule',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: _gray900)),
-          const Spacer(),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: notifier.prevMonth,
-                child: const Icon(Icons.chevron_left, color: _gray500),
-              ),
-              const SizedBox(width: 4),
-              Text(monthLabel,
-                  style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: _gray700)),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: notifier.nextMonth,
-                child: const Icon(Icons.chevron_right, color: _gray500),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildViewToggle(ScheduleState state, ScheduleNotifier notifier) {
     return Container(

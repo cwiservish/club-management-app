@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/home_data.dart';
 import '../providers/home_provider.dart';
+import '../../../core/widgets/shared_widgets.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -15,7 +16,7 @@ class HomeScreen extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
+            const AppHeader(),
             Expanded(
               child: homeAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -51,66 +52,6 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A56DB),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Center(
-              child: Text('P',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          const Text('Playbook365',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF111827))),
-          const Spacer(),
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined,
-                    color: Color(0xFF6B7280)),
-                onPressed: () {},
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                      color: Color(0xFFEF4444), shape: BoxShape.circle),
-                ),
-              ),
-            ],
-          ),
-          const CircleAvatar(
-            radius: 18,
-            backgroundColor: Color(0xFFDBEAFE),
-            child: Text('JD',
-                style: TextStyle(
-                    color: Color(0xFF1A56DB),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildTeamBanner(HomeStats stats) {
     return Container(

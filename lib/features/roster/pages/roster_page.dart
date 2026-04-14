@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/enums/member_role.dart';
 import '../../../core/models/roster_member.dart';
 import '../providers/roster_provider.dart';
+import '../../../core/widgets/shared_widgets.dart';
 
 const _blue = Color(0xFF1A56DB);
 const _green = Color(0xFF10B981);
@@ -45,7 +46,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(state),
+            const AppHeader(),
             _buildSearchBar(state),
             _buildFilterRow(state),
             Expanded(child: _buildList(state, staff, players)),
@@ -62,49 +63,6 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     );
   }
 
-  Widget _buildHeader(RosterState state) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          const Text('Roster',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: _gray900)),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
-            ),
-            child: const Text('U14 Boys',
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _blue)),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () => ref.read(rosterProvider.notifier).toggleView(),
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                  color: _gray100, borderRadius: BorderRadius.circular(8)),
-              child: Icon(
-                state.gridView ? Icons.view_list_outlined : Icons.grid_view,
-                size: 20,
-                color: _gray500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildSearchBar(RosterState state) {
     return Container(
