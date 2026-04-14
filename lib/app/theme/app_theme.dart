@@ -1,178 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// Playbook365 — Design Tokens & Theme
-/// All colors, text styles, and theme configuration in one place.
+import 'app_colors.dart';
+import 'app_text_styles.dart';
 
-// ─── Color Palette ────────────────────────────────────────────────────────────
-
-class AppColors {
-  AppColors._();
-
-  // Primary
-  static const Color primary = Color(0xFF1A56DB);
-  static const Color primaryDark = Color(0xFF1E3A8A);
-  static const Color primaryLight = Color(0xFFEFF6FF);
-  static const Color primaryMid = Color(0xFFBFDBFE);
-
-  // Semantic
-  static const Color success = Color(0xFF10B981);
-  static const Color successLight = Color(0xFFECFDF5);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color warningLight = Color(0xFFFFF7ED);
-  static const Color error = Color(0xFFEF4444);
-  static const Color errorLight = Color(0xFFFEF2F2);
-  static const Color purple = Color(0xFF8B5CF6);
-  static const Color purpleLight = Color(0xFFF5F3FF);
-
-  // Extra accents
-  static const Color sky = Color(0xFF0EA5E9);
-  static const Color orange = Color(0xFFF97316);
-  static const Color teal = Color(0xFF14B8A6);
-  static const Color indigo = Color(0xFF6366F1);
-
-  // Neutral grays — light mode
-  static const Color gray50 = Color(0xFFF9FAFB);
-  static const Color gray100 = Color(0xFFF3F4F6);
-  static const Color gray200 = Color(0xFFE5E7EB);
-  static const Color gray300 = Color(0xFFD1D5DB);
-  static const Color gray400 = Color(0xFF9CA3AF);
-  static const Color gray500 = Color(0xFF6B7280);
-  static const Color gray600 = Color(0xFF4B5563);
-  static const Color gray700 = Color(0xFF374151);
-  static const Color gray800 = Color(0xFF1F2937);
-  static const Color gray900 = Color(0xFF111827);
-
-  // Surface — light
-  static const Color white = Colors.white;
-  static const Color background = gray50;
-  static const Color surface = white;
-  static const Color divider = gray100;
-
-  // Surface — dark
-  static const Color darkBackground = Color(0xFF0F172A);
-  static const Color darkSurface = Color(0xFF1E293B);
-  static const Color darkCard = Color(0xFF293548);
-  static const Color darkDivider = Color(0xFF334155);
-}
-
-// ─── Text Styles ──────────────────────────────────────────────────────────────
-
-class AppTextStyles {
-  AppTextStyles._();
-
-  static const String _fontFamily = 'Inter';
-
-  static const TextStyle displayLarge = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 28,
-    fontWeight: FontWeight.w800,
-    color: AppColors.gray900,
-    height: 1.2,
-  );
-
-  static const TextStyle displayMedium = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 22,
-    fontWeight: FontWeight.w800,
-    color: AppColors.gray900,
-    height: 1.3,
-  );
-
-  static const TextStyle headlineLarge = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 20,
-    fontWeight: FontWeight.w700,
-    color: AppColors.gray900,
-  );
-
-  static const TextStyle headlineMedium = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 18,
-    fontWeight: FontWeight.w700,
-    color: AppColors.gray900,
-  );
-
-  static const TextStyle headlineSmall = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 16,
-    fontWeight: FontWeight.w700,
-    color: AppColors.gray900,
-  );
-
-  static const TextStyle titleLarge = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 15,
-    fontWeight: FontWeight.w700,
-    color: AppColors.gray900,
-  );
-
-  static const TextStyle titleMedium = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-    color: AppColors.gray900,
-  );
-
-  static const TextStyle titleSmall = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
-    color: AppColors.gray700,
-  );
-
-  static const TextStyle bodyLarge = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 15,
-    fontWeight: FontWeight.w400,
-    color: AppColors.gray700,
-    height: 1.5,
-  );
-
-  static const TextStyle bodyMedium = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    color: AppColors.gray700,
-    height: 1.4,
-  );
-
-  static const TextStyle bodySmall = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 13,
-    fontWeight: FontWeight.w400,
-    color: AppColors.gray500,
-    height: 1.4,
-  );
-
-  static const TextStyle labelLarge = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
-    color: AppColors.gray700,
-  );
-
-  static const TextStyle labelMedium = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: AppColors.gray500,
-  );
-
-  static const TextStyle labelSmall = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 11,
-    fontWeight: FontWeight.w500,
-    color: AppColors.gray400,
-  );
-
-  static const TextStyle caption = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 10,
-    fontWeight: FontWeight.w600,
-    color: AppColors.gray400,
-    letterSpacing: 0.8,
-  );
-}
 
 // ─── Spacing ──────────────────────────────────────────────────────────────────
 
@@ -302,7 +132,14 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.gray100,
-        hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.gray400),
+        // bodyMedium is now a context method; using equivalent inline style here
+        hintStyle: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: AppColors.gray400,
+          height: 1.4,
+        ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: AppRadius.lgRadius,
@@ -410,7 +247,14 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.darkCard,
-        hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.gray500),
+        // bodyMedium is now a context method; using equivalent inline style here
+        hintStyle: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: AppColors.gray500,
+          height: 1.4,
+        ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: AppRadius.lgRadius,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../app/app_theme.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_theme.dart';
 import '../enums/event_type.dart';
 
 class ClubEvent {

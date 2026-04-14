@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
-import '../../../app/app_theme.dart';
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_text_styles.dart';
+import '../../../app/theme/app_theme.dart';
 
 /// Playbook365 — More Screen
 /// Hub screen for all secondary features accessible from the bottom nav More tab.
@@ -137,8 +139,8 @@ class MoreScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(title.toUpperCase(), style: AppTextStyles.caption),
+          padding:  EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(title.toUpperCase(),),
         ),
         Container(
           decoration: BoxDecoration(
@@ -176,9 +178,7 @@ class MoreScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 14),
                           Expanded(
-                            child: Text(item.label,
-                                style: AppTextStyles.bodyMedium
-                                    .copyWith(fontWeight: FontWeight.w500)),
+                            child: Text(item.label,),
                           ),
                           const Icon(Icons.chevron_right,
                               color: AppColors.gray400, size: 18),

@@ -133,48 +133,45 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          // Tab 4: More
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.more,
-                builder: (context, state) => const MoreScreen(),
-                routes: [
-                  GoRoute(
-                    path: AppRoutes.moreStatistics,
-                    builder: (context, state) => const StatisticsScreen(),
-                  ),
-                  GoRoute(
-                    path: AppRoutes.morePhotos,
-                    builder: (context, state) => const PhotosScreen(),
-                  ),
-                  GoRoute(
-                    path: AppRoutes.moreFiles,
-                    builder: (context, state) => const FilesScreen(),
-                  ),
-                  GoRoute(
-                    path: AppRoutes.moreInvoicing,
-                    builder: (context, state) => const InvoicingScreen(),
-                  ),
-                  GoRoute(
-                    path: AppRoutes.moreRegistration,
-                    builder: (context, state) => const RegistrationScreen(),
-                  ),
-                  GoRoute(
-                    path: AppRoutes.moreNotifications,
-                    builder: (context, state) => const NotificationPrefsScreen(),
-                  ),
-                  GoRoute(
-                    path: AppRoutes.moreTracking,
-                    builder: (context, state) => const TrackingScreen(),
-                  ),
-                  GoRoute(
-                    path: AppRoutes.moreTeamDetail,
-                    builder: (context, state) => const TeamDetailScreen(),
-                  ),
-                ],
-              ),
-            ],
+        ],
+      ),
+
+      // ── More sub-pages (accessible via push, not a shell tab) ──────────────
+      GoRoute(
+        path: AppRoutes.more,
+        builder: (context, state) => const MoreScreen(),
+        routes: [
+          GoRoute(
+            path: AppRoutes.moreStatistics,
+            builder: (context, state) => const StatisticsScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.morePhotos,
+            builder: (context, state) => const PhotosScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.moreFiles,
+            builder: (context, state) => const FilesScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.moreInvoicing,
+            builder: (context, state) => const InvoicingScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.moreRegistration,
+            builder: (context, state) => const RegistrationScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.moreNotifications,
+            builder: (context, state) => const NotificationPrefsScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.moreTracking,
+            builder: (context, state) => const TrackingScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.moreTeamDetail,
+            builder: (context, state) => const TeamDetailScreen(),
           ),
         ],
       ),

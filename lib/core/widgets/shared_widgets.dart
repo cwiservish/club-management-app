@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../app/app_theme.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/theme/app_theme.dart';
 import '../models/roster_member.dart';
 
 /// Playbook365 — Shared Reusable Widgets
@@ -19,75 +21,71 @@ class AppBottomNavBar extends StatelessWidget {
   });
 
   static const _items = [
-    (Icons.home_outlined, Icons.home, 'Home'),
-    (Icons.calendar_today_outlined, Icons.calendar_today, 'Schedule'),
-    (Icons.people_outline, Icons.people, 'Roster'),
-    (Icons.chat_bubble_outline, Icons.chat_bubble, 'Messages'),
-    (Icons.grid_view_outlined, Icons.grid_view, 'More'),
+    (Icons.home_rounded, 'Home'),
+    (Icons.calendar_month_rounded, 'Schedule'),
+    (Icons.person_rounded, 'Roster'),
+    (Icons.forum_rounded, 'Messages'),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBg : AppColors.lightBg;
+    final activeColor = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final inactiveColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final activeBg = isDark ? AppColors.darkCard : const Color(0xFFF0F0F0);
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+
     return Container(
-      decoration:  BoxDecoration(
-        color: AppColors.white,
-        boxShadow: AppShadows.bottomNav,
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(_items.length, (i) {
-              final isActive = i == currentIndex;
-              final item = _items[i];
-              return GestureDetector(
-                onTap: () => onTap(i),
-                behavior: HitTestBehavior.opaque,
-                child: SizedBox(
-                  width: 64,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Icon(
-                            isActive ? item.$2 : item.$1,
-                            color: isActive
-                                ? AppColors.primary
-                                : AppColors.gray400,
-                            size: 24,
-                          ),
-                          if (i == 3 && messagesBadgeCount > 0)
-                            Positioned(
-                              top: -5,
-                              right: -8,
-                              child: _Badge(count: messagesBadgeCount),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.$3,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isActive
-                              ? AppColors.primary
-                              : AppColors.gray400,
-                          fontWeight: isActive
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: borderColor, width: 0.5),
         ),
+      ),
+      child: Row(
+        children: List.generate(_items.length, (i) {
+          final isActive = i == currentIndex;
+          final item = _items[i];
+          final color = isActive ? activeColor : inactiveColor;
+          final background = isActive ? activeBg : bgColor;
+
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onTap(i),
+              child: Container(
+                height: 93,
+                color: background,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(item.$1, color: color, size: 28),
+                        if (i == 3 && messagesBadgeCount > 0)
+                          Positioned(
+                            top: -5,
+                            right: -8,
+                            child: _Badge(count: messagesBadgeCount),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      item.$2,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
@@ -459,34 +457,3 @@ class DragHandle extends StatelessWidget {
   }
 }
 
-// ─── Info Row ─────────────────────────────────────────────────────────────────
-
-class InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color? iconColor;
-
-  const InfoRow({
-    super.key,
-    required this.icon,
-    required this.text,
-    this.iconColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: iconColor ?? AppColors.gray400),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(text, style: AppTextStyles.bodyMedium),
-          ),
-        ],
-      ),
-    );
-  }
-}
