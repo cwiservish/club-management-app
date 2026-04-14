@@ -11,7 +11,6 @@ import '../../../core/models/chat_models.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import '../providers/messages_provider.dart';
 import '../widgets/message_thread_row.dart';
-import '../widgets/messages_header.dart';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

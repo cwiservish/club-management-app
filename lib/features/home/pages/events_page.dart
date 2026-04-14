@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import '../widgets/event_card.dart';
-import '../../../features/messages/widgets/messages_header.dart';
 
 // ─── Sample event data ────────────────────────────────────────────────────────
 
