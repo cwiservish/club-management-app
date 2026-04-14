@@ -54,18 +54,7 @@ class AppBottomNavBar extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        CustomSvgIcon(assetPath: item.$1, color: color, size: 24),
-                        if (i == 3 && messagesBadgeCount > 0)
-                          Positioned(
-                            top: -5,
-                            right: -8,
-                            child: _Badge(count: messagesBadgeCount),
-                          ),
-                      ],
-                    ),
+                    CustomSvgIcon(assetPath: item.$1, color: color, size: 24),
                     const SizedBox(height: 12),
                     Text(
                       item.$2,
