@@ -10,12 +10,16 @@ class HomeMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Container(
       width: double.infinity,
       height: 37,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F4F4),
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -23,16 +27,14 @@ class HomeMenuItem extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 16,
+            style: textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.w400,
-              color: Color(0xFF20242A),
+              color: colorScheme.onSurface,
             ),
           ),
-          const Icon(
+          Icon(
             Icons.chevron_right,
-            color: Color(0xFF4E5663),
+            color: colorScheme.onSurfaceVariant,
             size: 20,
           ),
         ],

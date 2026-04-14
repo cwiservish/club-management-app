@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 import 'app_text_styles.dart';
@@ -85,7 +86,7 @@ class AppTheme {
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,
-      fontFamily: 'Inter',
+      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
       brightness: Brightness.light,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
@@ -93,6 +94,11 @@ class AppTheme {
         primary: AppColors.primary,
         surface: AppColors.surface,
         error: AppColors.error,
+        surfaceContainerHighest: AppColors.lightCard,
+        surfaceContainer: const Color(0xFFD9D9D9),
+        onSurface: AppColors.lightTextPrimary,
+        onSurfaceVariant: const Color(0xFF475467),
+        outline: const Color(0xFFD1D1D1),
       ),
       scaffoldBackgroundColor: AppColors.background,
       appBarTheme: const AppBarTheme(
@@ -195,14 +201,19 @@ class AppTheme {
   static ThemeData get dark {
     return ThemeData(
       useMaterial3: true,
-      fontFamily: 'Inter',
+      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
       brightness: Brightness.dark,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         brightness: Brightness.dark,
         primary: AppColors.primary,
-        surface: AppColors.darkSurface,
+        surface: const Color(0xFF20242A),
         error: AppColors.error,
+        surfaceContainerHighest: AppColors.darkCard,
+        surfaceContainer: const Color(0xFF4E5663),
+        onSurface: Colors.white,
+        onSurfaceVariant: const Color(0xFFD1D1D1),
+        outline: const Color(0xFF4E5663),
       ),
       scaffoldBackgroundColor: AppColors.darkBackground,
       appBarTheme: const AppBarTheme(

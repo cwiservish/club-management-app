@@ -12,12 +12,16 @@ class TeamInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Container(
       width: double.infinity,
       height: 88,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F4F4),
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -25,18 +29,17 @@ class TeamInfoCard extends StatelessWidget {
           Container(
             width: 54,
             height: 54,
-            decoration: const BoxDecoration(
-              color: Color(0xFFD9D9D9),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainer,
               shape: BoxShape.circle,
             ),
-            child: const Center(
+            child: Center(
               child: Text(
                 'P',
-                style: TextStyle(
-                  fontSize: 28,
+                style: textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w900,
                   fontStyle: FontStyle.italic,
-                  color: Color(0xFF20242A),
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -48,21 +51,17 @@ class TeamInfoCard extends StatelessWidget {
             children: [
               Text(
                 teamName,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
+                style: textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF20242A),
+                  color: colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 record,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
+                style: textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF475467),
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
