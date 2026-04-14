@@ -53,3 +53,40 @@ lib/
 
 ## Figma Source
 https://www.figma.com/make/d1kr0jsnxg9hbQfsuMBHAw/Club-Management-App
+
+SIMPLE TASK PROMPT POST PROCESSING PROMPT
+
+
+Resolve the above issue as a senior engineer and strategic problem solver but do ask questions if needed.
+
+Before performing the task:
+
+1. First, deeply understand the problem.
+
+2. Immediately ask clarifying questions based on your understanding:
+    - Identify missing information, ambiguities, or unclear goals.
+
+3. Then explain what you think needs to be done.
+    - Break down your intended approach step-by-step.
+
+Do NOT jump to the final answer before completing the above.
+
+While analyzing:
+- Infer missing details intelligently and clearly ask questions.
+- If this involves code/systems, identify and consider all related files, dependencies, and flows — not just the given snippet.
+
+After questions are answered (or if proceeding with assumptions), then:
+- Execute the solution step-by-step.
+- Provide a clean, practical, production-ready result.
+- Highlight risks, edge cases, and side effects.
+
+Response format:
+PHASE 1: Understanding
+PHASE 2: Questions
+PHASE 3: Plan / Approach
+--- WAIT FOR RESPONSE OR PROCEED WITH ASSUMPTIONS ---
+PHASE 4: Execution
+PHASE 5: Risks / Edge Cases
+
+Be precise, practical, and non-generic.
+
