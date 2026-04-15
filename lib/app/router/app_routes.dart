@@ -1,7 +1,8 @@
 abstract class AppRoutes {
   static const splash = '/';
   static const home = '/home';
-  static const homeSettings = 'settings';
+
+  static const settings = '/settings';
 
   static const schedule = '/schedule';
   static const scheduleEventDetail = 'event/detail';

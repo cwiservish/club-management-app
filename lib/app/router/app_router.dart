@@ -66,12 +66,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.home,
                 builder: (context, state) => const HomeScreen(),
-                routes: [
-                  GoRoute(
-                    path: AppRoutes.homeSettings,
-                    builder: (context, state) => const SettingsScreen(),
-                  ),
-                ],
               ),
             ],
           ),
@@ -127,6 +121,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         ChatDetailScreen(thread: state.extra as ChatThread),
                   ),
                 ],
+              ),
+            ],
+          ),
+
+          // Branch 4: Settings (no bottom nav tab — index 4 keeps all tabs deselected)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.settings,
+                builder: (context, state) => const SettingsScreen(),
               ),
             ],
           ),

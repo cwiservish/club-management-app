@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../../app/theme/app_theme.dart';
@@ -174,10 +176,13 @@ class AppHeader extends StatelessWidget {
             size: 18,
           ),
           const SizedBox(width: 16),
-          const Icon(
-            Icons.more_vert,
-            color: textColor,
-            size: 28,
+          GestureDetector(
+            onTap: () => context.go(AppRoutes.settings),
+            child: const Icon(
+              Icons.more_vert,
+              color: textColor,
+              size: 28,
+            ),
           ),
         ],
       ),
