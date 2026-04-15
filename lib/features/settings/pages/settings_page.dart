@@ -34,9 +34,7 @@ class SettingsScreen extends StatelessWidget {
                             SizedBox(height: 24),
                             SettingsMenuItem(
                               title: 'Photos',
-                              onTap: () => context.push(
-                                '${AppRoutes.settings}/${AppRoutes.settingsEvents}',
-                              ),
+                              onTap: () => context.go(AppRoutes.home),
                             ),
                             SizedBox(height: 12),
                             SettingsMenuItem(title: 'Statistics'),

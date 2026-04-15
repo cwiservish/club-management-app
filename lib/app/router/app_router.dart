@@ -46,7 +46,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return state.matchedLocation == AppRoutes.splash ? null : AppRoutes.splash;
       }
 
-      if (state.matchedLocation == AppRoutes.splash) return AppRoutes.settings;
+      if (state.matchedLocation == AppRoutes.splash) return AppRoutes.home;
 
       return null;
     },
@@ -60,16 +60,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, navigationShell) =>
             AppShell(navigationShell: navigationShell),
         branches: [
-          // Tab 0: Settings
+          // Tab 0: Home
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.settings,
-                builder: (context, state) => const SettingsScreen(),
+                path: AppRoutes.home,
+                builder: (context, state) => const HomeScreen(),
                 routes: [
                   GoRoute(
-                    path: AppRoutes.settingsEvents,
-                    builder: (context, state) => const HomeScreen(),
+                    path: AppRoutes.homeSettings,
+                    builder: (context, state) => const SettingsScreen(),
                   ),
                 ],
               ),
