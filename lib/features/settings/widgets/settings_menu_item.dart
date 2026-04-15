@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/app_text_styles.dart';
 
-class HomeMenuItem extends StatelessWidget {
+class SettingsMenuItem extends StatelessWidget {
   final String title;
   final VoidCallback? onTap;
 
-  const HomeMenuItem({super.key, required this.title, this.onTap});
+  const SettingsMenuItem({super.key, required this.title, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -42,4 +42,3 @@ class HomeMenuItem extends StatelessWidget {
     );
   }
 }
-

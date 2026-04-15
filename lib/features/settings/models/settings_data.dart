@@ -1,11 +1,11 @@
-class HomeEvent {
+class SettingsEvent {
   final String title;
   final String subtitle;
   final String date;
   final String time;
   final String type;
 
-  const HomeEvent({
+  const SettingsEvent({
     required this.title,
     required this.subtitle,
     required this.date,
@@ -14,13 +14,13 @@ class HomeEvent {
   });
 }
 
-class HomeAnnouncement {
+class SettingsAnnouncement {
   final String message;
   final String author;
   final String timeAgo;
   final String avatarInitials;
 
-  const HomeAnnouncement({
+  const SettingsAnnouncement({
     required this.message,
     required this.author,
     required this.timeAgo,
@@ -28,7 +28,7 @@ class HomeAnnouncement {
   });
 }
 
-class HomeStats {
+class SettingsStats {
   final int playerCount;
   final int eventsThisWeek;
   final int messageCount;
@@ -39,7 +39,7 @@ class HomeStats {
   final String teamName;
   final String season;
 
-  const HomeStats({
+  const SettingsStats({
     required this.playerCount,
     required this.eventsThisWeek,
     required this.messageCount,
@@ -52,12 +52,12 @@ class HomeStats {
   });
 }
 
-class HomeData {
-  final HomeStats stats;
-  final List<HomeEvent> events;
-  final List<HomeAnnouncement> announcements;
+class SettingsData {
+  final SettingsStats stats;
+  final List<SettingsEvent> events;
+  final List<SettingsAnnouncement> announcements;
 
-  const HomeData({
+  const SettingsData({
     required this.stats,
     required this.events,
     required this.announcements,

@@ -1,83 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import '../../../app/router/app_routes.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/shared_widgets.dart';
-import '../widgets/team_info_card.dart';
-import '../widgets/home_menu_item.dart';
+import '../providers/home_provider.dart';
+import '../widgets/home_card.dart';
 
-class HomeScreen extends StatelessWidget {
+// ─── Home Screen ──────────────────────────────────────────────────────────────
+// Pure display — all data and business logic come from homeProvider.
+
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final viewModels  = ref.watch(homeProvider).viewModels;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: colorScheme.surfaceContainerHighest,
       body: SafeArea(
         child: Column(
           children: [
-             AppHeader(),
+            const AppHeader(),
             Expanded(
-              child: SingleChildScrollView(
-                child: Container(
-                  color: Theme.of(context).colorScheme.surface,
-                  child: Column(
-                    children: [
-                      SizedBox(height: 24),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          children: [
-                            TeamInfoCard(
-                              teamName: '12 Girls ECNL RL',
-                              record: 'Record: 13-9-3',
-                            ),
-                            SizedBox(height: 24),
-                            HomeMenuItem(
-                              title: 'Photos',
-                              onTap: () => context.push(
-                                '${AppRoutes.home}/${AppRoutes.homeEvents}',
-                              ),
-                            ),
-                            SizedBox(height: 12),
-                            HomeMenuItem(title: 'Statistics'),
-                            SizedBox(height: 12),
-                            HomeMenuItem(title: 'Files'),
-                          ],
-                        ),
+              child: viewModels.isEmpty
+                  ? _EmptyState()
+                  : ListView.separated(
+                      padding:          const EdgeInsets.symmetric(vertical: 10),
+                      itemCount:        viewModels.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (_, i) => HomeCard(
+                        viewModel: viewModels[i],
+                        onEventDetails: () {},
                       ),
-                      SizedBox(height: 24),
-                      Divider(height: 1, thickness: 1),
-                      SizedBox(height: 24),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          children: [
-                            HomeMenuItem(title: 'Invoicing'),
-                            SizedBox(height: 12),
-                            HomeMenuItem(title: 'Tracking'),
-                            SizedBox(height: 12),
-                            HomeMenuItem(title: 'Registration Insurance'),
-                            SizedBox(height: 12),
-                            HomeMenuItem(title: 'Recruiting'),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 24),
-                      Divider(height: 1, thickness: 1),
-                      SizedBox(height: 24),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          children: [
-                            HomeMenuItem(title: 'Notification Preferences'),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 48), // Bottom padding
-                    ],
-                  ),
-                ),
-              ),
+                    ),
             ),
           ],
         ),
@@ -86,3 +41,31 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+// ─── Empty state ──────────────────────────────────────────────────────────────
+
+class _EmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.event_busy_outlined,
+            size:  48,
+            color: colorScheme.onSurface.withValues(alpha: 0.25),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No events yet',
+            style: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.45),
+              fontSize: 15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
