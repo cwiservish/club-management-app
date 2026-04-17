@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
-import '../../app/theme/app_theme.dart';
 import '../enums/member_role.dart';
 import '../enums/player_position.dart';
 
@@ -73,8 +72,8 @@ class RosterMember {
       role == MemberRole.staff ? (staffTitle ?? 'Staff') : positionFull;
 
   Color get attendanceColor {
-    if (attendancePercent >= 90) return AppColors.success;
-    if (attendancePercent >= 75) return AppColors.warning;
-    return AppColors.error;
+    if (attendancePercent >= 90) return AppColors.current.success;
+    if (attendancePercent >= 75) return AppColors.current.warning;
+    return AppColors.current.error;
   }
 }

@@ -161,10 +161,10 @@ class _RsvpBox extends StatelessWidget {
     switch (status) {
       case RsvpStatus.accepted:
         bg    = const Color(0xFF0ACB97);
-        child = const Icon(Icons.check, color: AppColors.white, size: 16);
+        child = Icon(Icons.check, color: AppColors.current.white, size: 16);
       case RsvpStatus.declined:
         bg    = const Color(0xFFFF5858);
-        child = const Icon(Icons.close, color: AppColors.white, size: 16);
+        child = Icon(Icons.close, color: AppColors.current.white, size: 16);
       case RsvpStatus.unknown:
         bg    = colorScheme.surfaceContainer;
         child = Text(

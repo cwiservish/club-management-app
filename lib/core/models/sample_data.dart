@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
-import '../../app/theme/app_theme.dart';
 import 'team_season.dart';
 import 'roster_member.dart';
 import 'club_event.dart';
@@ -33,19 +32,19 @@ final sampleSeason = const TeamSeason(
 // ─── Roster ───────────────────────────────────────────────────────────────────
 
 final List<RosterMember> sampleRoster = [
-  const RosterMember(
+  RosterMember(
     id: 's1',
     firstName: 'Carlos', lastName: 'Martinez',
     role: MemberRole.staff, staffTitle: 'Head Coach',
     phone: '(405) 555-0101', email: 'c.martinez@club.com',
-    attendancePercent: 100, avatarColor: AppColors.primary,
+    attendancePercent: 100, avatarColor: AppColors.current.primary,
   ),
-  const RosterMember(
+  RosterMember(
     id: 's2',
     firstName: 'Sarah', lastName: 'Johnson',
     role: MemberRole.staff, staffTitle: 'Assistant Coach',
     phone: '(405) 555-0102', email: 's.johnson@club.com',
-    attendancePercent: 95, avatarColor: AppColors.purple,
+    attendancePercent: 95, avatarColor: AppColors.current.purple,
   ),
   RosterMember(
     id: 'p1',
@@ -55,7 +54,7 @@ final List<RosterMember> sampleRoster = [
     phone: '(405) 555-0201', email: 'liam.a@email.com',
     parentName: 'Mark Anderson', parentPhone: '(405) 555-0211',
     attendancePercent: 92, goalsScored: 0, assists: 1,
-    avatarColor: AppColors.warning,
+    avatarColor: AppColors.current.warning,
   ),
   RosterMember(
     id: 'p2',
@@ -65,7 +64,7 @@ final List<RosterMember> sampleRoster = [
     phone: '(405) 555-0202', email: 'noah.w@email.com',
     parentName: 'James Williams', parentPhone: '(405) 555-0212',
     attendancePercent: 88, goalsScored: 1, assists: 3, yellowCards: 2,
-    avatarColor: AppColors.success,
+    avatarColor: AppColors.current.success,
   ),
   RosterMember(
     id: 'p3',
@@ -75,7 +74,7 @@ final List<RosterMember> sampleRoster = [
     phone: '(405) 555-0203', email: 'ethan.b@email.com',
     parentName: 'David Brown', parentPhone: '(405) 555-0213',
     attendancePercent: 100, goalsScored: 2, assists: 2, yellowCards: 1,
-    avatarColor: AppColors.error,
+    avatarColor: AppColors.current.error,
   ),
   RosterMember(
     id: 'p4',
@@ -85,7 +84,7 @@ final List<RosterMember> sampleRoster = [
     phone: '(405) 555-0204', email: 'mason.j@email.com',
     parentName: 'Robert Jones', parentPhone: '(405) 555-0214',
     attendancePercent: 75, goalsScored: 3, assists: 5, yellowCards: 1,
-    avatarColor: AppColors.indigo,
+    avatarColor: AppColors.current.indigo,
   ),
   RosterMember(
     id: 'p5',
@@ -95,7 +94,7 @@ final List<RosterMember> sampleRoster = [
     phone: '(405) 555-0205', email: 'oliver.d@email.com',
     parentName: 'Michael Davis', parentPhone: '(405) 555-0215',
     attendancePercent: 96, goalsScored: 5, assists: 8,
-    avatarColor: AppColors.sky,
+    avatarColor: AppColors.current.sky,
   ),
   RosterMember(
     id: 'p6',
@@ -106,7 +105,7 @@ final List<RosterMember> sampleRoster = [
     parentName: 'Tom Miller', parentPhone: '(405) 555-0216',
     attendancePercent: 83, goalsScored: 9, assists: 4,
     yellowCards: 3, redCards: 1,
-    avatarColor: AppColors.orange,
+    avatarColor: AppColors.current.orange,
   ),
   RosterMember(
     id: 'p7',
@@ -116,7 +115,7 @@ final List<RosterMember> sampleRoster = [
     phone: '(405) 555-0207', email: 'lucas.w@email.com',
     parentName: 'Brian Wilson', parentPhone: '(405) 555-0217',
     attendancePercent: 91, goalsScored: 6, assists: 3, yellowCards: 1,
-    avatarColor: AppColors.teal,
+    avatarColor: AppColors.current.teal,
   ),
   RosterMember(
     id: 'p8',
@@ -136,7 +135,7 @@ final List<RosterMember> sampleRoster = [
     phone: '(405) 555-0209', email: 'henry.t@email.com',
     parentName: 'Greg Thomas', parentPhone: '(405) 555-0219',
     attendancePercent: 100, goalsScored: 4, assists: 6,
-    avatarColor: AppColors.purple,
+    avatarColor: AppColors.current.purple,
   ),
 ];
 
@@ -224,7 +223,7 @@ final List<ChatThread> sampleThreads = [
     lastMessageTime: _ago(minutes: 10),
     unreadCount: 3, isPinned: true,
     type: ThreadType.team,
-    avatarColor: AppColors.primary, avatarInitials: 'U14',
+    avatarColor: AppColors.current.primary, avatarInitials: 'U14',
   ),
   ChatThread(
     id: 't2', name: 'Club Announcements',
@@ -232,14 +231,14 @@ final List<ChatThread> sampleThreads = [
     lastMessageTime: _ago(hours: 1),
     unreadCount: 1, isPinned: true,
     type: ThreadType.announcement,
-    avatarColor: AppColors.warning, avatarInitials: '📢',
+    avatarColor: AppColors.current.warning, avatarInitials: '📢',
   ),
   ChatThread(
     id: 't3', name: 'Carlos Martinez',
     lastMessage: 'See you at practice 👍',
     lastMessageTime: _ago(hours: 2, minutes: 30),
     type: ThreadType.direct,
-    avatarColor: AppColors.primary, avatarInitials: 'CM',
+    avatarColor: AppColors.current.primary, avatarInitials: 'CM',
     isOnline: true,
   ),
   ChatThread(
@@ -248,21 +247,21 @@ final List<ChatThread> sampleThreads = [
     lastMessageTime: _ago(hours: 5),
     unreadCount: 2,
     type: ThreadType.direct,
-    avatarColor: AppColors.purple, avatarInitials: 'SJ',
+    avatarColor: AppColors.current.purple, avatarInitials: 'SJ',
   ),
   ChatThread(
     id: 't5', name: 'Coaching Staff',
     lastMessage: 'Confirmed: Field 3 is booked.',
     lastMessageTime: _ago(hours: 24),
     type: ThreadType.team,
-    avatarColor: AppColors.success, avatarInitials: 'CS',
+    avatarColor: AppColors.current.success, avatarInitials: 'CS',
   ),
   ChatThread(
     id: 't6', name: 'Oliver Davis',
     lastMessage: 'I\'ll be there!',
     lastMessageTime: _ago(hours: 26),
     type: ThreadType.direct,
-    avatarColor: AppColors.sky, avatarInitials: 'OD',
+    avatarColor: AppColors.current.sky, avatarInitials: 'OD',
     isOnline: true,
   ),
 ];
@@ -271,7 +270,7 @@ final List<ChatMessage> sampleMessages = [
   ChatMessage(
     id: 'm1', senderId: 'coach',
     senderName: 'Carlos Martinez', senderInitials: 'CM',
-    senderColor: AppColors.primary,
+    senderColor: AppColors.current.primary,
     text: 'Hey team! Quick reminder about tomorrow\'s game vs Riverside FC.',
     type: MessageType.text,
     timestamp: _ago(hours: 2, minutes: 40),
@@ -280,7 +279,7 @@ final List<ChatMessage> sampleMessages = [
   ChatMessage(
     id: 'm2', senderId: 'coach',
     senderName: 'Carlos Martinez', senderInitials: 'CM',
-    senderColor: AppColors.primary,
+    senderColor: AppColors.current.primary,
     text: 'Please arrive at the field by 9:30 AM for warm-up. Game kicks off at 10:00.',
     type: MessageType.text,
     timestamp: _ago(hours: 2, minutes: 39),
@@ -289,7 +288,7 @@ final List<ChatMessage> sampleMessages = [
   ChatMessage(
     id: 'm3', senderId: 'me',
     senderName: 'You', senderInitials: 'JD',
-    senderColor: AppColors.sky,
+    senderColor: AppColors.current.sky,
     text: 'Got it coach! Will be there early 💪',
     type: MessageType.text,
     timestamp: _ago(hours: 2, minutes: 35),
@@ -298,7 +297,7 @@ final List<ChatMessage> sampleMessages = [
   ChatMessage(
     id: 'm4', senderId: 'sarah',
     senderName: 'Sarah Johnson', senderInitials: 'SJ',
-    senderColor: AppColors.purple,
+    senderColor: AppColors.current.purple,
     text: 'I\'ve attached the match day lineup.',
     type: MessageType.text,
     timestamp: _ago(hours: 2, minutes: 20),
@@ -307,7 +306,7 @@ final List<ChatMessage> sampleMessages = [
   ChatMessage(
     id: 'm5', senderId: 'sarah',
     senderName: 'Sarah Johnson', senderInitials: 'SJ',
-    senderColor: AppColors.purple,
+    senderColor: AppColors.current.purple,
     fileName: 'Lineup_Mar29.pdf', fileSize: '245 KB',
     type: MessageType.file,
     timestamp: _ago(hours: 2, minutes: 19),
@@ -316,7 +315,7 @@ final List<ChatMessage> sampleMessages = [
   ChatMessage(
     id: 'm6', senderId: 'me',
     senderName: 'You', senderInitials: 'JD',
-    senderColor: AppColors.sky,
+    senderColor: AppColors.current.sky,
     text: 'Thanks! Looking good 👌',
     type: MessageType.text,
     timestamp: _ago(hours: 2, minutes: 10),
@@ -325,7 +324,7 @@ final List<ChatMessage> sampleMessages = [
   ChatMessage(
     id: 'm7', senderId: 'coach',
     senderName: 'Carlos Martinez', senderInitials: 'CM',
-    senderColor: AppColors.primary,
+    senderColor: AppColors.current.primary,
     text: 'Remember warm-up at 9:30 tomorrow!',
     type: MessageType.text,
     timestamp: _ago(minutes: 10),

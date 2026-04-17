@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
-import '../../app/theme/app_theme.dart';
 import '../enums/event_type.dart';
 
 class ClubEvent {
@@ -40,17 +39,17 @@ class ClubEvent {
 
   Color get color {
     switch (type) {
-      case EventType.game: return AppColors.primary;
-      case EventType.practice: return AppColors.success;
-      case EventType.other: return AppColors.purple;
+      case EventType.game: return AppColors.current.primary;
+      case EventType.practice: return AppColors.current.success;
+      case EventType.other: return AppColors.current.purple;
     }
   }
 
   Color get backgroundColor {
     switch (type) {
-      case EventType.game: return AppColors.primaryLight;
-      case EventType.practice: return AppColors.successLight;
-      case EventType.other: return AppColors.purpleLight;
+      case EventType.game: return AppColors.current.primaryLight;
+      case EventType.practice: return AppColors.current.successLight;
+      case EventType.other: return AppColors.current.purpleLight;
     }
   }
 

@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
-import '../../app/theme/app_theme.dart';
 import '../models/roster_member.dart';
 import '../constants/app_assets.dart';
 import 'custom_svg_icon.dart';
@@ -89,15 +88,15 @@ class _Badge extends StatelessWidget {
       height: 16,
       padding: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
-        color: AppColors.error,
+        color: AppColors.current.error,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.white, width: 1.5),
+        border: Border.all(color: AppColors.current.white, width: 1.5),
       ),
       child: Center(
         child: Text(
           count > 99 ? '99+' : '$count',
-          style: const TextStyle(
-            color: AppColors.white,
+          style: TextStyle(
+            color: AppColors.current.white,
             fontSize: 9,
             fontWeight: FontWeight.w800,
           ),
@@ -145,7 +144,7 @@ class AppHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x0D101828), // rgba(16, 24, 40, 0.05)
+                  color: Color(0x0D101828),
                   offset: Offset(0, 1),
                   blurRadius: 2,
                 ),
@@ -216,12 +215,12 @@ class SectionHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: AppColors.gray100,
-              borderRadius: AppRadius.pillRadius,
+              color: AppColors.current.gray100,
+              borderRadius: BorderRadius.circular(99),
             ),
             child: Text('$count',
                 style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.gray500)),
+                    .copyWith(color: AppColors.current.gray500)),
           ),
         ],
         const Spacer(),
@@ -230,7 +229,7 @@ class SectionHeader extends StatelessWidget {
             onTap: onAction,
             child: Text(
               actionLabel!,
-              style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
+              style: AppTextStyles.labelLarge.copyWith(color: AppColors.current.primary),
             ),
           ),
       ],
@@ -259,9 +258,15 @@ class StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: AppRadius.lgRadius,
-        boxShadow: AppShadows.md,
+        color: AppColors.current.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,7 +275,7 @@ class StatCard extends StatelessWidget {
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: AppRadius.smRadius,
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(icon, color: color, size: 18),
           ),
@@ -326,14 +331,14 @@ class MemberAvatar extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: AppRadius.smRadius,
-                border: Border.all(color: AppColors.white, width: 1.5),
+                color: AppColors.current.primary,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppColors.current.white, width: 1.5),
               ),
               child: Text(
                 '#${member.jerseyNumber}',
-                style: const TextStyle(
-                  color: AppColors.white,
+                style: TextStyle(
+                  color: AppColors.current.white,
                   fontSize: 8,
                   fontWeight: FontWeight.w800,
                 ),
@@ -348,9 +353,9 @@ class MemberAvatar extends StatelessWidget {
               width: 12,
               height: 12,
               decoration: BoxDecoration(
-                color: isOnline ? AppColors.success : AppColors.gray400,
+                color: isOnline ? AppColors.current.success : AppColors.current.gray400,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.white, width: 2),
+                border: Border.all(color: AppColors.current.white, width: 2),
               ),
             ),
           ),
@@ -362,9 +367,9 @@ class MemberAvatar extends StatelessWidget {
               width: 14,
               height: 14,
               decoration: BoxDecoration(
-                color: AppColors.gray400,
+                color: AppColors.current.gray400,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.white, width: 1.5),
+                border: Border.all(color: AppColors.current.white, width: 1.5),
               ),
             ),
           ),
@@ -396,7 +401,7 @@ class StatusBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: AppRadius.smRadius,
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         label,
@@ -430,21 +435,21 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxxl),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 56, color: AppColors.gray300),
-            const SizedBox(height: AppSpacing.md),
+            Icon(icon, size: 56, color: AppColors.current.gray300),
+            const SizedBox(height: 12),
             Text(title,
-                style: AppTextStyles.titleMedium.copyWith(color: AppColors.gray500),
+                style: AppTextStyles.titleMedium.copyWith(color: AppColors.current.gray500),
                 textAlign: TextAlign.center),
             if (subtitle != null) ...[
-              const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: 4),
               Text(subtitle!, style: AppTextStyles.bodySmall, textAlign: TextAlign.center),
             ],
             if (action != null) ...[
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: 20),
               action!,
             ],
           ],
@@ -467,11 +472,10 @@ class DragHandle extends StatelessWidget {
         height: 4,
         margin: const EdgeInsets.only(top: 12, bottom: 8),
         decoration: BoxDecoration(
-          color: AppColors.gray100,
+          color: AppColors.current.gray100,
           borderRadius: BorderRadius.circular(2),
         ),
       ),
     );
   }
 }
-

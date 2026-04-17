@@ -215,7 +215,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(_daySeparator(dt),
-              style: AppTextStyles.labelSmall.copyWith(color: AppColors.gray400)),
+              style: AppTextStyles.labelSmall.copyWith(color: AppColors.current.gray400)),
         ),
         Expanded(child: Divider(color: cs.outline)),
       ]),
@@ -253,7 +253,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   padding: const EdgeInsets.only(bottom: 4, left: 4),
                   child: Text(msg.senderName,
                       style: AppTextStyles.labelSmall.copyWith(
-                          color: AppColors.gray500, fontWeight: FontWeight.w700)),
+                          color: AppColors.current.gray500, fontWeight: FontWeight.w700)),
                 ),
                 GestureDetector(
                   onLongPress: () => _showMessageMenu(msg, cs),
@@ -287,13 +287,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text(_chatTimestamp(msg.timestamp),
                         style: AppTextStyles.labelSmall.copyWith(
-                            color: AppColors.gray400, fontSize: 10, fontWeight: FontWeight.w400)),
+                            color: AppColors.current.gray400, fontSize: 10, fontWeight: FontWeight.w400)),
                     if (isMe) ...[
                       const SizedBox(width: 4),
                       Icon(
                         msg.isRead ? Icons.done_all : Icons.done,
                         size: 12,
-                        color: msg.isRead ? _blue : AppColors.gray400,
+                        color: msg.isRead ? _blue : AppColors.current.gray400,
                       ),
                     ],
                   ]),
@@ -349,11 +349,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   maxLines: 1, overflow: TextOverflow.ellipsis),
               Text(msg.fileSize ?? '',
                   style: AppTextStyles.labelSmall.copyWith(
-                    color: isMe ? Colors.white70 : AppColors.gray400)),
+                    color: isMe ? Colors.white70 : AppColors.current.gray400)),
             ],
           )),
           Icon(Icons.download_outlined,
-              color: isMe ? Colors.white70 : AppColors.gray400, size: 18),
+              color: isMe ? Colors.white70 : AppColors.current.gray400, size: 18),
         ]),
       );
     }
@@ -441,7 +441,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             const SizedBox(height: 6),
             Text(a.$2,
                 style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.gray500)),
+                    color: AppColors.current.gray500)),
           ]),
         )).toList(),
       ),
@@ -474,7 +474,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               ),
               child: Icon(
                 _showAttachMenu ? Icons.close : Icons.add,
-                color: _showAttachMenu ? _blue : AppColors.gray500,
+                color: _showAttachMenu ? _blue : AppColors.current.gray500,
                 size: 20,
               ),
             ),
@@ -521,7 +521,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   ),
                   child: Icon(
                     hasText ? Icons.send : Icons.mic_outlined,
-                    color: hasText ? Colors.white : AppColors.gray500,
+                    color: hasText ? Colors.white : AppColors.current.gray500,
                     size: 18,
                   ),
                 ),
@@ -586,7 +586,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     style: AppTextStyles.bodySmall.copyWith(
                       color: thread.isOnline && thread.type == ThreadType.direct
                           ? _green
-                          : AppColors.gray400,
+                          : AppColors.current.gray400,
                     ),
                   ),
                 ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
-import '../../app/theme/app_theme.dart';
 import '../enums/invoice_status.dart';
 
 class Invoice {
@@ -24,9 +23,9 @@ class Invoice {
 
   Color get statusColor {
     switch (status) {
-      case InvoiceStatus.paid: return AppColors.success;
-      case InvoiceStatus.pending: return AppColors.warning;
-      case InvoiceStatus.overdue: return AppColors.error;
+      case InvoiceStatus.paid: return AppColors.current.success;
+      case InvoiceStatus.pending: return AppColors.current.warning;
+      case InvoiceStatus.overdue: return AppColors.current.error;
     }
   }
 

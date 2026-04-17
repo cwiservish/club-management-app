@@ -1,66 +1,138 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  AppColors._();
+  // ── Static current (updated by app.dart on every theme change) ────────────
+  static AppColors _current = AppColors.light;
+  static AppColors get current => _current;
+  static void setCurrent(AppColors c) => _current = c;
 
-  // ── Developer: Dark/Light Mode Semantic Colors ────────────────────────────
-  static const Color darkBg = Color(0xFF191C20);
-  static const Color darkBorder = Color(0xFF333842);
-  static const Color darkAccent = Color(0xFFF7CE03);
-  static const Color darkTextPrimary = Colors.white;
-  static const Color darkTextSecondary = Color(0xB3FFFFFF); // white 0.7 opacity
+  // ── Instance properties ───────────────────────────────────────────────────
 
-  static const Color lightBg = Color(0xFFFFFFFF);
-  static const Color lightCard = Color(0xFFF4F4F4);
-  static const Color lightBorder = Color(0xFFE5E5E5);
-  static const Color lightTextPrimary = Color(0xFF20242A);
-  static const Color lightTextSecondary = Color(0x9920242A); // 0.6 opacity
+  final Brightness brightness;
 
-  static const Color pending = Color(0xFF4B5563);
+  // Theme-dependent
+  final Color bg;
+  final Color card;
+  final Color border;
+  final Color surface;
+  final Color divider;
+  final Color textPrimary;
+  final Color textSecondary;
 
-  // ── Primary ───────────────────────────────────────────────────────────────
-  static const Color primary = Color(0xFF008CFF);
-  static const Color primaryDark = Color(0xFF1E3A8A);
-  static const Color primaryLight = Color(0xFFEFF6FF);
-  static const Color primaryMid = Color(0xFFBFDBFE);
+  // Accents & semantic
+  final Color primary;
+  final Color primaryLight;
+  final Color success;
+  final Color successLight;
+  final Color warning;
+  final Color error;
+  final Color purple;
+  final Color purpleLight;
+  final Color indigo;
+  final Color sky;
+  final Color orange;
+  final Color teal;
 
-  // ── Semantic (developer's values win on conflicts) ────────────────────────
-  static const Color success = Color(0xFF00C853);
-  static const Color successLight = Color(0xFFECFDF5);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color warningLight = Color(0xFFFFF7ED);
-  static const Color error = Color(0xFFFF5252);
-  static const Color errorLight = Color(0xFFFEF2F2);
-  static const Color purple = Color(0xFF8B5CF6);
-  static const Color purpleLight = Color(0xFFF5F3FF);
+  // Neutrals
+  final Color white;
+  final Color gray100;
+  final Color gray300;
+  final Color gray400;
+  final Color gray500;
+  final Color gray700;
+  final Color gray900;
 
-  // ── Extra Accents ─────────────────────────────────────────────────────────
-  static const Color sky = Color(0xFF0EA5E9);
-  static const Color orange = Color(0xFFF97316);
-  static const Color teal = Color(0xFF14B8A6);
-  static const Color indigo = Color(0xFF6366F1);
+  const AppColors({
+    required this.brightness,
+    required this.bg,
+    required this.card,
+    required this.border,
+    required this.surface,
+    required this.divider,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.primary,
+    required this.primaryLight,
+    required this.success,
+    required this.successLight,
+    required this.warning,
+    required this.error,
+    required this.purple,
+    required this.purpleLight,
+    required this.indigo,
+    required this.sky,
+    required this.orange,
+    required this.teal,
+    required this.white,
+    required this.gray100,
+    required this.gray300,
+    required this.gray400,
+    required this.gray500,
+    required this.gray700,
+    required this.gray900,
+  });
 
-  // ── Neutral Grays (light mode) ────────────────────────────────────────────
-  static const Color gray50 = Color(0xFFF9FAFB);
-  static const Color gray100 = Color(0xFFF3F4F6);
-  static const Color gray200 = Color(0xFFE5E7EB);
-  static const Color gray300 = Color(0xFFD1D5DB);
-  static const Color gray400 = Color(0xFF9CA3AF);
-  static const Color gray500 = Color(0xFF6B7280);
-  static const Color gray600 = Color(0xFF4B5563);
-  static const Color gray700 = Color(0xFF374151);
-  static const Color gray800 = Color(0xFF1F2937);
-  static const Color gray900 = Color(0xFF111827);
+  bool get isDark => brightness == Brightness.dark;
 
-  // ── Surface (light) ───────────────────────────────────────────────────────
-  static const Color white = Colors.white;
-  static const Color background = gray50;
-  static const Color surface = white;
-  static const Color divider = gray100;
+  // ── Palettes ──────────────────────────────────────────────────────────────
 
-  // ── Surface (dark) ────────────────────────────────────────────────────────
-  static const Color darkBackground = Color(0xFF0F172A);
-  static const Color darkSurface = Color(0xFF1E293B);
-  static const Color darkCard = Color(0xFF2B3038); // developer's value
-  static const Color darkDivider = Color(0xFF334155);
+  static const AppColors light = AppColors(
+    brightness: Brightness.light,
+    bg: Color(0xFFFFFFFF),
+    card: Color(0xFFF4F4F4),
+    border: Color(0xFFE5E5E5),
+    surface: Color(0xFFFFFFFF),
+    divider: Color(0xFFF3F4F6),
+    textPrimary: Color(0xFF20242A),
+    textSecondary: Color(0x9920242A),
+    primary: Color(0xFF008CFF),
+    primaryLight: Color(0xFFEFF6FF),
+    success: Color(0xFF00C853),
+    successLight: Color(0xFFECFDF5),
+    warning: Color(0xFFF59E0B),
+    error: Color(0xFFFF5252),
+    purple: Color(0xFF8B5CF6),
+    purpleLight: Color(0xFFF5F3FF),
+    indigo: Color(0xFF6366F1),
+    sky: Color(0xFF0EA5E9),
+    orange: Color(0xFFF97316),
+    teal: Color(0xFF14B8A6),
+    white: Color(0xFFFFFFFF),
+    gray100: Color(0xFFF3F4F6),
+    gray300: Color(0xFFD1D5DB),
+    gray400: Color(0xFF9CA3AF),
+    gray500: Color(0xFF6B7280),
+    gray700: Color(0xFF374151),
+    gray900: Color(0xFF111827),
+  );
+
+  static const AppColors dark = AppColors(
+    brightness: Brightness.dark,
+    bg: Color(0xFF191C20),
+    card: Color(0xFF2B3038),
+    border: Color(0xFF333842),
+    surface: Color(0xFF1E293B),
+    divider: Color(0xFF334155),
+    textPrimary: Color(0xFFFFFFFF),
+    textSecondary: Color(0xB3FFFFFF),
+    primary: Color(0xFF008CFF),
+    primaryLight: Color(0xFFEFF6FF),
+    success: Color(0xFF00C853),
+    successLight: Color(0xFFECFDF5),
+    warning: Color(0xFFF59E0B),
+    error: Color(0xFFFF5252),
+    purple: Color(0xFF8B5CF6),
+    purpleLight: Color(0xFFF5F3FF),
+    indigo: Color(0xFF6366F1),
+    sky: Color(0xFF0EA5E9),
+    orange: Color(0xFFF97316),
+    teal: Color(0xFF14B8A6),
+    white: Color(0xFFFFFFFF),
+    gray100: Color(0xFFF3F4F6),
+    gray300: Color(0xFFD1D5DB),
+    gray400: Color(0xFF9CA3AF),
+    gray500: Color(0xFF6B7280),
+    gray700: Color(0xFF374151),
+    gray900: Color(0xFF111827),
+  );
 }
