@@ -14,4 +14,8 @@ class AppAssets {
 
   // Other SVGs
   static const String plusIcon = 'assets/svgs/plus_icon.svg';
+  static const String accountIcon = 'assets/svgs/account_icon.svg';
+  static const String logoutIcon = 'assets/svgs/logout_icon.svg';
+  static const String userMinusIcon = 'assets/svgs/user_minus_icon.svg';
+  static const String trashIcon = 'assets/svgs/trash_icon.svg';
 }

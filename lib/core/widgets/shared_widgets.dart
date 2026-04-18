@@ -7,6 +7,7 @@ import '../../app/theme/app_text_styles.dart';
 import '../common_providers/theme_provider.dart';
 import '../models/roster_member.dart';
 import '../constants/app_assets.dart';
+import 'account_drawer.dart';
 import 'custom_svg_icon.dart';
 
 /// Playbook365 — Shared Reusable Widgets
@@ -102,10 +103,13 @@ class AppHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CustomSvgIcon(
-            assetPath: AppAssets.rosterIcon,
-            color: textColor,
-            size: 24,
+          GestureDetector(
+            onTap: () => showAccountDrawer(context),
+            child: CustomSvgIcon(
+              assetPath: AppAssets.rosterIcon,
+              color: textColor,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 34),
           const Spacer(),

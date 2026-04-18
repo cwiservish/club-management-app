@@ -90,3 +90,43 @@ PHASE 5: Risks / Edge Cases
 
 Be precise, practical, and non-generic.
 
+
+
+AI MESSAGE TO RECREATE UI FROM FIGMA FILES
+
+
+- Match every background, card, border, text, icon, and accent color exactly
+- Use AppColors.current.xxx — never hardcode hex values
+- If a required color doesn't exist in AppColors, add it to both light and dark palettes first
+
+ICONS
+- Match every icon exactly to the Figma design
+- Prefer existing SVG assets in assets/svgs/ via CustomSvgIcon
+- If an icon doesn't exist, create a new SVG file using the exact lucide-react path data, add it to AppAssets, then use it
+- Never substitute a similar-looking Material Icon as a replacement
+
+TEXT
+- Match font size, font weight, line height, letter spacing, and color exactly
+- Use AppTextStyles.xxx where a matching style exists
+- For one-off sizes/weights not in AppTextStyles, use inline TextStyle with fontFamily: 'Inter'
+
+DIMENSIONS & SPACING
+- Match padding, margin, gap, border radius, and height/width values exactly (convert px → logical pixels 1:1)
+- Use SizedBox and EdgeInsets — no magic numbers without a comment explaining the source
+
+LAYOUT
+- Match the exact layout structure (Row, Column, Stack, etc.) as shown in Figma
+- Respect alignment, flex/expanded behaviour, and scroll direction
+
+THEME
+- Every widget must work correctly in both light and dark mode
+- Test color usage against both AppColors.light and AppColors.dark palettes
+
+COMPONENTS
+- Reuse existing shared widgets (AppHeader, AppBottomNavBar, etc.) where the Figma uses them
+- Do not duplicate existing widget logic — extend or parameterise instead
+
+PROJECT CONVENTIONS
+- Widgets are dumb — no business logic inside widgets
+- Follow the feature folder structure: models/, pages/, providers/, services/, widgets/
+- Prefix all feature files with the feature name
