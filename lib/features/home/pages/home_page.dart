@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/common_providers/theme_provider.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import '../providers/home_provider.dart';
 import '../widgets/home_card.dart';
@@ -14,6 +15,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeModeProvider);
     final viewModels = ref.watch(homeProvider).viewModels;
 
     return Scaffold(

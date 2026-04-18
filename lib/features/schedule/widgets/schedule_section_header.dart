@@ -11,13 +11,13 @@ class ScheduleSectionHeader extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: 29,
-      color: AppColors.current.primary,
+      color: AppColors.current.sectionHeaderBg,
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
         title,
         style: AppTextStyles.headlineSmall.copyWith(
-          color: Colors.white,
+          color: AppColors.current.white,
           fontWeight: FontWeight.w400,
         ),
       ),

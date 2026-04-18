@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/common_providers/theme_provider.dart';
 import '../../../core/enums/message_type.dart';
 import '../../../core/enums/thread_type.dart';
 import '../../../core/models/chat_models.dart';
@@ -41,6 +42,7 @@ class MessagesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeModeProvider);
     final state   = ref.watch(messagesProvider);
     final threads = state.filtered;
 
@@ -167,6 +169,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(themeModeProvider);
     return Scaffold(
       backgroundColor: AppColors.current.card,
       body: Column(

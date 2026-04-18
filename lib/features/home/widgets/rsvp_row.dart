@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../providers/home_provider.dart';
-
-// ─── Color constants (from Figma) ─────────────────────────────────────────────
-
-const _green  = Color(0xFF0ACB97);
-const _orange = Color(0xFFFD8F4B);
-const _red    = Color(0xFFFF5858);
-const _gray   = Color(0xFF4E5663);
 
 // ─── RSVP 3-button row ────────────────────────────────────────────────────────
 
@@ -34,7 +28,7 @@ class RsvpRow extends StatelessWidget {
         Expanded(
           child: RsvpBtn(
             label:       '$goingCount Going',
-            activeColor: _green,
+            activeColor: AppColors.current.rsvpGoing,
             isActive:    selected == HomeRsvp.going,
             radius:      const BorderRadius.only(
               topLeft:    Radius.circular(8),
@@ -47,7 +41,7 @@ class RsvpRow extends StatelessWidget {
         Expanded(
           child: RsvpBtn(
             label:       '$maybeCount Maybe',
-            activeColor: _orange,
+            activeColor: AppColors.current.rsvpMaybe,
             isActive:    selected == HomeRsvp.maybe,
             radius:      BorderRadius.zero,
             hasDivider:  true,
@@ -57,7 +51,7 @@ class RsvpRow extends StatelessWidget {
         Expanded(
           child: RsvpBtn(
             label:       '$noCount No',
-            activeColor: _red,
+            activeColor: AppColors.current.rsvpNo,
             isActive:    selected == HomeRsvp.no,
             radius:      const BorderRadius.only(
               topRight:    Radius.circular(8),
@@ -94,7 +88,7 @@ class RsvpBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isActive ? activeColor : _gray;
+    final bg = isActive ? activeColor : AppColors.current.rsvpUnselected;
 
     return GestureDetector(
       onTap: onTap,
@@ -113,8 +107,8 @@ class RsvpBtn extends StatelessWidget {
             ),
           ],
           border: hasDivider
-              ? const Border(
-                  right: BorderSide(color: Color(0xFFF4F4F4), width: 2),
+              ? Border(
+                  right: BorderSide(color: AppColors.current.card, width: 2),
                 )
               : null,
         ),

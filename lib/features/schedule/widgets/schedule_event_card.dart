@@ -155,13 +155,13 @@ class _RsvpBox extends StatelessWidget {
 
     switch (status) {
       case RsvpStatus.accepted:
-        bg    = AppColors.current.rsvpAccepted;
+        bg    = AppColors.current.rsvpGoing;
         child = Icon(Icons.check, color: AppColors.current.white, size: 16);
       case RsvpStatus.declined:
-        bg    = AppColors.current.rsvpDeclined;
+        bg    = AppColors.current.rsvpNo;
         child = Icon(Icons.close, color: AppColors.current.white, size: 16);
       case RsvpStatus.unknown:
-        bg    = AppColors.current.card;
+        bg    = AppColors.current.rsvpNoResponse;
         child = Text(
           '?',
           style: AppTextStyles.titleMedium.copyWith(

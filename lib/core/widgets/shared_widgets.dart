@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
@@ -34,8 +35,8 @@ class AppBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final activeBgColor = AppColors.current.card;
-    final inactiveBgColor = AppColors.current.surface;
-    final activeColor = AppColors.current.primary;
+    final inactiveBgColor = AppColors.current.background;
+    final activeColor = AppColors.current.navActive;
     final inactiveColor = AppColors.current.textPrimary;
 
     return Container(
@@ -92,7 +93,7 @@ class AppHeader extends StatelessWidget {
     return Container(
       height: 53,
       decoration: BoxDecoration(
-        color: AppColors.current.surface,
+        color: AppColors.current.headerBg,
         border: Border(
           bottom: BorderSide(color: borderColor, width: 1.0),
         ),

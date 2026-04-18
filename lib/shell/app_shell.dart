@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/common_providers/theme_provider.dart';
 import '../core/widgets/shared_widgets.dart';
 import '../features/messages/providers/unread_count_provider.dart';
 
@@ -21,6 +22,7 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeModeProvider); // rebuild shell + pages on theme change
     final unreadCount = ref.watch(unreadCountProvider);
 
     return Scaffold(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/common_providers/theme_provider.dart';
 import '../providers/schedule_provider.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import '../widgets/schedule_event_card.dart';
@@ -13,6 +14,7 @@ class ScheduleScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeModeProvider);
     final state         = ref.watch(scheduleProvider);
     final groupedEvents = _groupEventsByMonth(state.filtered);
     final sortedMonths  = groupedEvents.keys.toList()

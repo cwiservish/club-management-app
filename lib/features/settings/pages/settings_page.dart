@@ -1,25 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
+import '../../../app/theme/app_colors.dart';
+import '../../../core/common_providers/theme_provider.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import '../widgets/team_info_card.dart';
 import '../widgets/settings_menu_item.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeModeProvider);
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppColors.current.background,
       body: SafeArea(
         child: Column(
           children: [
-             AppHeader(),
+            const AppHeader(),
             Expanded(
               child: SingleChildScrollView(
                 child: Container(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: AppColors.current.surface,
                   child: Column(
                     children: [
                       SizedBox(height: 24),

@@ -5,6 +5,7 @@ import '../../../app/theme/app_text_styles.dart';
 import '../../../core/enums/member_role.dart';
 import '../../../core/models/roster_member.dart';
 import '../../../core/widgets/shared_widgets.dart';
+import '../../../core/common_providers/theme_provider.dart';
 import '../providers/roster_provider.dart';
 import '../widgets/roster_detail_headers.dart';
 import '../widgets/roster_detail_rows.dart';
@@ -18,6 +19,7 @@ class RosterScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeModeProvider);
     final state   = ref.watch(rosterProvider);
     final players = state.filtered.where((m) => m.role == MemberRole.player).toList();
     final staff   = state.filtered.where((m) => m.role == MemberRole.staff).toList();
