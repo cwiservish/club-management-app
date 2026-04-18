@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
-import '../../app/theme/theme_provider.dart';
+import '../common_providers/theme_provider.dart';
 import '../models/roster_member.dart';
 import '../constants/app_assets.dart';
 import 'custom_svg_icon.dart';
@@ -143,7 +143,7 @@ class AppHeader extends StatelessWidget {
            Spacer(),
           InkWell(
             onTap: (){
-              themeModeProvider.
+              toggleAppTheme();
             },
             child: const CustomSvgIcon(
               assetPath: AppAssets.plusIcon,

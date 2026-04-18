@@ -30,7 +30,7 @@ class HomeCard extends ConsumerWidget {
             children: [
               Container(
                 width: double.infinity,
-                color: AppColors.current.surface,
+                color: AppColors.current.card,
                 padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

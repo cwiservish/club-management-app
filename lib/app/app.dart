@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'theme/app_colors.dart';
-import 'theme/theme_provider.dart';
+import '../core/common_providers/theme_provider.dart';
 import 'router/app_router.dart';
 
 class Playbook365App extends ConsumerWidget {

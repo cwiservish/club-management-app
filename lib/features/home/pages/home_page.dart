@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_text_styles.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import '../providers/home_provider.dart';
 import '../widgets/home_card.dart';
@@ -12,11 +14,10 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final viewModels  = ref.watch(homeProvider).viewModels;
+    final viewModels = ref.watch(homeProvider).viewModels;
 
     return Scaffold(
-      backgroundColor: colorScheme.surfaceContainerHighest,
+      backgroundColor: AppColors.current.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -46,7 +47,6 @@ class HomeScreen extends ConsumerWidget {
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -54,14 +54,13 @@ class _EmptyState extends StatelessWidget {
           Icon(
             Icons.event_busy_outlined,
             size:  48,
-            color: colorScheme.onSurface.withValues(alpha: 0.25),
+            color: AppColors.current.textPrimary.withValues(alpha: 0.25),
           ),
           const SizedBox(height: 16),
           Text(
             'No events yet',
-            style: TextStyle(
-              color: colorScheme.onSurface.withValues(alpha: 0.45),
-              fontSize: 15,
+            style: AppTextStyles.body16.copyWith(
+              color: AppColors.current.textPrimary.withValues(alpha: 0.45),
             ),
           ),
         ],
