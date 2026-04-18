@@ -15,7 +15,7 @@ class RosterDetailSectionHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
         title,
-        style: AppTextStyles.headlineSmall.copyWith(
+        style: AppTextStyles.heading16.copyWith(
           color: Colors.white,
           fontWeight: FontWeight.w400,
         ),
@@ -54,7 +54,7 @@ class RosterDetailTopBar extends StatelessWidget {
                 const Icon(Icons.chevron_left, color: Colors.white, size: 20),
                 Text(
                   backLabel,
-                  style: AppTextStyles.headlineSmall.copyWith(
+                  style: AppTextStyles.heading16.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w400,
                   ),

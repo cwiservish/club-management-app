@@ -34,7 +34,7 @@ class TeamInfoCard extends StatelessWidget {
             child: Center(
               child: Text(
                 'P',
-                style: AppTextStyles.headlineMedium.copyWith(
+                style: AppTextStyles.heading18.copyWith(
                   fontWeight: FontWeight.w900,
                   fontStyle: FontStyle.italic,
                   color: AppColors.current.textSecondary,

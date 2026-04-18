@@ -87,12 +87,12 @@ class _EmptyState extends StatelessWidget {
           Icon(Icons.chat_bubble_outline,
               size: 48, color: AppColors.current.textPrimary.withOpacity(0.3)),
           const SizedBox(height: 12),
-          Text('No messages', style: AppTextStyles.titleLarge.copyWith(
+          Text('No messages', style: AppTextStyles.heading15.copyWith(
             color: AppColors.current.textPrimary.withOpacity(0.5),
           )),
           const SizedBox(height: 6),
           Text('Tap + to start a conversation',
-              style: AppTextStyles.bodySmall.copyWith(
+              style: AppTextStyles.body13.copyWith(
                 color: AppColors.current.textPrimary.withOpacity(0.35),
               )),
         ],
@@ -212,7 +212,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(_daySeparator(dt),
-              style: AppTextStyles.labelSmall.copyWith(color: AppColors.current.gray400)),
+              style: AppTextStyles.label11.copyWith(color: AppColors.current.gray400)),
         ),
         Expanded(child: Divider(color: AppColors.current.border)),
       ]),
@@ -237,7 +237,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     radius: 16,
                     backgroundColor: AppColors.current.card,
                     child: Text(msg.senderInitials,
-                        style: AppTextStyles.labelSmall.copyWith(
+                        style: AppTextStyles.label11.copyWith(
                           color: AppColors.current.textPrimary,
                           fontWeight: FontWeight.w700)),
                   )
@@ -250,7 +250,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                 if (showSender && !isMe) Padding(
                   padding: const EdgeInsets.only(bottom: 4, left: 4),
                   child: Text(msg.senderName,
-                      style: AppTextStyles.labelSmall.copyWith(
+                      style: AppTextStyles.label11.copyWith(
                           color: AppColors.current.gray500, fontWeight: FontWeight.w700)),
                 ),
                 GestureDetector(
@@ -284,7 +284,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text(_chatTimestamp(msg.timestamp),
-                        style: AppTextStyles.labelSmall.copyWith(
+                        style: AppTextStyles.label11.copyWith(
                             color: AppColors.current.gray400,
                             fontSize: 10,
                             fontWeight: FontWeight.w400)),
@@ -344,11 +344,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(msg.fileName ?? 'File',
-                  style: AppTextStyles.bodySmall.copyWith(
+                  style: AppTextStyles.body13.copyWith(
                     fontWeight: FontWeight.w600, color: textColor),
                   maxLines: 1, overflow: TextOverflow.ellipsis),
               Text(msg.fileSize ?? '',
-                  style: AppTextStyles.labelSmall.copyWith(
+                  style: AppTextStyles.label11.copyWith(
                     color: isMe ? AppColors.current.white.withOpacity(0.7) : AppColors.current.gray400)),
             ],
           )),
@@ -440,7 +440,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             ),
             const SizedBox(height: 6),
             Text(a.$2,
-                style: AppTextStyles.labelSmall.copyWith(
+                style: AppTextStyles.label11.copyWith(
                     color: AppColors.current.gray500)),
           ]),
         )).toList(),
@@ -566,7 +566,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     radius: 36,
                     backgroundColor: AppColors.current.card,
                     child: Text(thread.avatarInitials,
-                        style: AppTextStyles.headlineMedium.copyWith(
+                        style: AppTextStyles.heading18.copyWith(
                           color: AppColors.current.textPrimary,
                           fontWeight: FontWeight.w700)),
                   ),
@@ -574,7 +574,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                 const SizedBox(height: 12),
                 Center(
                   child: Text(thread.name,
-                      style: AppTextStyles.headlineLarge.copyWith(
+                      style: AppTextStyles.heading20.copyWith(
                         color: AppColors.current.textPrimary)),
                 ),
                 const SizedBox(height: 6),
@@ -583,7 +583,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     thread.type == ThreadType.direct
                         ? (thread.isOnline ? '● Online' : 'Offline')
                         : 'Group · 8 members',
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: AppTextStyles.body13.copyWith(
                       color: thread.isOnline && thread.type == ThreadType.direct
                           ? _green
                           : AppColors.current.gray400,
@@ -625,7 +625,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         ),
         const SizedBox(height: 6),
         Text(label,
-            style: AppTextStyles.labelSmall.copyWith(
+            style: AppTextStyles.label11.copyWith(
                 color: color, fontWeight: FontWeight.w500)),
       ]),
     );

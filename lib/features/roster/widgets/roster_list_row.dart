@@ -35,7 +35,7 @@ class RosterListRow extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 member.initials,
-                style: AppTextStyles.headlineMedium.copyWith(
+                style: AppTextStyles.heading18.copyWith(
                   color: AppColors.current.textPrimary,
                 ),
               ),
@@ -57,7 +57,7 @@ class RosterListRow extends StatelessWidget {
                     member.jerseyNumber != null
                         ? '#${member.jerseyNumber}'
                         : member.staffTitle ?? '',
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: AppTextStyles.body13.copyWith(
                         color: AppColors.current.textPrimary.withOpacity(0.6)),
                   ),
                 ],

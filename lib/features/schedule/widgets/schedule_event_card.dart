@@ -62,7 +62,7 @@ class ScheduleEventCard extends StatelessWidget {
                     ),
                     Text(
                       _shortDay(event.dateTime.weekday),
-                      style: AppTextStyles.labelSmall.copyWith(
+                      style: AppTextStyles.label11.copyWith(
                         color: AppColors.current.textPrimary,
                         fontWeight: FontWeight.w500,
                       ),
@@ -99,7 +99,7 @@ class ScheduleEventCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         event.location,
-                        style: AppTextStyles.bodySmall.copyWith(
+                        style: AppTextStyles.body13.copyWith(
                           color: AppColors.current.textPrimary,
                         ),
                         maxLines: 1,
@@ -164,7 +164,7 @@ class _RsvpBox extends StatelessWidget {
         bg    = AppColors.current.rsvpNoResponse;
         child = Text(
           '?',
-          style: AppTextStyles.titleMedium.copyWith(
+          style: AppTextStyles.heading14.copyWith(
             color: AppColors.current.textPrimary,
           ),
         );

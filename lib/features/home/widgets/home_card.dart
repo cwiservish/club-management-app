@@ -62,7 +62,7 @@ class HomeCard extends ConsumerWidget {
                       onTap: onEventDetails,
                       child: Text(
                         'Event Details',
-                        style: AppTextStyles.bodySmall.copyWith(
+                        style: AppTextStyles.body13.copyWith(
                           color:      AppColors.current.primary,
                           fontWeight: FontWeight.w600,
                         ),

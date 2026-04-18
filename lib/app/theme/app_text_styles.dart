@@ -6,117 +6,66 @@ class AppTextStyles {
 
   static const String fontFamily = 'Inter';
 
-  // ── Headings ──────────────────────────────────────────────────────────────
+  // ── Headings (w700) ───────────────────────────────────────────────────────
 
-  static TextStyle get h1 => TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        color: AppColors.current.gray900,
-      );
-
-  static TextStyle get h2 => TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: AppColors.current.gray900,
-      );
-
-  static TextStyle get h3 => TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 18,
-        fontWeight: FontWeight.w500,
-        color: AppColors.current.gray900,
-      );
-
-  // ── Body ──────────────────────────────────────────────────────────────────
-
-  static TextStyle get bodyLarge => TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        color: AppColors.current.gray900,
-      );
-
-  static TextStyle get bodyMedium => TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: AppColors.current.gray700,
-      );
-
-  static TextStyle get caption => TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        color: AppColors.current.gray500,
-      );
-
-  // ── Display ───────────────────────────────────────────────────────────────
-
-  static TextStyle get displayLarge => TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 28,
-        fontWeight: FontWeight.w800,
-        color: AppColors.current.gray900,
-        height: 1.2,
-      );
-
-  static TextStyle get displayMedium => TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 22,
-        fontWeight: FontWeight.w800,
-        color: AppColors.current.gray900,
-        height: 1.3,
-      );
-
-  // ── Headlines ─────────────────────────────────────────────────────────────
-
-  static TextStyle get headlineLarge => TextStyle(
+  static TextStyle get heading20 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 20,
         fontWeight: FontWeight.w700,
         color: AppColors.current.gray900,
       );
 
-  static TextStyle get headlineMedium => TextStyle(
+  static TextStyle get heading18 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 18,
         fontWeight: FontWeight.w700,
         color: AppColors.current.gray900,
       );
 
-  static TextStyle get headlineSmall => TextStyle(
+  static TextStyle get heading16 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 16,
         fontWeight: FontWeight.w700,
         color: AppColors.current.gray900,
       );
 
-  // ── Titles ────────────────────────────────────────────────────────────────
-
-  static TextStyle get titleLarge => TextStyle(
+  static TextStyle get heading15 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 15,
         fontWeight: FontWeight.w700,
         color: AppColors.current.gray900,
       );
 
-  static TextStyle get titleMedium => TextStyle(
+  static TextStyle get heading14 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 14,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         color: AppColors.current.gray900,
       );
 
-  static TextStyle get titleSmall => TextStyle(
+  static TextStyle get heading13 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: AppColors.current.gray700,
+        fontWeight: FontWeight.w700,
+        color: AppColors.current.gray900,
       );
 
-  // ── Body variants ─────────────────────────────────────────────────────────
+  static TextStyle get heading12 => TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: AppColors.current.gray900,
+      );
+
+  static TextStyle get heading22 => TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        color: AppColors.current.gray900,
+        height: 1.2,
+      );
+
+  // ── Body (w400) ───────────────────────────────────────────────────────────
 
   static TextStyle get body16 => TextStyle(
         fontFamily: fontFamily,
@@ -134,7 +83,7 @@ class AppTextStyles {
         height: 1.3,
       );
 
-  static TextStyle get bodySmall => TextStyle(
+  static TextStyle get body13 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 13,
         fontWeight: FontWeight.w400,
@@ -142,36 +91,37 @@ class AppTextStyles {
         height: 1.4,
       );
 
-  // ── Labels ────────────────────────────────────────────────────────────────
+  // ── Labels (w500) ─────────────────────────────────────────────────────────
 
-  static TextStyle get labelLarge => TextStyle(
+  static TextStyle get label13 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: AppColors.current.gray700,
+        fontWeight: FontWeight.w500,
+        color: AppColors.current.gray500,
       );
 
-  static TextStyle get labelMedium => TextStyle(
+  static TextStyle get label12 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 12,
         fontWeight: FontWeight.w500,
         color: AppColors.current.gray500,
       );
 
-  static TextStyle get labelSmall => TextStyle(
+  static TextStyle get label11 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 11,
         fontWeight: FontWeight.w500,
         color: AppColors.current.gray400,
       );
 
-  // ── Misc ──────────────────────────────────────────────────────────────────
+  // ── Special ───────────────────────────────────────────────────────────────
 
   static TextStyle get overline => TextStyle(
         fontFamily: fontFamily,
         fontSize: 11,
         fontWeight: FontWeight.w600,
         color: AppColors.current.gray500,
+        letterSpacing: 0.8,
       );
 
   static TextStyle get dateNumber => TextStyle(

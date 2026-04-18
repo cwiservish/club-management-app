@@ -68,7 +68,7 @@ class MessageThreadRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 1),
                   Text(thread.lastMessage,
-                      style: AppTextStyles.bodySmall.copyWith(
+                      style: AppTextStyles.body13.copyWith(
                           color: AppColors.current.textPrimary.withOpacity(0.6)),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
@@ -78,7 +78,7 @@ class MessageThreadRow extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               formatRelativeTime(thread.lastMessageTime),
-              style: AppTextStyles.labelSmall.copyWith(
+              style: AppTextStyles.label11.copyWith(
                 color: AppColors.current.textPrimary.withOpacity(0.55),
                 fontSize: 10,
                 fontWeight: FontWeight.w400,

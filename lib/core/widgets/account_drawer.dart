@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_text_styles.dart';
 import '../common_providers/theme_provider.dart';
 import '../constants/app_assets.dart';
 import 'custom_svg_icon.dart';
@@ -107,13 +108,7 @@ class _Header extends StatelessWidget {
               // Name
               Text(
                 'Ayla Becher',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: colors.textPrimary,
-                  height: 1.2,
-                ),
+                style: AppTextStyles.heading22.copyWith(color: colors.textPrimary),
               ),
               const SizedBox(height: 6),
               Row(
@@ -131,25 +126,15 @@ class _Header extends StatelessWidget {
                     ),
                     child: Text(
                       'Player',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: colors.isDark
-                            ? colors.actionAccent
-                            : colors.primary,
+                      style: AppTextStyles.heading14.copyWith(
+                        color: colors.isDark ? colors.actionAccent : colors.primary,
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'ayla@example.com',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: colors.gray500,
-                    ),
+                    style: AppTextStyles.label13.copyWith(color: colors.gray500),
                   ),
                 ],
               ),
@@ -206,10 +191,7 @@ class _Content extends StatelessWidget {
             children: [
               Text(
                 'SPORTID CARD',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                style: AppTextStyles.heading12.copyWith(
                   color: colors.gray400,
                   letterSpacing: 0.6,
                 ),
@@ -245,12 +227,19 @@ class _NavRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-        child: Row(
+    final hoverBg = colors.isDark ? colors.card : const Color(0xFFF9FAFB);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: hoverBg,
+        highlightColor: hoverBg,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
           children: [
             Container(
               width: 40,
@@ -265,23 +254,8 @@ class _NavRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      color: colors.gray500,
-                    ),
-                  ),
+                  Text(title, style: AppTextStyles.heading16.copyWith(color: colors.textPrimary)),
+                  Text(subtitle, style: AppTextStyles.label12.copyWith(color: colors.gray500)),
                 ],
               ),
             ),
@@ -289,7 +263,7 @@ class _NavRow extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),);
   }
 }
 
@@ -353,16 +327,14 @@ class _SportIdCard extends StatelessWidget {
             ),
 
             // Top: logo text
-            const Positioned(
+            Positioned(
               top: 20,
               left: 20,
               child: Text(
                 'Playbook365',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                style: AppTextStyles.heading13.copyWith(
                   color: Colors.white,
+                  fontWeight: FontWeight.w800,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -388,27 +360,13 @@ class _SportIdCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Row(
+                  Row(
                     children: [
-                      Text(
-                        '#84729-110',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 12,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      Text('·', style: TextStyle(color: Colors.white30)),
-                      SizedBox(width: 6),
-                      Text(
-                        '2025-2026',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 12,
-                          color: Colors.white70,
-                        ),
-                      ),
+                      Text('#84729-110', style: AppTextStyles.label12.copyWith(color: Colors.white70)),
+                      const SizedBox(width: 6),
+                      Text('·', style: AppTextStyles.label12.copyWith(color: Colors.white30)),
+                      const SizedBox(width: 6),
+                      Text('2025-2026', style: AppTextStyles.label12.copyWith(color: Colors.white70)),
                     ],
                   ),
                 ],
@@ -432,7 +390,7 @@ class _Footer extends StatelessWidget {
     final isDark = colors.isDark;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       decoration: BoxDecoration(
         color: colors.background,
         border: Border(
@@ -457,6 +415,7 @@ class _Footer extends StatelessWidget {
             colors: colors,
             onTap: () {},
           ),
+          SizedBox(height: 4,),
           Divider(
             height: 1,
             thickness: 1,
@@ -516,39 +475,48 @@ class _FooterRowState extends State<_FooterRow> {
         ? (colors.isDark ? colors.rsvpNo : const Color(0xFFDC2626))
         : colors.textPrimary;
 
+    final overlayColor = widget.isDestructive
+        ? (colors.isDark
+            ? const Color(0xFFEF4444).withValues(alpha: 0.1)
+            : const Color(0xFFFEF2F2))
+        : (colors.isDark ? colors.card : const Color(0xFFF9FAFB));
+
     final iconColor = widget.isDestructive ? color : colors.gray500;
     final iconWidget = widget.svgAsset != null
         ? CustomSvgIcon(assetPath: widget.svgAsset!, color: iconColor, size: 20)
         : Icon(widget.icon, size: 20, color: iconColor);
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: widget.isDestructive ? (_) => setState(() => _pressed = true) : null,
-      onTapUp: widget.isDestructive ? (_) => setState(() => _pressed = false) : null,
-      onTapCancel: widget.isDestructive ? () => setState(() => _pressed = false) : null,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-        child: Row(
-          children: [
-            AnimatedScale(
-              scale: (widget.isDestructive && _pressed) ? 1.1 : 1.0,
-              duration: const Duration(milliseconds: 150),
-              child: iconWidget,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                widget.label,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: widget.isDestructive ? 14 : 15,
-                  fontWeight: FontWeight.w700,
-                  color: color,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: overlayColor,
+        highlightColor: overlayColor,
+        onTapDown: widget.isDestructive ? (_) => setState(() => _pressed = true) : null,
+        onTapUp: widget.isDestructive ? (_) => setState(() => _pressed = false) : null,
+        onTapCancel: widget.isDestructive ? () => setState(() => _pressed = false) : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          child: Row(
+            children: [
+              AnimatedScale(
+                scale: (widget.isDestructive && _pressed) ? 1.1 : 1.0,
+                duration: const Duration(milliseconds: 150),
+                child: iconWidget,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  widget.label,
+                  style: (widget.isDestructive ? AppTextStyles.heading14 : AppTextStyles.heading15)
+                      .copyWith(color: color),
                 ),
               ),
-            ),
-            if (widget.trailing != null) widget.trailing!,
-          ],
+              if (widget.trailing != null) widget.trailing!,
+            ],
+          ),
         ),
       ),
     );

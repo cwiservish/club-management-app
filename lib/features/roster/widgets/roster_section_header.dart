@@ -24,7 +24,7 @@ class RosterSectionHeader extends StatelessWidget {
         children: [
           Text(
             '$title ($count)',
-            style: AppTextStyles.headlineSmall.copyWith(
+            style: AppTextStyles.heading16.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w400,
             ),

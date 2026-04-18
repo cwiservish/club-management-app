@@ -45,7 +45,7 @@ class RosterInfoRow extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       secondary!,
-                      style: AppTextStyles.bodySmall.copyWith(
+                      style: AppTextStyles.body13.copyWith(
                           color: AppColors.current.textPrimary.withOpacity(0.55)),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

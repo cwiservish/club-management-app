@@ -78,7 +78,7 @@ class ScheduleScreen extends ConsumerWidget {
               color: AppColors.current.textPrimary.withOpacity(0.25)),
           const SizedBox(height: 16),
           Text('No events scheduled',
-              style: AppTextStyles.titleMedium.copyWith(
+              style: AppTextStyles.heading14.copyWith(
                   color: AppColors.current.textPrimary.withOpacity(0.45))),
         ],
       ),

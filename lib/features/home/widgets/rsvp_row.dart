@@ -115,7 +115,7 @@ class RsvpBtn extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: AppTextStyles.headlineSmall.copyWith(
+          style: AppTextStyles.heading16.copyWith(
             color:      Colors.white,
             fontWeight: FontWeight.w600,
           ),

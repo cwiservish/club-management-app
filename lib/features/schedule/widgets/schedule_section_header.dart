@@ -16,7 +16,7 @@ class ScheduleSectionHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
         title,
-        style: AppTextStyles.headlineSmall.copyWith(
+        style: AppTextStyles.heading16.copyWith(
           color: AppColors.current.white,
           fontWeight: FontWeight.w400,
         ),
