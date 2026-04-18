@@ -483,7 +483,7 @@ class _Footer extends StatelessWidget {
   }
 }
 
-class _FooterRow extends StatelessWidget {
+class _FooterRow extends StatefulWidget {
   final IconData? icon;
   final String? svgAsset;
   final String label;
@@ -503,36 +503,51 @@ class _FooterRow extends StatelessWidget {
   });
 
   @override
+  State<_FooterRow> createState() => _FooterRowState();
+}
+
+class _FooterRowState extends State<_FooterRow> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final color = isDestructive
+    final colors = widget.colors;
+    final color = widget.isDestructive
         ? (colors.isDark ? colors.rsvpNo : const Color(0xFFDC2626))
         : colors.textPrimary;
 
-    final iconColor = isDestructive ? color : colors.gray500;
-    final iconWidget = svgAsset != null
-        ? CustomSvgIcon(assetPath: svgAsset!, color: iconColor, size: 20)
-        : Icon(icon, size: 20, color: iconColor);
+    final iconColor = widget.isDestructive ? color : colors.gray500;
+    final iconWidget = widget.svgAsset != null
+        ? CustomSvgIcon(assetPath: widget.svgAsset!, color: iconColor, size: 20)
+        : Icon(widget.icon, size: 20, color: iconColor);
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
+      onTapDown: widget.isDestructive ? (_) => setState(() => _pressed = true) : null,
+      onTapUp: widget.isDestructive ? (_) => setState(() => _pressed = false) : null,
+      onTapCancel: widget.isDestructive ? () => setState(() => _pressed = false) : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         child: Row(
           children: [
-            iconWidget,
+            AnimatedScale(
+              scale: (widget.isDestructive && _pressed) ? 1.1 : 1.0,
+              duration: const Duration(milliseconds: 150),
+              child: iconWidget,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                label,
+                widget.label,
                 style: TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: isDestructive ? 14 : 15,
+                  fontSize: widget.isDestructive ? 14 : 15,
                   fontWeight: FontWeight.w700,
                   color: color,
                 ),
               ),
             ),
-            if (trailing != null) trailing!,
+            if (widget.trailing != null) widget.trailing!,
           ],
         ),
       ),
