@@ -31,6 +31,12 @@ class AppColors {
   final Color sky;
   final Color orange;
   final Color teal;
+  final Color emerald;
+  final Color pink;
+
+  // Status
+  final Color rsvpAccepted;
+  final Color rsvpDeclined;
 
   // Neutrals
   final Color white;
@@ -61,6 +67,10 @@ class AppColors {
     required this.sky,
     required this.orange,
     required this.teal,
+    required this.emerald,
+    required this.pink,
+    required this.rsvpAccepted,
+    required this.rsvpDeclined,
     required this.white,
     required this.gray100,
     required this.gray300,
@@ -94,6 +104,10 @@ class AppColors {
     sky: Color(0xFF0EA5E9),
     orange: Color(0xFFF97316),
     teal: Color(0xFF14B8A6),
+    emerald: Color(0xFF10B981),
+    pink: Color(0xFFEC4899),
+    rsvpAccepted: Color(0xFF0ACB97),
+    rsvpDeclined: Color(0xFFFF5858),
     white: Color(0xFFFFFFFF),
     gray100: Color(0xFFF3F4F6),
     gray300: Color(0xFFD1D5DB),
@@ -123,6 +137,10 @@ class AppColors {
     sky: Color(0xFF0EA5E9),
     orange: Color(0xFFF97316),
     teal: Color(0xFF14B8A6),
+    emerald: Color(0xFF10B981),
+    pink: Color(0xFFEC4899),
+    rsvpAccepted: Color(0xFF0ACB97),
+    rsvpDeclined: Color(0xFFFF5858),
     white: Color(0xFFFFFFFF),
     gray100: Color(0xFF252B35),
     gray300: Color(0xFF475569),

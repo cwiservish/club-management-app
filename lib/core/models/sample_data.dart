@@ -125,7 +125,7 @@ final List<RosterMember> sampleRoster = [
     phone: '(405) 555-0208', email: 'aiden.t@email.com',
     parentName: 'Chris Taylor', parentPhone: '(405) 555-0218',
     attendancePercent: 67, isActive: false,
-    avatarColor: const Color(0xFFEC4899),
+    avatarColor: AppColors.current.pink,
   ),
   RosterMember(
     id: 'p9',

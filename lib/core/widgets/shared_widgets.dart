@@ -33,13 +33,13 @@ class AppBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const activeBgColor = Color(0xFFF4F4F4);
-    const inactiveBgColor = Color(0xFFFFFFFF);
-    const activeColor = Color(0xFF008CFF);
-    const inactiveColor = Color(0xFF20242A);
+    final activeBgColor = AppColors.current.card;
+    final inactiveBgColor = AppColors.current.surface;
+    final activeColor = AppColors.current.primary;
+    final inactiveColor = AppColors.current.textPrimary;
 
     return Container(
-      color: Colors.white,
+      color: AppColors.current.surface,
       child: Row(
         children: List.generate(_items.length, (i) {
           final isActive = i == currentIndex;
@@ -85,14 +85,14 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const textColor = Color(0xFF20242A);
-    const borderColor = Color(0xFFD1D1D1);
-    const pillBgColor = Color(0xFFF4F4F4);
+    final textColor = AppColors.current.textPrimary;
+    final borderColor = AppColors.current.border;
+    final pillBgColor = AppColors.current.card;
 
     return Container(
       height: 53,
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.current.surface,
         border: Border(
           bottom: BorderSide(color: borderColor, width: 1.0),
         ),
@@ -101,7 +101,7 @@ class AppHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const CustomSvgIcon(
+          CustomSvgIcon(
             assetPath: AppAssets.rosterIcon,
             color: textColor,
             size: 24,
@@ -122,7 +122,7 @@ class AppHeader extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
@@ -135,17 +135,15 @@ class AppHeader extends StatelessWidget {
                     height: 1.25,
                   ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Icon(Icons.keyboard_arrow_down, color: textColor, size: 20),
               ],
             ),
           ),
            Spacer(),
           InkWell(
-            onTap: (){
-              toggleAppTheme();
-            },
-            child: const CustomSvgIcon(
+            onTap: toggleAppTheme,
+            child: CustomSvgIcon(
               assetPath: AppAssets.plusIcon,
               color: textColor,
               size: 18,
@@ -154,7 +152,7 @@ class AppHeader extends StatelessWidget {
           const SizedBox(width: 16),
           GestureDetector(
             onTap: () => context.go(AppRoutes.settings),
-            child: const Icon(
+            child: Icon(
               Icons.more_vert,
               color: textColor,
               size: 28,

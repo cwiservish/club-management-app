@@ -117,11 +117,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   bool _showAttachMenu    = false;
   late List<ChatMessage> _localMessages;
 
-  static const _blue   = Color(0xFF008CFF);
-  static const _green  = Color(0xFF10B981);
-  static const _amber  = Color(0xFFF59E0B);
-  static const _purple = Color(0xFF8B5CF6);
-  static const _red    = Color(0xFFEF4444);
+  Color get _blue   => AppColors.current.primary;
+  Color get _green  => AppColors.current.emerald;
+  Color get _amber  => AppColors.current.warning;
+  Color get _purple => AppColors.current.purple;
+  Color get _red    => AppColors.current.error;
 
   @override
   void initState() {
@@ -145,7 +145,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         senderId: 'me',
         senderName: 'You',
         senderInitials: 'JD',
-        senderColor: const Color(0xFF0EA5E9),
+        senderColor: AppColors.current.sky,
         text: text,
         type: MessageType.text,
         timestamp: DateTime.now(),
@@ -267,7 +267,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                               color: AppColors.current.surface,
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: [BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
+                                  color: AppColors.current.textPrimary.withOpacity(0.08),
                                   blurRadius: 4)],
                             ),
                             child: Text(msg.reactionEmoji!,
@@ -306,7 +306,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   Widget _buildBubbleContent(ChatMessage msg, bool isMe) {
     final bubbleBg  = isMe ? _blue : AppColors.current.surface;
-    final textColor = isMe ? Colors.white : AppColors.current.textPrimary;
+    final textColor = isMe ? AppColors.current.white : AppColors.current.textPrimary;
     final radius    = BorderRadius.only(
       topLeft:     const Radius.circular(18),
       topRight:    const Radius.circular(18),
@@ -322,7 +322,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           color: bubbleBg,
           borderRadius: radius,
           boxShadow: [BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: AppColors.current.textPrimary.withOpacity(0.06),
               blurRadius: 6,
               offset: const Offset(0, 2))],
         ),
@@ -330,11 +330,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
-              color: isMe ? Colors.white.withOpacity(0.2) : _blue.withOpacity(0.1),
+              color: isMe ? AppColors.current.white.withOpacity(0.2) : _blue.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(Icons.insert_drive_file_outlined,
-                color: isMe ? Colors.white : _blue, size: 20),
+                color: isMe ? AppColors.current.white : _blue, size: 20),
           ),
           const SizedBox(width: 10),
           Expanded(child: Column(
@@ -346,11 +346,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   maxLines: 1, overflow: TextOverflow.ellipsis),
               Text(msg.fileSize ?? '',
                   style: AppTextStyles.labelSmall.copyWith(
-                    color: isMe ? Colors.white70 : AppColors.current.gray400)),
+                    color: isMe ? AppColors.current.white.withOpacity(0.7) : AppColors.current.gray400)),
             ],
           )),
           Icon(Icons.download_outlined,
-              color: isMe ? Colors.white70 : AppColors.current.gray400, size: 18),
+              color: isMe ? AppColors.current.white.withOpacity(0.7) : AppColors.current.gray400, size: 18),
         ]),
       );
     }
@@ -362,7 +362,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         color: bubbleBg,
         borderRadius: radius,
         boxShadow: [BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: AppColors.current.textPrimary.withOpacity(0.06),
             blurRadius: 6,
             offset: const Offset(0, 2))],
       ),
@@ -518,7 +518,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   ),
                   child: Icon(
                     hasText ? Icons.send : Icons.mic_outlined,
-                    color: hasText ? Colors.white : AppColors.current.gray500,
+                    color: hasText ? AppColors.current.white : AppColors.current.gray500,
                     size: 18,
                   ),
                 ),

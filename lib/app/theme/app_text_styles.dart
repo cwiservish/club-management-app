@@ -12,21 +12,21 @@ class AppTextStyles {
         fontFamily: fontFamily,
         fontSize: 28,
         fontWeight: FontWeight.w700,
-        color: AppColors.current.textPrimary,
+        color: AppColors.current.gray900,
       );
 
   static TextStyle get h2 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 20,
         fontWeight: FontWeight.w600,
-        color: AppColors.current.textPrimary,
+        color: AppColors.current.gray900,
       );
 
   static TextStyle get h3 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 18,
         fontWeight: FontWeight.w500,
-        color: AppColors.current.textPrimary,
+        color: AppColors.current.gray900,
       );
 
   // ── Body ──────────────────────────────────────────────────────────────────
@@ -35,21 +35,21 @@ class AppTextStyles {
         fontFamily: fontFamily,
         fontSize: 16,
         fontWeight: FontWeight.w400,
-        color: AppColors.current.textPrimary,
+        color: AppColors.current.gray900,
       );
 
   static TextStyle get bodyMedium => TextStyle(
         fontFamily: fontFamily,
         fontSize: 14,
         fontWeight: FontWeight.w400,
-        color: AppColors.current.textSecondary,
+        color: AppColors.current.gray700,
       );
 
   static TextStyle get caption => TextStyle(
         fontFamily: fontFamily,
         fontSize: 12,
         fontWeight: FontWeight.w400,
-        color: AppColors.current.textSecondary.withOpacity(0.5),
+        color: AppColors.current.gray500,
       );
 
   // ── Display ───────────────────────────────────────────────────────────────

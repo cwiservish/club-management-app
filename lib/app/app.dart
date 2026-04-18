@@ -10,7 +10,7 @@ class Playbook365App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeModeProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: 'Playbook365',
@@ -18,6 +18,10 @@ class Playbook365App extends ConsumerWidget {
       theme: ThemeData(
         fontFamily: 'Inter',
         scaffoldBackgroundColor: AppColors.current.background,
+      ),
+      builder: (_, child) => KeyedSubtree(
+        key: ValueKey(themeMode),
+        child: child!,
       ),
       routerConfig: ref.watch(appRouterProvider),
     );
