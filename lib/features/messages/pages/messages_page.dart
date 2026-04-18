@@ -45,12 +45,12 @@ class MessagesScreen extends ConsumerWidget {
     final threads = state.filtered;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: AppColors.current.surface,
       body: SafeArea(
         child: Column(
           children: [
             const AppHeader(),
-            const SizedBox(height: 10), // 10px white spacer — Group 835
+            const SizedBox(height: 10),
             Expanded(
               child: threads.isEmpty
                   ? _EmptyState()
@@ -78,21 +78,20 @@ class MessagesScreen extends ConsumerWidget {
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.chat_bubble_outline,
-              size: 48, color: colorScheme.onSurface.withOpacity(0.3)),
+              size: 48, color: AppColors.current.textPrimary.withOpacity(0.3)),
           const SizedBox(height: 12),
           Text('No messages', style: AppTextStyles.titleLarge.copyWith(
-            color: colorScheme.onSurface.withOpacity(0.5),
+            color: AppColors.current.textPrimary.withOpacity(0.5),
           )),
           const SizedBox(height: 6),
           Text('Tap + to start a conversation',
               style: AppTextStyles.bodySmall.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.35),
+                color: AppColors.current.textPrimary.withOpacity(0.35),
               )),
         ],
       ),
@@ -101,7 +100,7 @@ class _EmptyState extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Chat Detail Screen  (internal — not moved to widgets folder — tightly coupled)
+// Chat Detail Screen
 // ══════════════════════════════════════════════════════════════════════════════
 
 class ChatDetailScreen extends ConsumerStatefulWidget {
@@ -118,7 +117,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   bool _showAttachMenu    = false;
   late List<ChatMessage> _localMessages;
 
-  // Local color shorthands scoped to the detail screen
   static const _blue   = Color(0xFF008CFF);
   static const _green  = Color(0xFF10B981);
   static const _amber  = Color(0xFFF59E0B);
@@ -169,24 +167,20 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
-      backgroundColor: colorScheme.surfaceContainerHighest,
-
+      backgroundColor: AppColors.current.card,
       body: Column(
         children: [
           const AppHeader(),
-          Expanded(child: _buildMessageList(colorScheme)),
-          if (_showAttachMenu) _buildAttachMenu(colorScheme),
-          _buildInputBar(colorScheme),
+          Expanded(child: _buildMessageList()),
+          if (_showAttachMenu) _buildAttachMenu(),
+          _buildInputBar(),
         ],
       ),
     );
   }
 
-
-  Widget _buildMessageList(ColorScheme colorScheme) {
+  Widget _buildMessageList() {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -197,8 +191,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         final showDay  = prev == null || !_sameDay(msg.timestamp, prev.timestamp);
         final showName = !msg.isMe && (prev == null || prev.senderId != msg.senderId || showDay);
         return Column(children: [
-          if (showDay) _buildDaySep(msg.timestamp, colorScheme),
-          _buildBubble(msg, showName, colorScheme),
+          if (showDay) _buildDaySep(msg.timestamp),
+          _buildBubble(msg, showName),
         ]);
       },
     );
@@ -207,22 +201,22 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   bool _sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  Widget _buildDaySep(DateTime dt, ColorScheme cs) {
+  Widget _buildDaySep(DateTime dt) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(children: [
-        Expanded(child: Divider(color: cs.outline)),
+        Expanded(child: Divider(color: AppColors.current.border)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(_daySeparator(dt),
               style: AppTextStyles.labelSmall.copyWith(color: AppColors.current.gray400)),
         ),
-        Expanded(child: Divider(color: cs.outline)),
+        Expanded(child: Divider(color: AppColors.current.border)),
       ]),
     );
   }
 
-  Widget _buildBubble(ChatMessage msg, bool showSender, ColorScheme cs) {
+  Widget _buildBubble(ChatMessage msg, bool showSender) {
     final isMe = msg.isMe;
     return Padding(
       padding: EdgeInsets.only(
@@ -238,10 +232,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             child: showSender
                 ? CircleAvatar(
                     radius: 16,
-                    backgroundColor: cs.surfaceContainer,
+                    backgroundColor: AppColors.current.card,
                     child: Text(msg.senderInitials,
                         style: AppTextStyles.labelSmall.copyWith(
-                          color: cs.onSurface, fontWeight: FontWeight.w700)),
+                          color: AppColors.current.textPrimary,
+                          fontWeight: FontWeight.w700)),
                   )
                 : const SizedBox(width: 32),
           ),
@@ -256,11 +251,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                           color: AppColors.current.gray500, fontWeight: FontWeight.w700)),
                 ),
                 GestureDetector(
-                  onLongPress: () => _showMessageMenu(msg, cs),
+                  onLongPress: () => _showMessageMenu(msg),
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      _buildBubbleContent(msg, isMe, cs),
+                      _buildBubbleContent(msg, isMe),
                       if (msg.reactionEmoji != null)
                         Positioned(
                           bottom: -12,
@@ -269,7 +264,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: cs.surface,
+                              color: AppColors.current.surface,
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: [BoxShadow(
                                   color: Colors.black.withOpacity(0.08),
@@ -287,7 +282,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text(_chatTimestamp(msg.timestamp),
                         style: AppTextStyles.labelSmall.copyWith(
-                            color: AppColors.current.gray400, fontSize: 10, fontWeight: FontWeight.w400)),
+                            color: AppColors.current.gray400,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w400)),
                     if (isMe) ...[
                       const SizedBox(width: 4),
                       Icon(
@@ -307,9 +304,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     );
   }
 
-  Widget _buildBubbleContent(ChatMessage msg, bool isMe, ColorScheme cs) {
-    final bubbleBg  = isMe ? _blue : cs.surface;
-    final textColor = isMe ? Colors.white : cs.onSurface;
+  Widget _buildBubbleContent(ChatMessage msg, bool isMe) {
+    final bubbleBg  = isMe ? _blue : AppColors.current.surface;
+    final textColor = isMe ? Colors.white : AppColors.current.textPrimary;
     final radius    = BorderRadius.only(
       topLeft:     const Radius.circular(18),
       topRight:    const Radius.circular(18),
@@ -374,10 +371,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     );
   }
 
-  void _showMessageMenu(ChatMessage msg, ColorScheme cs) {
+  void _showMessageMenu(ChatMessage msg) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: cs.surface,
+      backgroundColor: AppColors.current.surface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (_) => Padding(
@@ -395,9 +392,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   .toList(),
             ),
           ),
-          Divider(height: 1, color: cs.outline),
-          _menuItem(Icons.reply_outlined,       'Reply',   cs.onSurface),
-          _menuItem(Icons.content_copy_outlined, 'Copy',   cs.onSurface),
+          Divider(height: 1, color: AppColors.current.border),
+          _menuItem(Icons.reply_outlined,        'Reply',  AppColors.current.textPrimary),
+          _menuItem(Icons.content_copy_outlined, 'Copy',   AppColors.current.textPrimary),
           if (msg.isMe) _menuItem(Icons.delete_outline, 'Delete', _red),
         ]),
       ),
@@ -414,7 +411,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     );
   }
 
-  Widget _buildAttachMenu(ColorScheme cs) {
+  Widget _buildAttachMenu() {
     final actions = [
       (Icons.image_outlined,       'Photo',    const Color(0xFF0EA5E9)),
       (Icons.camera_alt_outlined,  'Camera',   _green),
@@ -423,7 +420,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       (Icons.contact_page_outlined,'Contact',  _blue),
     ];
     return Container(
-      color: cs.surface,
+      color: AppColors.current.surface,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -448,9 +445,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     );
   }
 
-  Widget _buildInputBar(ColorScheme cs) {
+  Widget _buildInputBar() {
     return Container(
-      color: cs.surface,
+      color: AppColors.current.surface,
       padding: EdgeInsets.only(
         left: 12, right: 12, top: 10,
         bottom: MediaQuery.of(context).viewInsets.bottom > 0
@@ -469,7 +466,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               decoration: BoxDecoration(
                 color: _showAttachMenu
                     ? _blue.withOpacity(0.1)
-                    : cs.surfaceContainerHighest,
+                    : AppColors.current.card,
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -484,18 +481,18 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             child: Container(
               constraints: const BoxConstraints(maxHeight: 120),
               decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest,
+                color: AppColors.current.card,
                 borderRadius: BorderRadius.circular(22),
               ),
               child: TextField(
                 controller: _inputController,
                 maxLines: null,
                 textCapitalization: TextCapitalization.sentences,
-                style: AppTextStyles.body14.copyWith(color: cs.onSurface),
+                style: AppTextStyles.body14.copyWith(color: AppColors.current.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Message…',
                   hintStyle: AppTextStyles.body14.copyWith(
-                      color: cs.onSurface.withOpacity(0.4)),
+                      color: AppColors.current.textPrimary.withOpacity(0.4)),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 10),
@@ -516,7 +513,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   width: 38, height: 38,
                   margin: const EdgeInsets.only(bottom: 2),
                   decoration: BoxDecoration(
-                    color: hasText ? _blue : cs.surfaceContainerHighest,
+                    color: hasText ? _blue : AppColors.current.card,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -543,10 +540,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         initialChildSize: 0.5,
         maxChildSize: 0.85,
         builder: (_, ctrl) {
-          final cs = Theme.of(context).colorScheme;
           return Container(
             decoration: BoxDecoration(
-              color: cs.surface,
+              color: AppColors.current.surface,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: ListView(
@@ -558,24 +554,25 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     width: 40, height: 4,
                     margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
-                        color: cs.surfaceContainerHighest,
+                        color: AppColors.current.card,
                         borderRadius: BorderRadius.circular(2)),
                   ),
                 ),
                 Center(
                   child: CircleAvatar(
                     radius: 36,
-                    backgroundColor: cs.surfaceContainer,
+                    backgroundColor: AppColors.current.card,
                     child: Text(thread.avatarInitials,
                         style: AppTextStyles.headlineMedium.copyWith(
-                          color: cs.onSurface, fontWeight: FontWeight.w700)),
+                          color: AppColors.current.textPrimary,
+                          fontWeight: FontWeight.w700)),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Center(
                   child: Text(thread.name,
                       style: AppTextStyles.headlineLarge.copyWith(
-                        color: cs.onSurface)),
+                        color: AppColors.current.textPrimary)),
                 ),
                 const SizedBox(height: 6),
                 Center(
@@ -594,13 +591,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _infoAction(Icons.volume_off_outlined, 'Mute',     color: _blue),
+                    _infoAction(Icons.volume_off_outlined, 'Mute',   color: _blue),
                     const SizedBox(width: 24),
-                    _infoAction(Icons.search,              'Search',   color: _blue),
+                    _infoAction(Icons.search,              'Search', color: _blue),
                     const SizedBox(width: 24),
-                    _infoAction(Icons.push_pin_outlined,   'Pin',      color: _blue),
+                    _infoAction(Icons.push_pin_outlined,   'Pin',    color: _blue),
                     const SizedBox(width: 24),
-                    _infoAction(Icons.exit_to_app,         'Leave',    color: _red),
+                    _infoAction(Icons.exit_to_app,         'Leave',  color: _red),
                   ],
                 ),
               ],
@@ -632,19 +629,18 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }
 
   void _showMoreMenu() {
-    final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
-      backgroundColor: cs.surface,
+      backgroundColor: AppColors.current.surface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (_) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          _menuItem(Icons.search,                    'Search in Conversation',  cs.onSurface),
-          _menuItem(Icons.notifications_outlined,    'Mute Notifications',      cs.onSurface),
-          _menuItem(Icons.push_pin_outlined,         'Pin Conversation',        cs.onSurface),
-          _menuItem(Icons.delete_outline,            'Delete Conversation',     _red),
+          _menuItem(Icons.search,                 'Search in Conversation', AppColors.current.textPrimary),
+          _menuItem(Icons.notifications_outlined, 'Mute Notifications',    AppColors.current.textPrimary),
+          _menuItem(Icons.push_pin_outlined,      'Pin Conversation',      AppColors.current.textPrimary),
+          _menuItem(Icons.delete_outline,         'Delete Conversation',   _red),
         ]),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
+import '../../app/theme/theme_provider.dart';
 import '../models/roster_member.dart';
 import '../constants/app_assets.dart';
 import 'custom_svg_icon.dart';
@@ -77,35 +78,6 @@ class AppBottomNavBar extends StatelessWidget {
   }
 }
 
-class _Badge extends StatelessWidget {
-  final int count;
-  const _Badge({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 16),
-      height: 16,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        color: AppColors.current.error,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.current.white, width: 1.5),
-      ),
-      child: Center(
-        child: Text(
-          count > 99 ? '99+' : '$count',
-          style: TextStyle(
-            color: AppColors.current.white,
-            fontSize: 9,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ─── App Header ───────────────────────────────────────────────────────────────
 
 class AppHeader extends StatelessWidget {
@@ -168,11 +140,16 @@ class AppHeader extends StatelessWidget {
               ],
             ),
           ),
-          const Spacer(),
-          const CustomSvgIcon(
-            assetPath: AppAssets.plusIcon,
-            color: textColor,
-            size: 18,
+           Spacer(),
+          InkWell(
+            onTap: (){
+              themeModeProvider.
+            },
+            child: const CustomSvgIcon(
+              assetPath: AppAssets.plusIcon,
+              color: textColor,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 16),
           GestureDetector(
@@ -190,292 +167,3 @@ class AppHeader extends StatelessWidget {
 }
 
 // ─── Section Header ───────────────────────────────────────────────────────────
-
-class SectionHeader extends StatelessWidget {
-  final String title;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-  final int? count;
-
-  const SectionHeader({
-    super.key,
-    required this.title,
-    this.actionLabel,
-    this.onAction,
-    this.count,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(title, style: AppTextStyles.headlineSmall),
-        if (count != null) ...[
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.current.gray100,
-              borderRadius: BorderRadius.circular(99),
-            ),
-            child: Text('$count',
-                style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.current.gray500)),
-          ),
-        ],
-        const Spacer(),
-        if (actionLabel != null)
-          GestureDetector(
-            onTap: onAction,
-            child: Text(
-              actionLabel!,
-              style: AppTextStyles.labelLarge.copyWith(color: AppColors.current.primary),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-// ─── Stat Card ────────────────────────────────────────────────────────────────
-
-class StatCard extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-  final Color color;
-
-  const StatCard({
-    super.key,
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.current.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(height: 10),
-          Text(value,
-              style: AppTextStyles.displayMedium.copyWith(fontSize: 22)),
-          Text(label, style: AppTextStyles.labelSmall),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Member Avatar ────────────────────────────────────────────────────────────
-
-class MemberAvatar extends StatelessWidget {
-  final RosterMember member;
-  final double radius;
-  final bool showJerseyBadge;
-  final bool showOnlineIndicator;
-  final bool isOnline;
-
-  const MemberAvatar({
-    super.key,
-    required this.member,
-    this.radius = 22,
-    this.showJerseyBadge = true,
-    this.showOnlineIndicator = false,
-    this.isOnline = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        CircleAvatar(
-          radius: radius,
-          backgroundColor: member.avatarColor.withOpacity(0.15),
-          child: Text(
-            member.initials,
-            style: TextStyle(
-              color: member.avatarColor,
-              fontSize: radius * 0.65,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        if (showJerseyBadge && member.jerseyNumber != null)
-          Positioned(
-            bottom: -3,
-            right: -6,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(
-                color: AppColors.current.primary,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.current.white, width: 1.5),
-              ),
-              child: Text(
-                '#${member.jerseyNumber}',
-                style: TextStyle(
-                  color: AppColors.current.white,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-        if (showOnlineIndicator)
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: isOnline ? AppColors.current.success : AppColors.current.gray400,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.current.white, width: 2),
-              ),
-            ),
-          ),
-        if (!member.isActive)
-          Positioned(
-            top: -3,
-            right: -3,
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: AppColors.current.gray400,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.current.white, width: 1.5),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-
-class StatusBadge extends StatelessWidget {
-  final String label;
-  final Color color;
-  final bool small;
-
-  const StatusBadge({
-    super.key,
-    required this.label,
-    required this.color,
-    this.small = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: small ? 6 : 8,
-        vertical: small ? 2 : 3,
-      ),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: small ? 10 : 12,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Empty State ──────────────────────────────────────────────────────────────
-
-class EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final Widget? action;
-
-  const EmptyState({
-    super.key,
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.action,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 56, color: AppColors.current.gray300),
-            const SizedBox(height: 12),
-            Text(title,
-                style: AppTextStyles.titleMedium.copyWith(color: AppColors.current.gray500),
-                textAlign: TextAlign.center),
-            if (subtitle != null) ...[
-              const SizedBox(height: 4),
-              Text(subtitle!, style: AppTextStyles.bodySmall, textAlign: TextAlign.center),
-            ],
-            if (action != null) ...[
-              const SizedBox(height: 20),
-              action!,
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Drag Handle ─────────────────────────────────────────────────────────────
-
-class DragHandle extends StatelessWidget {
-  const DragHandle({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 40,
-        height: 4,
-        margin: const EdgeInsets.only(top: 12, bottom: 8),
-        decoration: BoxDecoration(
-          color: AppColors.current.gray100,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
-}

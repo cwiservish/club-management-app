@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 
-/// A 77-px info row used in the member detail screen.
-/// Shows [primary] text (large) + [secondary] text (small) + a right chevron.
 class RosterInfoRow extends StatelessWidget {
   final String primary;
   final String? secondary;
@@ -17,20 +16,15 @@ class RosterInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         height: 77,
         decoration: BoxDecoration(
-          color: colorScheme.surface,
+          color: AppColors.current.surface,
           border: Border(
-            bottom: BorderSide(
-              color: colorScheme.surfaceContainerHighest,
-              width: 1,
-            ),
+            bottom: BorderSide(color: AppColors.current.card, width: 1),
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -43,9 +37,7 @@ class RosterInfoRow extends StatelessWidget {
                 children: [
                   Text(
                     primary,
-                    style: AppTextStyles.body16.copyWith(
-                      color: colorScheme.onSurface,
-                    ),
+                    style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -54,8 +46,7 @@ class RosterInfoRow extends StatelessWidget {
                     Text(
                       secondary!,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.55),
-                      ),
+                          color: AppColors.current.textPrimary.withOpacity(0.55)),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -63,11 +54,8 @@ class RosterInfoRow extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.onSurface.withOpacity(0.35),
-              size: 20,
-            ),
+            Icon(Icons.chevron_right,
+                color: AppColors.current.textPrimary.withOpacity(0.35), size: 20),
           ],
         ),
       ),
@@ -75,7 +63,6 @@ class RosterInfoRow extends StatelessWidget {
   }
 }
 
-/// A highlighted nav row (grey bg + bottom border) — e.g. "Statistics".
 class RosterNavRow extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
@@ -84,17 +71,15 @@ class RosterNavRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         height: 77,
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
+          color: AppColors.current.card,
           border: Border(
-            bottom: BorderSide(color: colorScheme.outline, width: 1),
+            bottom: BorderSide(color: AppColors.current.border, width: 1),
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -103,16 +88,11 @@ class RosterNavRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: AppTextStyles.body16.copyWith(
-                  color: colorScheme.onSurface,
-                ),
+                style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary),
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.onSurface.withOpacity(0.35),
-              size: 20,
-            ),
+            Icon(Icons.chevron_right,
+                color: AppColors.current.textPrimary.withOpacity(0.35), size: 20),
           ],
         ),
       ),
@@ -120,7 +100,6 @@ class RosterNavRow extends StatelessWidget {
   }
 }
 
-/// Small inline link text — "+ Add Family Member".
 class RosterActionLink extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
@@ -129,17 +108,15 @@ class RosterActionLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        color: Theme.of(context).colorScheme.surface,
+        color: AppColors.current.surface,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Text(
           label,
-          style: AppTextStyles.overline.copyWith(color: primary),
+          style: AppTextStyles.overline.copyWith(color: AppColors.current.primary),
         ),
       ),
     );

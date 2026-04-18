@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_text_styles.dart';
 import '../providers/schedule_provider.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import '../widgets/schedule_event_card.dart';
 import '../widgets/schedule_section_header.dart';
 import '../../../core/models/club_event.dart';
-import '../../../app/theme/app_text_styles.dart';
 
 class ScheduleScreen extends ConsumerWidget {
   const ScheduleScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state       = ref.watch(scheduleProvider);
-    final colorScheme = Theme.of(context).colorScheme;
-
+    final state         = ref.watch(scheduleProvider);
     final groupedEvents = _groupEventsByMonth(state.filtered);
     final sortedMonths  = groupedEvents.keys.toList()
       ..sort((a, b) => (a.year != b.year)
@@ -22,15 +21,14 @@ class ScheduleScreen extends ConsumerWidget {
           : a.month.compareTo(b.month));
 
     return Scaffold(
-      // Match the Figma bg: white between/around cards
-      backgroundColor: colorScheme.surface,
+      backgroundColor: AppColors.current.surface,
       body: SafeArea(
         child: Column(
           children: [
             const AppHeader(),
             Expanded(
               child: state.filtered.isEmpty
-                  ? _buildEmptyState(context)
+                  ? _buildEmptyState()
                   : ListView.builder(
                       padding: EdgeInsets.zero,
                       itemCount: sortedMonths.length,
@@ -42,30 +40,10 @@ class ScheduleScreen extends ConsumerWidget {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ── Blue month header ───────────────────────────
                             ScheduleSectionHeader(title: monthName),
-
-                            // ── White gap between header and first card ─────
-                            // Matches Figma "Group 773 / Rectangle 267" 21 px
-                            // white divider row above the cards.
-                            Container(
-                              height: 9,
-                              color: colorScheme.surface,
-                            ),
-
-                            // ── Event cards ─────────────────────────────────
-                            // Each card already adds 9 px top + 9 px bottom
-                            // padding as its own white gap, so consecutive
-                            // cards share an 18 px gap which is visually clean.
-                            ...monthEvents.map(
-                              (event) => ScheduleEventCard(event: event),
-                            ),
-
-                            // ── Extra white gap after last card in section ──
-                            Container(
-                              height: 12,
-                              color: colorScheme.surface,
-                            ),
+                            Container(height: 9, color: AppColors.current.surface),
+                            ...monthEvents.map((e) => ScheduleEventCard(event: e)),
+                            Container(height: 12, color: AppColors.current.surface),
                           ],
                         );
                       },
@@ -89,24 +67,17 @@ class ScheduleScreen extends ConsumerWidget {
     return groups;
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.calendar_today_outlined,
-            size: 48,
-            color: colorScheme.onSurface.withOpacity(0.25),
-          ),
+          Icon(Icons.calendar_today_outlined, size: 48,
+              color: AppColors.current.textPrimary.withOpacity(0.25)),
           const SizedBox(height: 16),
-          Text(
-            'No events scheduled',
-            style: AppTextStyles.titleMedium.copyWith(
-              color: colorScheme.onSurface.withOpacity(0.45),
-            ),
-          ),
+          Text('No events scheduled',
+              style: AppTextStyles.titleMedium.copyWith(
+                  color: AppColors.current.textPrimary.withOpacity(0.45))),
         ],
       ),
     );

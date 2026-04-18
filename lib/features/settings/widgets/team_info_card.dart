@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 
 class TeamInfoCard extends StatelessWidget {
@@ -13,14 +14,12 @@ class TeamInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
       width: double.infinity,
       height: 88,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
+        color: AppColors.current.card,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -29,7 +28,7 @@ class TeamInfoCard extends StatelessWidget {
             width: 54,
             height: 54,
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainer,
+              color: AppColors.current.card,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -38,7 +37,7 @@ class TeamInfoCard extends StatelessWidget {
                 style: AppTextStyles.headlineMedium.copyWith(
                   fontWeight: FontWeight.w900,
                   fontStyle: FontStyle.italic,
-                  color: colorScheme.onSurfaceVariant,
+                  color: AppColors.current.textSecondary,
                 ),
               ),
             ),
@@ -48,19 +47,11 @@ class TeamInfoCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                teamName,
-                style: AppTextStyles.body16.copyWith(
-                  color: colorScheme.onSurface,
-                ),
-              ),
+              Text(teamName,
+                  style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary)),
               const SizedBox(height: 4),
-              Text(
-                record,
-                style: AppTextStyles.body14.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
+              Text(record,
+                  style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary)),
             ],
           ),
         ],

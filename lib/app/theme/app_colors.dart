@@ -11,11 +11,10 @@ class AppColors {
   final Brightness brightness;
 
   // Theme-dependent
-  final Color bg;
+  final Color background;
   final Color card;
   final Color border;
   final Color surface;
-  final Color divider;
   final Color textPrimary;
   final Color textSecondary;
 
@@ -44,11 +43,10 @@ class AppColors {
 
   const AppColors({
     required this.brightness,
-    required this.bg,
+    required this.background,
     required this.card,
     required this.border,
     required this.surface,
-    required this.divider,
     required this.textPrimary,
     required this.textSecondary,
     required this.primary,
@@ -78,11 +76,10 @@ class AppColors {
 
   static const AppColors light = AppColors(
     brightness: Brightness.light,
-    bg: Color(0xFFFFFFFF),
+    background: Color(0xFFFFFFFF),
     card: Color(0xFFF4F4F4),
     border: Color(0xFFE5E5E5),
     surface: Color(0xFFFFFFFF),
-    divider: Color(0xFFF3F4F6),
     textPrimary: Color(0xFF20242A),
     textSecondary: Color(0x9920242A),
     primary: Color(0xFF008CFF),
@@ -108,11 +105,10 @@ class AppColors {
 
   static const AppColors dark = AppColors(
     brightness: Brightness.dark,
-    bg: Color(0xFF191C20),
+    background: Color(0xFF191C20),
     card: Color(0xFF2B3038),
     border: Color(0xFF333842),
     surface: Color(0xFF1E293B),
-    divider: Color(0xFF334155),
     textPrimary: Color(0xFFFFFFFF),
     textSecondary: Color(0xB3FFFFFF),
     primary: Color(0xFF008CFF),

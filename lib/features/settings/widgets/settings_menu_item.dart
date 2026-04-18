@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 
 class SettingsMenuItem extends StatelessWidget {
@@ -9,8 +10,6 @@ class SettingsMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -19,23 +18,15 @@ class SettingsMenuItem extends StatelessWidget {
         height: 37,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
+          color: AppColors.current.card,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: AppTextStyles.body16.copyWith(
-                color: colorScheme.onSurface,
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.onSurfaceVariant,
-              size: 20,
-            ),
+            Text(title,
+                style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary)),
+            Icon(Icons.chevron_right, color: AppColors.current.textSecondary, size: 20),
           ],
         ),
       ),

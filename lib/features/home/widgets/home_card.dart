@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../providers/home_provider.dart';
 import 'rsvp_row.dart';
 import 'map_section.dart';
 
 // ─── Home Card ────────────────────────────────────────────────────────────────
-// Pure display widget — receives a pre-computed HomeCardViewModel.
-// All RSVP toggle and count logic lives in HomeNotifier (home_provider.dart).
 
 class HomeCard extends ConsumerWidget {
   final HomeCardViewModel viewModel;
@@ -21,8 +20,6 @@ class HomeCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Padding(
       padding: const EdgeInsets.all(13.0),
       child: Center(
@@ -31,38 +28,24 @@ class HomeCard extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ── White top section ────────────────────────────────────────
               Container(
                 width: double.infinity,
-                color: colorScheme.surface,
+                color: AppColors.current.surface,
                 padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      viewModel.date,
-                      style: AppTextStyles.body16
-                          .copyWith(color: colorScheme.onSurface),
-                    ),
-                    Text(
-                      viewModel.timeRange,
-                      style: AppTextStyles.body16
-                          .copyWith(color: colorScheme.onSurface),
-                    ),
-                    Text(
-                      viewModel.type,
-                      style: AppTextStyles.body16
-                          .copyWith(color: colorScheme.onSurface),
-                    ),
-                    Text(
-                      viewModel.location,
-                      style: AppTextStyles.body16
-                          .copyWith(color: colorScheme.onSurface),
-                    ),
+                    Text(viewModel.date,
+                        style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary)),
+                    Text(viewModel.timeRange,
+                        style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary)),
+                    Text(viewModel.type,
+                        style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary)),
+                    Text(viewModel.location,
+                        style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary)),
 
                     const SizedBox(height: 14),
 
-                    // RSVP row — delegates tap to provider
                     RsvpRow(
                       goingCount: viewModel.goingCount,
                       maybeCount: viewModel.maybeCount,
@@ -80,7 +63,7 @@ class HomeCard extends ConsumerWidget {
                       child: Text(
                         'Event Details',
                         style: AppTextStyles.bodySmall.copyWith(
-                          color:      colorScheme.primary,
+                          color:      AppColors.current.primary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -88,8 +71,6 @@ class HomeCard extends ConsumerWidget {
                   ],
                 ),
               ),
-
-              // ── Map section ──────────────────────────────────────────────
               const MapSection(),
             ],
           ),

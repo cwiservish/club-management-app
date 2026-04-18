@@ -16,19 +16,8 @@ class Playbook365App extends ConsumerWidget {
       title: 'Playbook365',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.current.primary,
-          brightness: AppColors.current.brightness,
-          primary: AppColors.current.primary,
-          surface: AppColors.current.surface,
-          onSurface: AppColors.current.textPrimary,
-          surfaceContainerHighest: AppColors.current.card,
-          surfaceContainer: AppColors.current.card,
-          onSurfaceVariant: AppColors.current.textSecondary,
-          outline: AppColors.current.border,
-        ),
         fontFamily: 'Inter',
-        scaffoldBackgroundColor: AppColors.current.bg,
+        scaffoldBackgroundColor: AppColors.current.background,
       ),
       routerConfig: ref.watch(appRouterProvider),
     );

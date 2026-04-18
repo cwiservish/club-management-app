@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 
-/// Blue 29-px section header inside the member detail screen
-/// (e.g. "Contact Information"). No action label on the right.
 class RosterDetailSectionHeader extends StatelessWidget {
   final String title;
-
   const RosterDetailSectionHeader({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 29,
-      color: Theme.of(context).colorScheme.primary,
+      color: AppColors.current.primary,
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
@@ -26,7 +24,6 @@ class RosterDetailSectionHeader extends StatelessWidget {
   }
 }
 
-/// Blue 29-px top-bar inside the detail screen: "< Rosters" + optional action.
 class RosterDetailTopBar extends StatelessWidget {
   final String backLabel;
   final String? actionLabel;
@@ -43,11 +40,9 @@ class RosterDetailTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-
     return Container(
       height: 29,
-      color: primary,
+      color: AppColors.current.primary,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
@@ -71,9 +66,7 @@ class RosterDetailTopBar extends StatelessWidget {
           if (actionLabel != null)
             Text(
               actionLabel!,
-              style: AppTextStyles.overline.copyWith(
-                color: actionColor,
-              ),
+              style: AppTextStyles.overline.copyWith(color: actionColor),
             ),
         ],
       ),

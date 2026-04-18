@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 
-/// Blue 29-px section header used on the roster list.
-/// Shows [title] + member [count] on the left, and a [actionLabel] on the right.
 class RosterSectionHeader extends StatelessWidget {
   final String title;
   final int count;
@@ -17,11 +16,9 @@ class RosterSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-
     return Container(
       height: 29,
-      color: primary,
+      color: AppColors.current.primary,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [

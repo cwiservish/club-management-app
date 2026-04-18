@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/enums/member_role.dart';
 import '../../../core/models/roster_member.dart';
@@ -22,7 +23,7 @@ class RosterScreen extends ConsumerWidget {
     final staff   = state.filtered.where((m) => m.role == MemberRole.staff).toList();
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: AppColors.current.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -69,11 +70,10 @@ class _MemberDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final contactName = member.parentName ?? member.fullName;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: AppColors.current.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -122,11 +122,10 @@ class _MemberPhoto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 183,
       width: double.infinity,
-      color: colorScheme.surfaceContainerHighest,
+      color: AppColors.current.card,
       alignment: Alignment.center,
       child: Text(
         member.initials,
@@ -134,7 +133,7 @@ class _MemberPhoto extends StatelessWidget {
           fontFamily: AppTextStyles.fontFamily,
           fontSize: 72,
           fontWeight: FontWeight.w900,
-          color: colorScheme.onSurface.withOpacity(0.15),
+          color: AppColors.current.textPrimary.withOpacity(0.15),
         ),
       ),
     );

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/roster_member.dart';
 
-/// A single 77-px roster list row: avatar circle + name/jersey + chevron.
 class RosterListRow extends StatelessWidget {
   final RosterMember member;
   final VoidCallback onTap;
@@ -11,44 +11,36 @@ class RosterListRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         height: 77,
         decoration: BoxDecoration(
-          color: colorScheme.surface,
+          color: AppColors.current.surface,
           border: Border(
-            bottom: BorderSide(
-              color: colorScheme.surfaceContainerHighest,
-              width: 1,
-            ),
+            bottom: BorderSide(color: AppColors.current.card, width: 1),
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            // Avatar
             Container(
               width: 54,
               height: 54,
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainer,
+                color: AppColors.current.card,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
               child: Text(
                 member.initials,
                 style: AppTextStyles.headlineMedium.copyWith(
-                  color: colorScheme.onSurface,
+                  color: AppColors.current.textPrimary,
                 ),
               ),
             ),
             const SizedBox(width: 16),
-
-            // Name + jersey / staff title
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -56,9 +48,7 @@ class RosterListRow extends StatelessWidget {
                 children: [
                   Text(
                     member.fullName,
-                    style: AppTextStyles.body16.copyWith(
-                      color: colorScheme.onSurface,
-                    ),
+                    style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -68,19 +58,13 @@ class RosterListRow extends StatelessWidget {
                         ? '#${member.jerseyNumber}'
                         : member.staffTitle ?? '',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.6),
-                    ),
+                        color: AppColors.current.textPrimary.withOpacity(0.6)),
                   ),
                 ],
               ),
             ),
-
-            // Chevron
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.onSurface.withOpacity(0.35),
-              size: 20,
-            ),
+            Icon(Icons.chevron_right,
+                color: AppColors.current.textPrimary.withOpacity(0.35), size: 20),
           ],
         ),
       ),
