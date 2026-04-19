@@ -9,7 +9,7 @@ import '../../../core/common_providers/theme_provider.dart';
 import '../../../core/enums/message_type.dart';
 import '../../../core/enums/thread_type.dart';
 import '../../../core/models/chat_models.dart';
-import '../../../core/widgets/app_header.dart';
+import '../../../core/shared_widgets/app_header.dart';
 import '../providers/messages_provider.dart';
 import '../widgets/message_thread_row.dart';
 

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import '../core/common_providers/theme_provider.dart';
-import '../core/widgets/app_bottom_nav_bar.dart';
+import '../core/shared_widgets/app_bottom_nav_bar.dart';
 import '../features/messages/providers/unread_count_provider.dart';
 
 /// Playbook365 — App Shell

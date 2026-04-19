@@ -5,7 +5,8 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/common_providers/theme_provider.dart';
-import '../../../core/widgets/sub_header.dart';
+import '../../../core/shared_widgets/sub_header.dart';
+import '../../../core/shared_widgets/app_header.dart';
 import 'event_details_tab_page.dart';
 import 'event_availability_tab_page.dart';
 import 'event_assignment_tab_page.dart';
@@ -35,6 +36,9 @@ class EventDetailPage extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
+            // ── App header ───────────────────────────────────────────────────
+            const AppHeader(),
+
             // ── Sub-header ───────────────────────────────────────────────────
             SubHeader(
               title: 'Event Details',
