@@ -150,7 +150,7 @@ class AppColors {
     sectionHeaderBg: Color(0xFF2B3038),
     textPrimary: Color(0xFFFFFFFF),
     textSecondary: Color(0xFF94A3B8),
-    primary: Color(0xFF008CFF),
+    primary: Color(0xFFF7CE03),
     primaryLight: Color(0xFF0A2540),
     navActive: Color(0xFFF7CE03),
     actionAccent: Color(0xFFFED52C),
