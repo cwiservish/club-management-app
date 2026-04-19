@@ -14,6 +14,7 @@ import '../../features/roster/pages/roster_page.dart';
 import '../../features/schedule/pages/event_detail_page.dart';
 import '../../features/schedule/pages/event_form_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
+import '../../features/event_details/pages/event_detail_page.dart' as ed;
 import '../../shell/app_shell.dart';
 import 'app_routes.dart';
 
@@ -66,6 +67,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.home,
                 builder: (context, state) => const HomeScreen(),
+                routes: [
+                  GoRoute(
+                    path: '${AppRoutes.eventDetailBase}/${AppRoutes.eventDetailDetails}',
+                    builder: (context, state) => ed.EventDetailPage(
+                      eventId: state.pathParameters['eventId']!,
+                      activeTab: ed.EventDetailTab.details,
+                    ),
+                  ),
+                  GoRoute(
+                    path: '${AppRoutes.eventDetailBase}/${AppRoutes.eventDetailAvailability}',
+                    builder: (context, state) => ed.EventDetailPage(
+                      eventId: state.pathParameters['eventId']!,
+                      activeTab: ed.EventDetailTab.availability,
+                    ),
+                  ),
+                  GoRoute(
+                    path: '${AppRoutes.eventDetailBase}/${AppRoutes.eventDetailAssignments}',
+                    builder: (context, state) => ed.EventDetailPage(
+                      eventId: state.pathParameters['eventId']!,
+                      activeTab: ed.EventDetailTab.assignments,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

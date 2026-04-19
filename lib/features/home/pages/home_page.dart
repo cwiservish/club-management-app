@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/common_providers/theme_provider.dart';
@@ -33,7 +35,8 @@ class HomeScreen extends ConsumerWidget {
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (_, i) => HomeCard(
                         viewModel: viewModels[i],
-                        onEventDetails: () {},
+                        onEventDetails: () =>
+                            context.push(AppRoutes.eventDetails(viewModels[i].id)),
                       ),
                     ),
             ),
