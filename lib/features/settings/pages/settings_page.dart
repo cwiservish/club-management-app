@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/common_providers/theme_provider.dart';
-import '../../../core/widgets/shared_widgets.dart';
+import '../../../core/widgets/app_header.dart';
 import '../widgets/team_info_card.dart';
 import '../widgets/settings_menu_item.dart';
 

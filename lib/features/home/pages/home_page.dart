@@ -5,7 +5,7 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/common_providers/theme_provider.dart';
-import '../../../core/widgets/shared_widgets.dart';
+import '../../../core/widgets/app_header.dart';
 import '../providers/home_provider.dart';
 import '../widgets/home_card.dart';
 

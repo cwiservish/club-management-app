@@ -4,7 +4,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/enums/member_role.dart';
 import '../../../core/models/roster_member.dart';
-import '../../../core/widgets/shared_widgets.dart';
+import '../../../core/widgets/app_header.dart';
 import '../../../core/common_providers/theme_provider.dart';
 import '../providers/roster_provider.dart';
 import '../widgets/roster_detail_headers.dart';
