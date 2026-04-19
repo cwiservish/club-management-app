@@ -70,23 +70,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: '${AppRoutes.eventDetailBase}/${AppRoutes.eventDetailDetails}',
-                    builder: (context, state) => ed.EventDetailPage(
-                      eventId: state.pathParameters['eventId']!,
-                      activeTab: ed.EventDetailTab.details,
+                    pageBuilder: (context, state) => NoTransitionPage(
+                      child: ed.EventDetailPage(
+                        eventId: state.pathParameters['eventId']!,
+                        activeTab: ed.EventDetailTab.details,
+                      ),
                     ),
                   ),
                   GoRoute(
                     path: '${AppRoutes.eventDetailBase}/${AppRoutes.eventDetailAvailability}',
-                    builder: (context, state) => ed.EventDetailPage(
-                      eventId: state.pathParameters['eventId']!,
-                      activeTab: ed.EventDetailTab.availability,
+                    pageBuilder: (context, state) => NoTransitionPage(
+                      child: ed.EventDetailPage(
+                        eventId: state.pathParameters['eventId']!,
+                        activeTab: ed.EventDetailTab.availability,
+                      ),
                     ),
                   ),
                   GoRoute(
                     path: '${AppRoutes.eventDetailBase}/${AppRoutes.eventDetailAssignments}',
-                    builder: (context, state) => ed.EventDetailPage(
-                      eventId: state.pathParameters['eventId']!,
-                      activeTab: ed.EventDetailTab.assignments,
+                    pageBuilder: (context, state) => NoTransitionPage(
+                      child: ed.EventDetailPage(
+                        eventId: state.pathParameters['eventId']!,
+                        activeTab: ed.EventDetailTab.assignments,
+                      ),
                     ),
                   ),
                 ],
