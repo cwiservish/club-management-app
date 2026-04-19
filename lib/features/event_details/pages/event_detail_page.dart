@@ -43,7 +43,7 @@ class EventDetailPage extends ConsumerWidget {
             SubHeader(
               title: 'Event Details',
               rightText: 'Edit',
-              onRightTap: () {},
+              onRightTap: () => context.push(AppRoutes.eventEdit(eventId)),
             ),
 
             // ── Tab bar ──────────────────────────────────────────────────────

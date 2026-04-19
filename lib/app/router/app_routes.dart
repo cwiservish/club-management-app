@@ -20,7 +20,10 @@ abstract class AppRoutes {
   static const eventDetailAvailability = 'availability';
   static const eventDetailAssignments  = 'assignments';
 
+  static const eventDetailEdit = 'edit';
+
   static String eventDetails(String id)      => '/home/event/$id/details';
   static String eventAvailability(String id) => '/home/event/$id/availability';
   static String eventAssignments(String id)  => '/home/event/$id/assignments';
+  static String eventEdit(String id)         => '/home/event/$id/edit';
 }
