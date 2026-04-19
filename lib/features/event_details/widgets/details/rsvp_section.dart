@@ -19,7 +19,7 @@ class RsvpSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colors.card,
+        color: colors.background,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colors.border.withValues(alpha: 0.5)),
       ),
@@ -100,7 +100,7 @@ class _RsvpButton extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           alignment: Alignment.center,
-          color: isActive ? activeColor : colors.background,
+          color: isActive ? activeColor : colors.card,
           child: Text(
             label,
             style: AppTextStyles.heading14.copyWith(

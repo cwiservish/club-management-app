@@ -18,7 +18,7 @@ class EventAvailabilityTabPage extends ConsumerWidget {
     final colors = AppColors.current;
 
     return ColoredBox(
-      color: colors.background,
+      color: colors.card,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -62,7 +62,7 @@ class EventAvailabilityTabPage extends ConsumerWidget {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: colors.card,
+      backgroundColor: colors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -155,7 +155,7 @@ class _StatusOption extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           alignment: Alignment.center,
-          color: isActive ? activeColor : colors.background,
+          color: isActive ? activeColor : colors.card,
           child: Text(
             label,
             style: AppTextStyles.heading14.copyWith(

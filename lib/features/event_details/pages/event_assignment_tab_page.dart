@@ -10,7 +10,7 @@ class EventAssignmentTabPage extends StatelessWidget {
     final colors = AppColors.current;
 
     return ColoredBox(
-      color: colors.background,
+      color: colors.card,
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),

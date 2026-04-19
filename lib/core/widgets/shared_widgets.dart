@@ -40,41 +40,58 @@ class AppBottomNavBar extends StatelessWidget {
     final activeColor = AppColors.current.navActive;
     final inactiveColor = AppColors.current.textPrimary;
 
-    return Container(
-      color: AppColors.current.surface,
-      child: Row(
-        children: List.generate(_items.length, (i) {
-          final isActive = i == currentIndex;
-          final item = _items[i];
-          final color = isActive ? activeColor : inactiveColor;
-          final background = isActive ? activeBgColor : inactiveBgColor;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
 
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onTap(i),
-              child: Container(
-                height: 93,
-                color: background,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CustomSvgIcon(assetPath: item.$1, color: color, size: 24),
-                    const SizedBox(height: 12),
-                    Text(
-                      item.$2,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Inter',
-                      ),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.current.surface,
+        border: Border(
+          top: BorderSide(color: AppColors.current.border, width: 1),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: List.generate(_items.length, (i) {
+              final isActive = i == currentIndex;
+              final item = _items[i];
+              final color = isActive ? activeColor : inactiveColor;
+              final background = isActive ? activeBgColor : inactiveBgColor;
+
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onTap(i),
+                  child: Container(
+                    height: 93,
+                    color: background,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CustomSvgIcon(assetPath: item.$1, color: color, size: 24),
+                        const SizedBox(height: 12),
+                        Text(
+                          item.$2,
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              );
+            }),
+          ),
+          if (bottomInset > 0)
+            Container(
+              height: bottomInset,
+              color: AppColors.current.surface,
             ),
-          );
-        }),
+        ],
       ),
     );
   }

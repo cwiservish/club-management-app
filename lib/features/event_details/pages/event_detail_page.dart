@@ -31,7 +31,7 @@ class EventDetailPage extends ConsumerWidget {
     final colors = AppColors.current;
 
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: colors.card,
       body: SafeArea(
         child: Column(
           children: [
@@ -76,7 +76,7 @@ class EventDetailTabBar extends StatelessWidget {
     final colors = AppColors.current;
 
     return Container(
-      color: colors.card,
+      color: colors.background,
       child: Row(
         children: [
           EventDetailTabItem(

@@ -35,7 +35,7 @@ class PlayerGroup extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 12),
           decoration: BoxDecoration(
-            color: colors.background,
+            color: colors.card,
             border: Border(
               top: BorderSide(color: colors.border.withValues(alpha: 0.5)),
               bottom: BorderSide(color: colors.border.withValues(alpha: 0.5)),
@@ -57,7 +57,7 @@ class PlayerGroup extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: colors.card,
+                      color: colors.background,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
@@ -82,7 +82,7 @@ class PlayerGroup extends StatelessWidget {
 
         // ── Player rows ─────────────────────────────────────────────────────
         Container(
-          color: colors.card,
+          color: colors.background,
           child: Column(
             children: players
                 .map((p) => PlayerRow(

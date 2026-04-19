@@ -50,7 +50,7 @@ class EventDetailsTabPage extends ConsumerWidget {
               ),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: colors.border),
-                backgroundColor: colors.card,
+                backgroundColor: colors.background,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

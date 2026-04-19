@@ -16,7 +16,7 @@ class EventHeaderCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colors.card,
+        color: colors.background,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colors.border.withValues(alpha: 0.5)),
       ),
@@ -26,7 +26,7 @@ class EventHeaderCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: colors.background,
+              color: colors.card,
               shape: BoxShape.circle,
             ),
             child: Icon(

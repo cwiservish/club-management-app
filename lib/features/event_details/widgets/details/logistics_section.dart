@@ -19,7 +19,7 @@ class LogisticsSection extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: colors.card,
+        color: colors.background,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colors.border.withValues(alpha: 0.5)),
       ),
