@@ -75,6 +75,14 @@ class AppTextStyles {
         height: 1.3,
       );
 
+  static TextStyle get body15 => TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        color: AppColors.current.gray900,
+        height: 1.4,
+      );
+
   static TextStyle get body14 => TextStyle(
         fontFamily: fontFamily,
         fontSize: 14,
@@ -130,5 +138,13 @@ class AppTextStyles {
         fontWeight: FontWeight.w700,
         color: AppColors.current.gray900,
         height: 1.1,
+      );
+    
+  static TextStyle get buttonLabel => TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: AppColors.current.textSecondary,
+        letterSpacing: 0.5,
       );
 }

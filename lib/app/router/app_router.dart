@@ -9,6 +9,7 @@ import '../../features/splash/pages/splash_page.dart';
 import '../../features/home/pages/home_page.dart';
 import '../../features/settings/pages/settings_page.dart';
 import '../../features/messages/pages/messages_page.dart';
+import '../../features/messages/pages/chat_detail_page.dart';
 import '../../features/roster/pages/attendance_history_page.dart';
 import '../../features/roster/pages/roster_page.dart';
 import '../../features/schedule/pages/event_detail_page.dart';

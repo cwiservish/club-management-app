@@ -30,19 +30,18 @@ class MessageThreadRow extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 60,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: AppColors.current.surface,
           border: Border(
-            bottom: BorderSide(color: AppColors.current.card, width: 1),
+            bottom: BorderSide(color: AppColors.current.border, width: 0.5),
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 54,
+              height: 54,
               decoration: BoxDecoration(
                 color: AppColors.current.card,
                 shape: BoxShape.circle,
@@ -53,36 +52,55 @@ class MessageThreadRow extends StatelessWidget {
                     ? Icons.group_outlined
                     : Icons.person_outline,
                 color: AppColors.current.textSecondary,
-                size: 20,
+                size: 26,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(thread.name,
-                      style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 1),
-                  Text(thread.lastMessage,
-                      style: AppTextStyles.body13.copyWith(
-                          color: AppColors.current.textPrimary.withOpacity(0.6)),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          thread.name,
+                          style: AppTextStyles.body16.copyWith(
+                            color: AppColors.current.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        formatRelativeTime(thread.lastMessageTime),
+                        style: AppTextStyles.label12.copyWith(
+                          color: AppColors.current.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    thread.lastMessage,
+                    style: AppTextStyles.body14.copyWith(
+                      color: AppColors.current.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              formatRelativeTime(thread.lastMessageTime),
-              style: AppTextStyles.label11.copyWith(
-                color: AppColors.current.textPrimary.withOpacity(0.55),
-                fontSize: 10,
-                fontWeight: FontWeight.w400,
-              ),
+            const SizedBox(width: 12),
+            Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: AppColors.current.border,
             ),
           ],
         ),
