@@ -105,7 +105,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   Widget build(BuildContext context) {
     ref.watch(themeModeProvider);
     return Scaffold(
-      backgroundColor: AppColors.current.background,
+      backgroundColor: AppColors.current.card,
       body: SafeArea(
         child: Column(
           children: [
@@ -257,12 +257,25 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         children: [
           if (!isMe) Padding(
             padding: const EdgeInsets.only(right: 12, top: 20),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: AppColors.current.card,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.current.surface,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.current.border, width: 0.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              alignment: Alignment.center,
               child: Text(msg.senderInitials,
                   style: AppTextStyles.label12.copyWith(
-                    color: AppColors.current.textPrimary,
+                    color: AppColors.current.textSecondary,
                     fontWeight: FontWeight.w700)),
             ),
           ),

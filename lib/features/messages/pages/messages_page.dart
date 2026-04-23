@@ -24,7 +24,7 @@ class MessagesScreen extends ConsumerWidget {
     final threads = state.filtered;
 
     return Scaffold(
-      backgroundColor: AppColors.current.surface,
+      backgroundColor: AppColors.current.card,
       body: SafeArea(
         child: Column(
           children: [
