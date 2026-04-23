@@ -12,19 +12,20 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
     final textColor = AppColors.current.textPrimary;
     final borderColor = AppColors.current.border;
     final pillBgColor = AppColors.current.card;
 
     return Container(
-      height: 53,
+      height: 53 + topPadding,
       decoration: BoxDecoration(
         color: AppColors.current.headerBg,
         border: Border(
           bottom: BorderSide(color: borderColor, width: 1.0),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.only(top: topPadding, left: 16, right: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [

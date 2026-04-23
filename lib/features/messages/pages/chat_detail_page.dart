@@ -107,6 +107,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.current.card,
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
             const AppHeader(),

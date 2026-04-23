@@ -26,6 +26,7 @@ class MessagesScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.current.card,
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
             const AppHeader(),
