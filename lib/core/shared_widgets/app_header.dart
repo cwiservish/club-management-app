@@ -5,6 +5,7 @@ import '../../app/theme/app_colors.dart';
 import '../common_providers/theme_provider.dart';
 import '../constants/app_assets.dart';
 import 'account_drawer.dart';
+import 'add_menu_dialog.dart';
 import 'custom_svg_icon.dart';
 
 class AppHeader extends StatelessWidget {
@@ -73,7 +74,7 @@ class AppHeader extends StatelessWidget {
           ),
           const Spacer(),
           InkWell(
-            onTap: toggleAppTheme,
+            onTap: () => showAddMenu(context),
             child: CustomSvgIcon(
               assetPath: AppAssets.plusIcon,
               color: textColor,
