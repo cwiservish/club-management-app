@@ -80,6 +80,28 @@ class ScheduleNotifier extends Notifier<ScheduleState> {
           DateTime(state.displayMonth.year, state.displayMonth.month + 1, 1));
   void setFilter(EventType? f) => state = state.copyWith(filter: f);
   void setMonthView(bool v) => state = state.copyWith(monthView: v);
+
+  void updateRsvp(String eventId, String status) {
+    // For now, assume current user ID is "me"
+    const currentUserId = "me";
+
+    final newEvents = state.events.map((e) {
+      if (e.id != eventId) return e;
+
+      // Remove current user from all lists first
+      final newYes = e.rsvpYes.where((id) => id != currentUserId).toList();
+      final newNo = e.rsvpNo.where((id) => id != currentUserId).toList();
+      final newMaybe = e.rsvpMaybe.where((id) => id != currentUserId).toList();
+
+      if (status == 'going') newYes.add(currentUserId);
+      if (status == 'no') newNo.add(currentUserId);
+      if (status == 'maybe') newMaybe.add(currentUserId);
+
+      return e.copyWith(rsvpYes: newYes, rsvpNo: newNo, rsvpMaybe: newMaybe);
+    }).toList();
+
+    state = state.copyWith(events: newEvents);
+  }
 }
 
 final scheduleServiceProvider =

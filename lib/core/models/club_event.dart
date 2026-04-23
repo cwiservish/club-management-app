@@ -35,6 +35,40 @@ class ClubEvent {
     this.rsvpMaybe = const [],
   });
 
+  ClubEvent copyWith({
+    String? id,
+    String? title,
+    String? subtitle,
+    DateTime? dateTime,
+    Duration? duration,
+    String? location,
+    EventType? type,
+    bool? isHome,
+    String? opponent,
+    bool? rsvpRequired,
+    String? notes,
+    List<String>? rsvpYes,
+    List<String>? rsvpNo,
+    List<String>? rsvpMaybe,
+  }) {
+    return ClubEvent(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      dateTime: dateTime ?? this.dateTime,
+      duration: duration ?? this.duration,
+      location: location ?? this.location,
+      type: type ?? this.type,
+      isHome: isHome ?? this.isHome,
+      opponent: opponent ?? this.opponent,
+      rsvpRequired: rsvpRequired ?? this.rsvpRequired,
+      notes: notes ?? this.notes,
+      rsvpYes: rsvpYes ?? this.rsvpYes,
+      rsvpNo: rsvpNo ?? this.rsvpNo,
+      rsvpMaybe: rsvpMaybe ?? this.rsvpMaybe,
+    );
+  }
+
   DateTime get endTime => dateTime.add(duration);
 
   Color get color {

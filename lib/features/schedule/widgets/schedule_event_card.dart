@@ -4,6 +4,7 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/club_event.dart';
+import 'my_rsvp_dialog.dart';
 
 enum RsvpStatus { accepted, declined, unknown }
 
@@ -64,11 +65,12 @@ class ScheduleEventCard extends StatelessWidget {
                           color: AppColors.current.textPrimary,
                         ),
                       ),
+                      const SizedBox(height: 8),
+
                       Text(
                         _shortDay(event.dateTime.weekday),
-                        style: AppTextStyles.label11.copyWith(
+                        style: AppTextStyles.dateDay.copyWith(
                           color: AppColors.current.textPrimary,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -116,10 +118,18 @@ class ScheduleEventCard extends StatelessWidget {
                 Container(width: 1, color: AppColors.current.surface),
 
                 // RSVP column
-                _Col(
-                  width: 55,
-                  color: AppColors.current.card,
-                  child: _RsvpBox(status: status),
+                GestureDetector(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => MyRsvpDialog(event: event),
+                    );
+                  },
+                  child: _Col(
+                    width: 60,
+                    color: AppColors.current.card,
+                    child: _RsvpBox(status: status),
+                  ),
                 ),
               ],
             ),
@@ -161,27 +171,27 @@ class _RsvpBox extends StatelessWidget {
     switch (status) {
       case RsvpStatus.accepted:
         bg    = AppColors.current.rsvpGoing;
-        child = Icon(Icons.check, color: AppColors.current.white, size: 16);
+        child = Icon(Icons.check, color: AppColors.current.white, size: 17);
       case RsvpStatus.declined:
         bg    = AppColors.current.rsvpNo;
-        child = Icon(Icons.close, color: AppColors.current.white, size: 16);
+        child = Icon(Icons.close, color: AppColors.current.white, size: 17);
       case RsvpStatus.unknown:
         bg    = AppColors.current.rsvpNoResponse;
         child = Text(
           '?',
-          style: AppTextStyles.heading14.copyWith(
+          style: AppTextStyles.heading15.copyWith(
             color: AppColors.current.textPrimary,
           ),
         );
     }
 
     return Container(
-      width: 30,
-      height: 30,
+      width: 31,
+      height: 31,
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.current.border),
+        border: Border.all(color: const Color(0xFF4E5663), width: 1),
       ),
       alignment: Alignment.center,
       child: child,

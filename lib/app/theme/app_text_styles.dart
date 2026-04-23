@@ -139,6 +139,14 @@ class AppTextStyles {
         color: AppColors.current.gray900,
         height: 1.1,
       );
+      
+  static TextStyle get dateDay => TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 19,
+        fontWeight: FontWeight.w400,
+        color: AppColors.current.gray900,
+        height: 1.0,
+      );
     
   static TextStyle get buttonLabel => TextStyle(
         fontFamily: fontFamily,
