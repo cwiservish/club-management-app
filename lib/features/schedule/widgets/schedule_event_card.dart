@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/club_event.dart';
@@ -38,86 +40,89 @@ class ScheduleEventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = rsvpStatus ?? _deriveStatus();
 
-    return Container(
-      color: AppColors.current.surface,
-      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 18),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          height: 85,
-          child: Row(
-            children: [
-              // Date column
-              _Col(
-                width: 67,
-                color: AppColors.current.card,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${event.dateTime.day}',
-                      style: AppTextStyles.dateNumber.copyWith(
-                        color: AppColors.current.textPrimary,
-                      ),
-                    ),
-                    Text(
-                      _shortDay(event.dateTime.weekday),
-                      style: AppTextStyles.label11.copyWith(
-                        color: AppColors.current.textPrimary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(width: 1, color: AppColors.current.surface),
-
-              // Details column
-              Expanded(
-                child: Container(
+    return GestureDetector(
+      onTap: () => context.push(AppRoutes.eventDetails(event.id)),
+      child: Container(
+        color: AppColors.current.surface,
+        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 18),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            height: 85,
+            child: Row(
+              children: [
+                // Date column
+                _Col(
+                  width: 67,
                   color: AppColors.current.card,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${_fmtTime(event.dateTime)} - ${_fmtTime(event.endTime)}',
-                        style: AppTextStyles.body16.copyWith(
+                        '${event.dateTime.day}',
+                        style: AppTextStyles.dateNumber.copyWith(
                           color: AppColors.current.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 2),
                       Text(
-                        event.title,
-                        style: AppTextStyles.body14.copyWith(
+                        _shortDay(event.dateTime.weekday),
+                        style: AppTextStyles.label11.copyWith(
                           color: AppColors.current.textPrimary,
+                          fontWeight: FontWeight.w500,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        event.location,
-                        style: AppTextStyles.body13.copyWith(
-                          color: AppColors.current.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-              ),
-              Container(width: 1, color: AppColors.current.surface),
+                Container(width: 1, color: AppColors.current.surface),
 
-              // RSVP column
-              _Col(
-                width: 55,
-                color: AppColors.current.card,
-                child: _RsvpBox(status: status),
-              ),
-            ],
+                // Details column
+                Expanded(
+                  child: Container(
+                    color: AppColors.current.card,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${_fmtTime(event.dateTime)} - ${_fmtTime(event.endTime)}',
+                          style: AppTextStyles.body16.copyWith(
+                            color: AppColors.current.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          event.title,
+                          style: AppTextStyles.body14.copyWith(
+                            color: AppColors.current.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          event.location,
+                          style: AppTextStyles.body13.copyWith(
+                            color: AppColors.current.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(width: 1, color: AppColors.current.surface),
+
+                // RSVP column
+                _Col(
+                  width: 55,
+                  color: AppColors.current.card,
+                  child: _RsvpBox(status: status),
+                ),
+              ],
+            ),
           ),
         ),
       ),

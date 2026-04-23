@@ -86,19 +86,19 @@ class EventDetailTabBar extends StatelessWidget {
           EventDetailTabItem(
             label: 'Details',
             isActive: activeTab == EventDetailTab.details,
-            onTap: () => context.go(AppRoutes.eventDetails(eventId)),
+            onTap: () => context.replace(AppRoutes.eventDetails(eventId)),
             colors: colors,
           ),
           EventDetailTabItem(
             label: 'Availability',
             isActive: activeTab == EventDetailTab.availability,
-            onTap: () => context.go(AppRoutes.eventAvailability(eventId)),
+            onTap: () => context.replace(AppRoutes.eventAvailability(eventId)),
             colors: colors,
           ),
           EventDetailTabItem(
             label: 'Assignments',
             isActive: activeTab == EventDetailTab.assignments,
-            onTap: () => context.go(AppRoutes.eventAssignments(eventId)),
+            onTap: () => context.replace(AppRoutes.eventAssignments(eventId)),
             colors: colors,
           ),
         ],

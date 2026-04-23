@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,8 +13,6 @@ import '../../features/messages/pages/messages_page.dart';
 import '../../features/messages/pages/chat_detail_page.dart';
 import '../../features/roster/pages/attendance_history_page.dart';
 import '../../features/roster/pages/roster_page.dart';
-import '../../features/schedule/pages/event_detail_page.dart';
-import '../../features/schedule/pages/event_form_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
 import '../../features/event_details/pages/event_detail_page.dart' as ed;
 import '../../features/event_details/pages/event_edit_page.dart';
@@ -69,41 +68,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.home,
                 builder: (context, state) => const HomeScreen(),
-                routes: [
-                  GoRoute(
-                    path: '${AppRoutes.eventDetailBase}/${AppRoutes.eventDetailDetails}',
-                    pageBuilder: (context, state) => NoTransitionPage(
-                      child: ed.EventDetailPage(
-                        eventId: state.pathParameters['eventId']!,
-                        activeTab: ed.EventDetailTab.details,
-                      ),
-                    ),
-                  ),
-                  GoRoute(
-                    path: '${AppRoutes.eventDetailBase}/${AppRoutes.eventDetailAvailability}',
-                    pageBuilder: (context, state) => NoTransitionPage(
-                      child: ed.EventDetailPage(
-                        eventId: state.pathParameters['eventId']!,
-                        activeTab: ed.EventDetailTab.availability,
-                      ),
-                    ),
-                  ),
-                  GoRoute(
-                    path: '${AppRoutes.eventDetailBase}/${AppRoutes.eventDetailAssignments}',
-                    pageBuilder: (context, state) => NoTransitionPage(
-                      child: ed.EventDetailPage(
-                        eventId: state.pathParameters['eventId']!,
-                        activeTab: ed.EventDetailTab.assignments,
-                      ),
-                    ),
-                  ),
-                  GoRoute(
-                    path: '${AppRoutes.eventDetailBase}/${AppRoutes.eventDetailEdit}',
-                    builder: (context, state) => EventEditPage(
-                      eventId: state.pathParameters['eventId']!,
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
@@ -115,16 +79,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.schedule,
                 builder: (context, state) => const ScheduleScreen(),
                 routes: [
-                  GoRoute(
-                    path: AppRoutes.scheduleEventDetail,
-                    builder: (context, state) =>
-                        EventDetailScreen(event: state.extra as ClubEvent),
-                  ),
-                  GoRoute(
-                    path: AppRoutes.scheduleEventForm,
-                    builder: (context, state) =>
-                        EventFormScreen(event: state.extra as ClubEvent?),
-                  ),
+
                 ],
               ),
             ],
@@ -169,6 +124,63 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.settings,
                 builder: (context, state) => const SettingsScreen(),
+              ),
+            ],
+          ),
+
+          // Branch 5: Event Details (independent feature, keeps all tabs deselected)
+          StatefulShellBranch(
+            routes: [
+              // Dummy non-parameterized route to satisfy GoRouter's requirement that
+              // the default location of a branch cannot be parameterized.
+              GoRoute(
+                path: '/_event_details_root',
+                builder: (context, state) => const SizedBox.shrink(),
+              ),
+              GoRoute(
+                path: AppRoutes.eventDetailBase,
+                // If user just goes to /event/:eventId, we redirect them to details
+                redirect: (context, state) {
+                  if (state.matchedLocation == state.uri.path) {
+                    return AppRoutes.eventDetails(state.pathParameters['eventId']!);
+                  }
+                  return null;
+                },
+                routes: [
+                  GoRoute(
+                    path: AppRoutes.eventDetailDetails,
+                    pageBuilder: (context, state) => NoTransitionPage(
+                      child: ed.EventDetailPage(
+                        eventId: state.pathParameters['eventId']!,
+                        activeTab: ed.EventDetailTab.details,
+                      ),
+                    ),
+                  ),
+                  GoRoute(
+                    path: AppRoutes.eventDetailAvailability,
+                    pageBuilder: (context, state) => NoTransitionPage(
+                      child: ed.EventDetailPage(
+                        eventId: state.pathParameters['eventId']!,
+                        activeTab: ed.EventDetailTab.availability,
+                      ),
+                    ),
+                  ),
+                  GoRoute(
+                    path: AppRoutes.eventDetailAssignments,
+                    pageBuilder: (context, state) => NoTransitionPage(
+                      child: ed.EventDetailPage(
+                        eventId: state.pathParameters['eventId']!,
+                        activeTab: ed.EventDetailTab.assignments,
+                      ),
+                    ),
+                  ),
+                  GoRoute(
+                    path: AppRoutes.eventDetailEdit,
+                    builder: (context, state) => EventEditPage(
+                      eventId: state.pathParameters['eventId']!,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
