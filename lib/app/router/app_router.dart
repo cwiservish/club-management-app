@@ -13,6 +13,7 @@ import '../../features/roster/pages/roster_page.dart';
 import '../../features/roster/pages/roster_detail_page.dart';
 import '../../features/roster/pages/attendance_history_page.dart';
 import '../../features/roster/models/roster_member.dart';
+import '../../features/statistics/pages/statistics_page.dart';
 import '../../features/invoice/pages/invoice_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
 import '../../features/event_details/pages/event_detail_page.dart' as ed;
@@ -133,6 +134,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.settings,
                 builder: (context, state) => const SettingsScreen(),
+              ),
+              GoRoute(
+                path: AppRoutes.statistics,
+                builder: (context, state) => const StatisticsPage(),
               ),
               GoRoute(
                 path: AppRoutes.invoiceNew,

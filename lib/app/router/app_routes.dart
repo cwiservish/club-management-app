@@ -3,6 +3,7 @@ abstract class AppRoutes {
   static const home = '/home';
 
   static const settings = '/settings';
+  static const statistics = '/statistics';
   static const invoiceNew = '/invoice/new';
 
   static const schedule = '/schedule';

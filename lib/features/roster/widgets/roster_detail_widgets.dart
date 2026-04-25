@@ -131,8 +131,9 @@ class RosterJerseyBadge extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 
 class RosterActionButtons extends StatelessWidget {
+  final VoidCallback? onStatisticsTap;
   final VoidCallback? onAttendanceTap;
-  const RosterActionButtons({super.key, this.onAttendanceTap});
+  const RosterActionButtons({super.key, this.onStatisticsTap, this.onAttendanceTap});
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +141,7 @@ class RosterActionButtons extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          Expanded(child: RosterNavButton(label: 'Statistics')),
+          Expanded(child: RosterNavButton(label: 'Statistics', onTap: onStatisticsTap)),
           const SizedBox(width: 12),
           Expanded(child: RosterNavButton(label: 'Attendance', onTap: onAttendanceTap)),
         ],

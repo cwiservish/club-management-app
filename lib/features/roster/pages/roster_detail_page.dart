@@ -48,6 +48,7 @@ class RosterDetailPage extends ConsumerWidget {
                       onAvatarTap: () => _showEditSheet(context, member),
                     ),
                     RosterActionButtons(
+                      onStatisticsTap: () => context.push(AppRoutes.statistics),
                       onAttendanceTap: () => context.push(
                         '${AppRoutes.roster}/${AppRoutes.rosterDetail}/${AppRoutes.rosterAttendance}',
                         extra: memberId,
