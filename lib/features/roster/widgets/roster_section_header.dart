@@ -22,50 +22,59 @@ class RosterSectionHeader extends StatelessWidget {
         ? AppColors.current.card
         : AppColors.current.primaryLight;
 
-    return Container(
-      color: AppColors.current.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          Text(
-            '${title.toUpperCase()} ($count)',
-            style: AppTextStyles.overline.copyWith(
-              color: AppColors.current.textSecondary,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
-            ),
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap: onSortTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: sortBtnBg,
-                borderRadius: BorderRadius.circular(8),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          color: AppColors.current.surface,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              Text(
+                '${title.toUpperCase()} ($count)',
+                style: AppTextStyles.overline.copyWith(
+                  color: AppColors.current.textSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CustomSvgIcon(
-                    assetPath: AppAssets.sortIcon,
-                    size: 14,
-                    color: AppColors.current.primary,
+              const Spacer(),
+              GestureDetector(
+                onTap: onSortTap,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: sortBtnBg,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 5),
-                  Text(
-                    'Sort',
-                    style: AppTextStyles.heading13.copyWith(
-                      color: AppColors.current.primary,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CustomSvgIcon(
+                        assetPath: AppAssets.sortIcon,
+                        size: 14,
+                        color: AppColors.current.primary,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Sort',
+                        style: AppTextStyles.heading13.copyWith(
+                          color: AppColors.current.primary,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Divider(
+          height: 1,
+          thickness: 1,
+          color: AppColors.current.border.withOpacity(0.5),
+        ),
+      ],
     );
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/models/roster_member.dart';
+import '../models/roster_member.dart';
 import '../../../core/enums/member_role.dart';
 import '../services/roster_service.dart';
 

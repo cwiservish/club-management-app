@@ -10,6 +10,7 @@ abstract class AppRoutes {
   static const scheduleEventForm = 'event/edit';
 
   static const roster = '/roster';
+  static const rosterDetail     = 'detail';
   static const rosterAttendance = 'attendance';
 
   static const messages = '/messages';

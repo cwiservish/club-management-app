@@ -2,25 +2,22 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../core/common_providers/current_user_provider.dart';
 import '../../core/models/chat_models.dart';
-import '../../core/models/club_event.dart';
 import '../../features/splash/pages/splash_page.dart';
 import '../../features/home/pages/home_page.dart';
 import '../../features/settings/pages/settings_page.dart';
 import '../../features/messages/pages/messages_page.dart';
 import '../../features/messages/pages/chat_detail_page.dart';
-import '../../features/roster/pages/attendance_history_page.dart';
 import '../../features/roster/pages/roster_page.dart';
+import '../../features/roster/pages/roster_detail_page.dart';
+import '../../features/roster/models/roster_member.dart';
 import '../../features/invoice/pages/invoice_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
 import '../../features/event_details/pages/event_detail_page.dart' as ed;
 import '../../features/event_details/pages/event_edit_page.dart';
 import '../../shell/app_shell.dart';
 import 'app_routes.dart';
-
-export 'app_routes.dart';
 
 // ─── Auth Listenable ──────────────────────────────────────────────────────────
 
@@ -94,8 +91,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const RosterScreen(),
                 routes: [
                   GoRoute(
-                    path: AppRoutes.rosterAttendance,
-                    builder: (context, state) => const PlayerAttendanceScreen(),
+                    path: AppRoutes.rosterDetail,
+                    builder: (context, state) => RosterDetailPage(
+                      memberId: (state.extra as RosterMember).id,
+                    ),
                   ),
                 ],
               ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 import 'team_season.dart';
-import 'roster_member.dart';
+import '../../features/roster/models/roster_member.dart';
 import 'club_event.dart';
 import 'chat_models.dart';
 import 'invoice.dart';

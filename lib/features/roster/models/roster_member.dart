@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../app/theme/app_colors.dart';
-import '../enums/member_role.dart';
-import '../enums/player_position.dart';
+import '../../../app/theme/app_colors.dart';
+import '../../../core/enums/member_role.dart';
+import '../../../core/enums/player_position.dart';
 
 class RosterMember {
   final String id;
@@ -51,20 +51,20 @@ class RosterMember {
   String get positionLabel {
     switch (position) {
       case PlayerPosition.goalkeeper: return 'GK';
-      case PlayerPosition.defender: return 'DEF';
+      case PlayerPosition.defender:   return 'DEF';
       case PlayerPosition.midfielder: return 'MID';
-      case PlayerPosition.forward: return 'FWD';
-      case null: return '';
+      case PlayerPosition.forward:    return 'FWD';
+      case null:                      return '';
     }
   }
 
   String get positionFull {
     switch (position) {
       case PlayerPosition.goalkeeper: return 'Goalkeeper';
-      case PlayerPosition.defender: return 'Defender';
+      case PlayerPosition.defender:   return 'Defender';
       case PlayerPosition.midfielder: return 'Midfielder';
-      case PlayerPosition.forward: return 'Forward';
-      case null: return '';
+      case PlayerPosition.forward:    return 'Forward';
+      case null:                      return '';
     }
   }
 

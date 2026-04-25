@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
-import '../../../core/models/roster_member.dart';
+import '../models/roster_member.dart';
 import '../../../core/enums/member_role.dart';
 
 class RosterListRow extends StatelessWidget {
@@ -30,18 +30,25 @@ class RosterListRow extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.current.gray300,
+                color: AppColors.current.gray100,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppColors.current.border.withOpacity(0.4),
+                  color: AppColors.current.border.withOpacity(0.3),
                   width: 0.5,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.current.gray400.withOpacity(0.15),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               alignment: Alignment.center,
               child: Text(
                 member.initials,
                 style: AppTextStyles.heading14.copyWith(
-                  color: AppColors.current.gray500,
+                  color: AppColors.current.gray400,
                 ),
               ),
             ),
