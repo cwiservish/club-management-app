@@ -1,39 +1,67 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/constants/app_assets.dart';
+import '../../../core/shared_widgets/custom_svg_icon.dart';
 
 class RosterSectionHeader extends StatelessWidget {
   final String title;
   final int count;
-  final String actionLabel;
+  final VoidCallback? onSortTap;
 
   const RosterSectionHeader({
     super.key,
     required this.title,
     required this.count,
-    this.actionLabel = 'Sort',
+    this.onSortTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final sortBtnBg = AppColors.current.isDark
+        ? AppColors.current.card
+        : AppColors.current.primaryLight;
+
     return Container(
-      height: 29,
-      color: AppColors.current.primary,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      color: AppColors.current.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
           Text(
-            '$title ($count)',
-            style: AppTextStyles.heading16.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w400,
+            '${title.toUpperCase()} ($count)',
+            style: AppTextStyles.overline.copyWith(
+              color: AppColors.current.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
             ),
           ),
           const Spacer(),
-          Text(
-            actionLabel,
-            style: AppTextStyles.overline.copyWith(
-              color: const Color(0xFFFED52C),
+          GestureDetector(
+            onTap: onSortTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: sortBtnBg,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomSvgIcon(
+                    assetPath: AppAssets.sortIcon,
+                    size: 14,
+                    color: AppColors.current.primary,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Sort',
+                    style: AppTextStyles.heading13.copyWith(
+                      color: AppColors.current.primary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

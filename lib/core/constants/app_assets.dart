@@ -18,4 +18,7 @@ class AppAssets {
   static const String logoutIcon = 'assets/svgs/logout_icon.svg';
   static const String userMinusIcon = 'assets/svgs/user_minus_icon.svg';
   static const String trashIcon = 'assets/svgs/trash_icon.svg';
+  static const String searchIcon = 'assets/svgs/search_icon.svg';
+  static const String filterIcon = 'assets/svgs/filter_icon.svg';
+  static const String sortIcon = 'assets/svgs/sort_icon.svg';
 }
