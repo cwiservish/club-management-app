@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/common_providers/theme_provider.dart';
 import '../models/roster_detail_contact.dart';
@@ -45,7 +47,12 @@ class RosterDetailPage extends ConsumerWidget {
                       member: member,
                       onAvatarTap: () => _showEditSheet(context, member),
                     ),
-                    const RosterActionButtons(),
+                    RosterActionButtons(
+                      onAttendanceTap: () => context.push(
+                        '${AppRoutes.roster}/${AppRoutes.rosterDetail}/${AppRoutes.rosterAttendance}',
+                        extra: memberId,
+                      ),
+                    ),
                     RosterFamilyContactsSection(
                       contacts: contacts,
                       onContactTap: (c) => _showContactDialog(context, c),

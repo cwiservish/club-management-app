@@ -131,7 +131,8 @@ class RosterJerseyBadge extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 
 class RosterActionButtons extends StatelessWidget {
-  const RosterActionButtons({super.key});
+  final VoidCallback? onAttendanceTap;
+  const RosterActionButtons({super.key, this.onAttendanceTap});
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +142,7 @@ class RosterActionButtons extends StatelessWidget {
         children: [
           Expanded(child: RosterNavButton(label: 'Statistics')),
           const SizedBox(width: 12),
-          Expanded(child: RosterNavButton(label: 'Attendance')),
+          Expanded(child: RosterNavButton(label: 'Attendance', onTap: onAttendanceTap)),
         ],
       ),
     );
@@ -150,34 +151,38 @@ class RosterActionButtons extends StatelessWidget {
 
 class RosterNavButton extends StatelessWidget {
   final String label;
-  const RosterNavButton({super.key, required this.label});
+  final VoidCallback? onTap;
+  const RosterNavButton({super.key, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: AppColors.current.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.current.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: AppTextStyles.heading14.copyWith(color: AppColors.current.textPrimary),
-          ),
-          const SizedBox(width: 4),
-          Icon(Icons.chevron_right, size: 18, color: AppColors.current.gray400),
-        ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: AppColors.current.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.current.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: AppTextStyles.heading14.copyWith(color: AppColors.current.textPrimary),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, size: 18, color: AppColors.current.gray400),
+          ],
+        ),
       ),
     );
   }

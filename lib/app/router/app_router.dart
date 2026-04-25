@@ -11,6 +11,7 @@ import '../../features/messages/pages/messages_page.dart';
 import '../../features/messages/pages/chat_detail_page.dart';
 import '../../features/roster/pages/roster_page.dart';
 import '../../features/roster/pages/roster_detail_page.dart';
+import '../../features/roster/pages/attendance_history_page.dart';
 import '../../features/roster/models/roster_member.dart';
 import '../../features/invoice/pages/invoice_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
@@ -95,6 +96,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => RosterDetailPage(
                       memberId: (state.extra as RosterMember).id,
                     ),
+                    routes: [
+                      GoRoute(
+                        path: AppRoutes.rosterAttendance,
+                        builder: (context, state) => AttendanceHistoryPage(
+                          memberId: state.extra as String,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
