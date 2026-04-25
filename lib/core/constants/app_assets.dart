@@ -24,4 +24,7 @@ class AppAssets {
   static const String activityIcon = 'assets/svgs/activity_icon.svg';
   static const String trophyIcon = 'assets/svgs/trophy_icon.svg';
   static const String goalIcon = 'assets/svgs/goal_icon.svg';
+  static const String fileTextIcon = 'assets/svgs/file_text_icon.svg';
+  static const String downloadIcon = 'assets/svgs/download_icon.svg';
+  static const String imageIcon = 'assets/svgs/image_icon.svg';
 }

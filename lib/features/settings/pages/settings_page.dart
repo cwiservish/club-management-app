@@ -38,7 +38,7 @@ class SettingsScreen extends ConsumerWidget {
                             SizedBox(height: 24),
                             SettingsMenuItem(
                               title: 'Photos',
-                              onTap: () => context.go(AppRoutes.home),
+                              onTap: () => context.push(AppRoutes.photos),
                             ),
                             SizedBox(height: 12),
                             SettingsMenuItem(
@@ -46,7 +46,10 @@ class SettingsScreen extends ConsumerWidget {
                               onTap: () => context.push(AppRoutes.statistics),
                             ),
                             SizedBox(height: 12),
-                            SettingsMenuItem(title: 'Files'),
+                            SettingsMenuItem(
+                              title: 'Files',
+                              onTap: () => context.push(AppRoutes.files),
+                            ),
                           ],
                         ),
                       ),

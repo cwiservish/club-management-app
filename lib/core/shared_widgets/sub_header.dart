@@ -15,6 +15,7 @@ class SubHeader extends StatelessWidget {
   final VoidCallback? onLeftTap;
   final String? rightText;
   final VoidCallback? onRightTap;
+  final Widget? rightWidget;
 
   const SubHeader({
     super.key,
@@ -25,6 +26,7 @@ class SubHeader extends StatelessWidget {
     this.onLeftTap,
     this.rightText,
     this.onRightTap,
+    this.rightWidget,
   });
 
   @override
@@ -75,8 +77,13 @@ class SubHeader extends StatelessWidget {
               ),
             ),
 
-          // ── Right: text action ────────────────────────────────────────────
-          if (rightText != null)
+          // ── Right: widget or text action ──────────────────────────────────
+          if (rightWidget != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: rightWidget!,
+            )
+          else if (rightText != null)
             Align(
               alignment: Alignment.centerRight,
               child: InkWell(

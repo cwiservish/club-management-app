@@ -4,6 +4,8 @@ abstract class AppRoutes {
 
   static const settings = '/settings';
   static const statistics = '/statistics';
+  static const photos = '/photos';
+  static const files = '/files';
   static const invoiceNew = '/invoice/new';
 
   static const schedule = '/schedule';
