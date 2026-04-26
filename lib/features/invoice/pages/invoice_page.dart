@@ -33,7 +33,7 @@ class InvoicePage extends ConsumerWidget {
                 child: IconButton(
                   icon: Icon(Icons.add,
                       size: 26, color: AppColors.current.primary),
-                  onPressed: () => {},
+                  onPressed: () => context.push('${AppRoutes.invoicing}/${AppRoutes.invoicingNew}'),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
