@@ -16,6 +16,8 @@ import '../../features/roster/models/roster_member.dart';
 import '../../features/statistics/pages/statistics_page.dart';
 import '../../features/photos/pages/photos_page.dart';
 import '../../features/files/pages/files_page.dart';
+import '../../features/tracking/pages/tracking_page.dart';
+import '../../features/notification_preferences/pages/notification_preferences_page.dart';
 import '../../features/invoice/pages/invoice_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
 import '../../features/event_details/pages/event_detail_page.dart' as ed;
@@ -148,6 +150,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.files,
                 builder: (context, state) => const FilesPage(),
+              ),
+              GoRoute(
+                path: AppRoutes.tracking,
+                builder: (context, state) => const TrackingPage(),
+              ),
+              GoRoute(
+                path: AppRoutes.notificationPreferences,
+                builder: (context, state) => const NotificationPreferencesPage(),
               ),
               GoRoute(
                 path: AppRoutes.invoiceNew,

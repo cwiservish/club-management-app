@@ -21,6 +21,8 @@ class AppAssets {
   static const String searchIcon = 'assets/svgs/search_icon.svg';
   static const String filterIcon = 'assets/svgs/filter_icon.svg';
   static const String sortIcon = 'assets/svgs/sort_icon.svg';
+  static const String checkCircleIcon = 'assets/svgs/check_circle_icon.svg';
+  static const String clockIcon = 'assets/svgs/clock_icon.svg';
   static const String activityIcon = 'assets/svgs/activity_icon.svg';
   static const String trophyIcon = 'assets/svgs/trophy_icon.svg';
   static const String goalIcon = 'assets/svgs/goal_icon.svg';
