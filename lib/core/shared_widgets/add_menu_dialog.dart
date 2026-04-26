@@ -82,7 +82,7 @@ void showAddMenu(BuildContext context) {
                           borderBottom: false,
                           onTap: () {
                             Navigator.of(context).pop();
-                            context.push(AppRoutes.invoiceNew);
+                            context.push(AppRoutes.invoicing);
                           },
                         ),
                       ],

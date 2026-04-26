@@ -8,7 +8,8 @@ abstract class AppRoutes {
   static const files = '/files';
   static const tracking = '/tracking';
   static const notificationPreferences = '/notification-preferences';
-  static const invoiceNew = '/invoice/new';
+  static const invoicing = '/invoicing';
+  static const invoicingNew = 'new';
 
   static const schedule = '/schedule';
   static const scheduleEventDetail = 'event/detail';

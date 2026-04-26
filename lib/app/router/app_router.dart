@@ -19,6 +19,7 @@ import '../../features/files/pages/files_page.dart';
 import '../../features/tracking/pages/tracking_page.dart';
 import '../../features/notification_preferences/pages/notification_preferences_page.dart';
 import '../../features/invoice/pages/invoice_page.dart';
+import '../../features/invoice/pages/invoice_form_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
 import '../../features/event_details/pages/event_detail_page.dart' as ed;
 import '../../features/event_details/pages/event_edit_page.dart';
@@ -160,8 +161,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const NotificationPreferencesPage(),
               ),
               GoRoute(
-                path: AppRoutes.invoiceNew,
+                path: AppRoutes.invoicing,
                 builder: (context, state) => const InvoicePage(),
+                routes: [
+                  GoRoute(
+                    path: AppRoutes.invoicingNew,
+                    builder: (context, state) => const InvoiceFormPage(),
+                  ),
+                ],
               ),
             ],
           ),

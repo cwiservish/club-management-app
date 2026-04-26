@@ -60,7 +60,10 @@ class SettingsScreen extends ConsumerWidget {
                         padding: EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
                           children: [
-                            SettingsMenuItem(title: 'Invoicing'),
+                            SettingsMenuItem(
+                              title: 'Invoicing',
+                              onTap: () => context.push(AppRoutes.invoicing),
+                            ),
                             SizedBox(height: 12),
                             SettingsMenuItem(
                               title: 'Tracking',
@@ -68,8 +71,6 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                             SizedBox(height: 12),
                             SettingsMenuItem(title: 'Registration Insurance'),
-                            SizedBox(height: 12),
-                            SettingsMenuItem(title: 'Recruiting'),
                           ],
                         ),
                       ),
