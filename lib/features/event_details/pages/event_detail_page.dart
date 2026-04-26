@@ -69,14 +69,15 @@ class EventDetailPage extends ConsumerWidget {
 
 // ─── Tab bar ──────────────────────────────────────────────────────────────────
 
-class EventDetailTabBar extends StatelessWidget {
+class EventDetailTabBar extends ConsumerWidget {
   final String eventId;
   final EventDetailTab activeTab;
 
   const EventDetailTabBar({required this.eventId, required this.activeTab});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeModeProvider);
     final colors = AppColors.current;
 
     return Container(

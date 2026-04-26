@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
+import '../common_providers/theme_provider.dart';
 
 // ─── Sub Header ───────────────────────────────────────────────────────────────
 // Reusable 44 px sub-header for sub-pages.
 // Left side defaults to chevron + "Back". Pass [leftIcon] + [leftLabel] to
 // override (e.g. Icons.close + "Close" for the edit event sheet).
 
-class SubHeader extends StatelessWidget {
+class SubHeader extends ConsumerWidget {
   final String title;
   final bool showLeft;
   final IconData leftIcon;
@@ -30,7 +32,8 @@ class SubHeader extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeModeProvider);
     final colors = AppColors.current;
 
     return Container(

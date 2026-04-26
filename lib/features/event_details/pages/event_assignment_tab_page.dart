@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/common_providers/theme_provider.dart';
 
-class EventAssignmentTabPage extends StatelessWidget {
+class EventAssignmentTabPage extends ConsumerWidget {
   const EventAssignmentTabPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeModeProvider);
     final colors = AppColors.current;
 
     return ColoredBox(

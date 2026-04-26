@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/common_providers/theme_provider.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/shared_widgets/custom_svg_icon.dart';
 
-class RosterSubHeader extends StatelessWidget {
+class RosterSubHeader extends ConsumerWidget {
   const RosterSubHeader({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeModeProvider);
     return Container(
       height: 54,
       decoration: BoxDecoration(

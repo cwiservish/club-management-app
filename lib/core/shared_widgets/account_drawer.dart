@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../common_providers/theme_provider.dart';
@@ -178,7 +180,10 @@ class _Content extends StatelessWidget {
             title: 'Team Profile',
             subtitle: 'View stats and details',
             colors: colors,
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pop(context);
+              context.push(AppRoutes.statistics);
+            },
           ),
         ),
         const SizedBox(height: 24),
