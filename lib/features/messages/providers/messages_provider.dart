@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/models/chat_models.dart';
+import '../../../core/enums/message_type.dart';
 import '../../../core/enums/thread_type.dart';
+import '../../../core/models/chat_models.dart';
 import '../services/messages_service.dart';
 
 class MessagesState {
@@ -38,10 +40,10 @@ class MessagesState {
     int? activeTab,
   }) {
     return MessagesState(
-      threads: threads ?? this.threads,
-      messages: messages ?? this.messages,
+      threads:     threads     ?? this.threads,
+      messages:    messages    ?? this.messages,
       searchQuery: searchQuery ?? this.searchQuery,
-      activeTab: activeTab ?? this.activeTab,
+      activeTab:   activeTab   ?? this.activeTab,
     );
   }
 }
@@ -51,15 +53,31 @@ class MessagesNotifier extends Notifier<MessagesState> {
   MessagesState build() {
     final service = ref.read(messagesServiceProvider);
     return MessagesState(
-      threads: service.getThreads(),
-      messages: service.getMessages(''),
+      threads:     service.getThreads(),
+      messages:    service.getMessages(''),
       searchQuery: '',
-      activeTab: 0,
+      activeTab:   0,
     );
   }
 
   void setSearch(String q) => state = state.copyWith(searchQuery: q);
-  void setTab(int tab) => state = state.copyWith(activeTab: tab);
+  void setTab(int tab)     => state = state.copyWith(activeTab: tab);
+
+  void sendMessage(String text) {
+    if (text.trim().isEmpty) return;
+    final newMessage = ChatMessage(
+      id:              DateTime.now().millisecondsSinceEpoch.toString(),
+      senderId:        'me',
+      senderName:      'You',
+      senderInitials:  'JD',
+      senderColor:     const Color(0xFF0EA5E9), // current user constant
+      text:            text.trim(),
+      type:            MessageType.text,
+      timestamp:       DateTime.now(),
+      isMe:            true,
+    );
+    state = state.copyWith(messages: [...state.messages, newMessage]);
+  }
 }
 
 final messagesServiceProvider =
