@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event_detail_model.dart';
 import '../models/event_player_model.dart';
+import '../services/event_detail_service.dart';
 
 export '../models/event_detail_model.dart';
 export '../models/event_player_model.dart';
@@ -21,29 +22,29 @@ class EventDetailState {
     List<EventPlayerModel>? players,
   }) {
     return EventDetailState(
-      event: event ?? this.event,
+      event:   event   ?? this.event,
       players: players ?? this.players,
     );
   }
 
-  List<EventPlayerModel> get goingPlayers   => players.where((p) => p.status == PlayerStatus.going).toList();
-  List<EventPlayerModel> get maybePlayers   => players.where((p) => p.status == PlayerStatus.maybe).toList();
-  List<EventPlayerModel> get noPlayers      => players.where((p) => p.status == PlayerStatus.no).toList();
+  List<EventPlayerModel> get goingPlayers     => players.where((p) => p.status == PlayerStatus.going).toList();
+  List<EventPlayerModel> get maybePlayers     => players.where((p) => p.status == PlayerStatus.maybe).toList();
+  List<EventPlayerModel> get noPlayers        => players.where((p) => p.status == PlayerStatus.no).toList();
   List<EventPlayerModel> get unrepliedPlayers => players.where((p) => p.status == PlayerStatus.none).toList();
 }
 
 // ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class EventDetailNotifier extends Notifier<EventDetailState> {
-  // In Riverpod 3.x, the family arg is passed to the constructor.
   final String eventId;
   EventDetailNotifier(this.eventId);
 
   @override
   EventDetailState build() {
+    final service = ref.read(eventDetailServiceProvider);
     return EventDetailState(
-      event: sampleEventDetail,
-      players: sampleEventPlayers,
+      event:   service.getEventDetail(eventId),
+      players: service.getEventPlayers(eventId),
     );
   }
 
@@ -68,7 +69,10 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
   }
 }
 
-// ─── Provider ─────────────────────────────────────────────────────────────────
+// ─── Providers ────────────────────────────────────────────────────────────────
+
+final eventDetailServiceProvider =
+    Provider<EventDetailService>((ref) => EventDetailService());
 
 final eventDetailProvider =
     NotifierProvider.family<EventDetailNotifier, EventDetailState, String>(

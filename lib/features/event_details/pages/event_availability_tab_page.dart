@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
-import '../../../app/theme/app_text_styles.dart';
 import '../providers/event_detail_provider.dart';
 import '../models/event_player_model.dart';
 import '../widgets/availability/player_group.dart';
 import '../widgets/dialogs/text_input_dialog.dart';
+import '../widgets/event_status_picker_sheet.dart';
 
 class EventAvailabilityTabPage extends ConsumerWidget {
   final String eventId;
@@ -14,14 +14,14 @@ class EventAvailabilityTabPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(eventDetailProvider(eventId));
+    final state    = ref.watch(eventDetailProvider(eventId));
     final notifier = ref.read(eventDetailProvider(eventId).notifier);
-    final colors = AppColors.current;
+    final colors   = AppColors.current;
 
     void showNote(EventPlayerModel p) => showTextInputDialog(
           context,
-          title: p.hasNote ? 'Edit Note' : 'Add Note',
-          subtitle: 'Adding note for ${p.name}',
+          title:       p.hasNote ? 'Edit Note' : 'Add Note',
+          subtitle:    'Adding note for ${p.name}',
           initialText: p.note,
           placeholder: 'Type note here...',
           primaryLabel: 'Save',
@@ -30,18 +30,34 @@ class EventAvailabilityTabPage extends ConsumerWidget {
 
     void showMessageAll() => showTextInputDialog(
           context,
-          title: 'Message All',
-          subtitle: "Send a message to players who haven't replied.",
+          title:       'Message All',
+          subtitle:    "Send a message to players who haven't replied.",
           initialText: "Please update your availability for ${state.event.date} ${state.event.name}",
           placeholder: 'Type message here...',
           primaryLabel: 'Send',
           primaryIcon: Icon(
             Icons.message_outlined,
-            size: 16,
-            color: AppColors.current.isDark ? AppColors.current.gray900 : Colors.white,
+            size:  16,
+            color: AppColors.current.isDark
+                ? AppColors.current.gray900
+                : Colors.white,
           ),
           onConfirm: (_) {}, // TODO: wire to messages feature
         );
+
+    void showStatusPicker(EventPlayerModel player) {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: colors.background,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (_) => EventStatusPickerSheet(
+          player:   player,
+          notifier: notifier,
+        ),
+      );
+    }
 
     return ColoredBox(
       color: colors.card,
@@ -49,147 +65,33 @@ class EventAvailabilityTabPage extends ConsumerWidget {
         padding: EdgeInsets.zero,
         children: [
           PlayerGroup(
-            title: 'GOING',
-            players: state.goingPlayers,
-            onNoteTap: showNote,
-            onStatusTap: (p) => _showStatusPicker(context, p, notifier),
+            title:       'GOING',
+            players:     state.goingPlayers,
+            onNoteTap:   showNote,
+            onStatusTap: showStatusPicker,
           ),
           PlayerGroup(
-            title: 'MAYBE',
-            players: state.maybePlayers,
-            onNoteTap: showNote,
-            onStatusTap: (p) => _showStatusPicker(context, p, notifier),
+            title:       'MAYBE',
+            players:     state.maybePlayers,
+            onNoteTap:   showNote,
+            onStatusTap: showStatusPicker,
           ),
           PlayerGroup(
-            title: 'NOT GOING',
-            players: state.noPlayers,
-            onNoteTap: showNote,
-            onStatusTap: (p) => _showStatusPicker(context, p, notifier),
+            title:       'NOT GOING',
+            players:     state.noPlayers,
+            onNoteTap:   showNote,
+            onStatusTap: showStatusPicker,
           ),
           PlayerGroup(
-            title: "HAVEN'T REPLIED",
-            players: state.unrepliedPlayers,
+            title:          "HAVEN'T REPLIED",
+            players:        state.unrepliedPlayers,
             showMessageAll: true,
-            onMessageAll: showMessageAll,
-            onNoteTap: showNote,
-            onStatusTap: (p) => _showStatusPicker(context, p, notifier),
+            onMessageAll:   showMessageAll,
+            onNoteTap:      showNote,
+            onStatusTap:    showStatusPicker,
           ),
           const SizedBox(height: 40),
         ],
-      ),
-    );
-  }
-
-  void _showStatusPicker(
-    BuildContext context,
-    EventPlayerModel player,
-    EventDetailNotifier notifier,
-  ) {
-    final colors = AppColors.current;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: colors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(19, 20, 19, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "${player.name}'s Attendance",
-              style: AppTextStyles.overline.copyWith(
-                color: colors.textSecondary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(
-                height: 44,
-                child: Row(
-                  children: [
-                    _StatusOption(
-                      label: 'Going',
-                      value: PlayerStatus.going,
-                      current: player.status,
-                      activeColor: colors.rsvpGoing,
-                      onTap: (s) {
-                        notifier.updatePlayerStatus(player.id, s);
-                        Navigator.pop(context);
-                      },
-                    ),
-                    VerticalDivider(width: 1, color: colors.border.withValues(alpha: 0.5)),
-                    _StatusOption(
-                      label: 'Maybe',
-                      value: PlayerStatus.maybe,
-                      current: player.status,
-                      activeColor: colors.rsvpMaybe,
-                      onTap: (s) {
-                        notifier.updatePlayerStatus(player.id, s);
-                        Navigator.pop(context);
-                      },
-                    ),
-                    VerticalDivider(width: 1, color: colors.border.withValues(alpha: 0.5)),
-                    _StatusOption(
-                      label: 'No',
-                      value: PlayerStatus.no,
-                      current: player.status,
-                      activeColor: colors.rsvpNo,
-                      onTap: (s) {
-                        notifier.updatePlayerStatus(player.id, s);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusOption extends StatelessWidget {
-  final String label;
-  final PlayerStatus value;
-  final PlayerStatus current;
-  final Color activeColor;
-  final ValueChanged<PlayerStatus> onTap;
-
-  const _StatusOption({
-    required this.label,
-    required this.value,
-    required this.current,
-    required this.activeColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isActive = current == value;
-    final colors = AppColors.current;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => onTap(value),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          alignment: Alignment.center,
-          color: isActive ? activeColor : colors.card,
-          child: Text(
-            label,
-            style: AppTextStyles.heading14.copyWith(
-              color: isActive ? Colors.white : colors.textSecondary,
-            ),
-          ),
-        ),
       ),
     );
   }

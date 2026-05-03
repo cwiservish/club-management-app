@@ -1,6 +1,8 @@
-// ─── Event Player Model ────────────────────────────────────────────────────────
+// ─── Player Status ────────────────────────────────────────────────────────────
 
 enum PlayerStatus { going, maybe, no, none }
+
+// ─── Event Player Model ───────────────────────────────────────────────────────
 
 class EventPlayerModel {
   final int id;
@@ -21,29 +23,14 @@ class EventPlayerModel {
 
   bool get hasNote => note.isNotEmpty;
 
-  EventPlayerModel copyWith({
-    PlayerStatus? status,
-    String? note,
-  }) {
+  EventPlayerModel copyWith({PlayerStatus? status, String? note}) {
     return EventPlayerModel(
-      id: id,
-      name: name,
-      number: number,
+      id:       id,
+      name:     name,
+      number:   number,
       imageUrl: imageUrl,
-      status: status ?? this.status,
-      note: note ?? this.note,
+      status:   status ?? this.status,
+      note:     note ?? this.note,
     );
   }
 }
-
-// ─── Dummy players ─────────────────────────────────────────────────────────────
-
-final List<EventPlayerModel> sampleEventPlayers = [
-  const EventPlayerModel(id: 1, name: 'Kinsley Weston',  number: '1',  status: PlayerStatus.going, note: ''),
-  const EventPlayerModel(id: 2, name: 'Kinley Kirkes',   number: '5',  status: PlayerStatus.going, note: ''),
-  const EventPlayerModel(id: 3, name: 'Mila Chaisson',   number: '10', status: PlayerStatus.going, note: ''),
-  const EventPlayerModel(id: 4, name: 'Scarlett Garling',number: '12', status: PlayerStatus.going, note: 'Running 5 mins late'),
-  const EventPlayerModel(id: 5, name: 'Nene Randolph',   number: '61', status: PlayerStatus.going, note: ''),
-  const EventPlayerModel(id: 6, name: 'Rose Hall',       number: '11', status: PlayerStatus.none,  note: ''),
-  const EventPlayerModel(id: 7, name: 'Emma Smith',      number: '4',  status: PlayerStatus.none,  note: ''),
-];
