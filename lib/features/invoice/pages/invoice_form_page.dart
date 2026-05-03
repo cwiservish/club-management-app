@@ -3,6 +3,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
+import '../widgets/invoice_form_field.dart';
 
 class InvoiceFormPage extends StatelessWidget {
   const InvoiceFormPage({super.key});
@@ -42,38 +43,38 @@ class InvoiceFormPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _FormField(
-                            label: 'Recipient Name',
+                          InvoiceFormField(
+                            label:       'Recipient Name',
                             placeholder: 'e.g. John Doe',
-                            required: true,
+                            required:    true,
                           ),
                           const SizedBox(height: 16),
-                          _FormField(
-                            label: 'Email Address',
-                            placeholder: 'john@example.com',
-                            required: true,
+                          InvoiceFormField(
+                            label:        'Email Address',
+                            placeholder:  'john@example.com',
+                            required:     true,
                             keyboardType: TextInputType.emailAddress,
                           ),
                           const SizedBox(height: 16),
-                          _FormField(
-                            label: 'Phone Number',
-                            placeholder: '(555) 123-4567',
+                          InvoiceFormField(
+                            label:        'Phone Number',
+                            placeholder:  '(555) 123-4567',
                             keyboardType: TextInputType.phone,
                           ),
                           const SizedBox(height: 16),
-                          _FormField(
-                            label: 'Amount',
-                            placeholder: '0.00',
-                            required: true,
+                          InvoiceFormField(
+                            label:        'Amount',
+                            placeholder:  '0.00',
+                            required:     true,
                             keyboardType: TextInputType.number,
-                            prefix: '\$',
+                            prefix:       '\$',
                           ),
                           const SizedBox(height: 16),
-                          _FormField(
-                            label: 'Description',
+                          InvoiceFormField(
+                            label:       'Description',
                             placeholder: 'What is this invoice for?',
-                            required: true,
-                            maxLines: 3,
+                            required:    true,
+                            maxLines:    3,
                           ),
                         ],
                       ),
@@ -81,15 +82,15 @@ class InvoiceFormPage extends StatelessWidget {
                     const SizedBox(height: 20),
                     // ── Send button ──────────────────────────────────────────
                     SizedBox(
-                      width: double.infinity,
+                      width:  double.infinity,
                       height: 48,
                       child: ElevatedButton(
                         onPressed: () => Navigator.maybePop(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.current.primary,
                           foregroundColor: Colors.white,
-                          elevation: 0,
-                          shadowColor: Colors.transparent,
+                          elevation:       0,
+                          shadowColor:     Colors.transparent,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -109,101 +110,6 @@ class InvoiceFormPage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ── Private form field ────────────────────────────────────────────────────────
-
-class _FormField extends StatelessWidget {
-  final String label;
-  final String placeholder;
-  final bool required;
-  final TextInputType keyboardType;
-  final int maxLines;
-  final String? prefix;
-
-  const _FormField({
-    required this.label,
-    required this.placeholder,
-    this.required = false,
-    this.keyboardType = TextInputType.text,
-    this.maxLines = 1,
-    this.prefix,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isSingleLine = maxLines == 1;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Label
-        RichText(
-          text: TextSpan(
-            style: AppTextStyles.heading13
-                .copyWith(color: AppColors.current.gray700),
-            children: [
-              TextSpan(text: label),
-              if (required)
-                TextSpan(
-                  text: ' *',
-                  style: TextStyle(color: AppColors.current.error),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 6),
-        // Input
-        Container(
-          height: isSingleLine ? 44 : null,
-          decoration: BoxDecoration(
-            color: AppColors.current.card,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            crossAxisAlignment: isSingleLine
-                ? CrossAxisAlignment.center
-                : CrossAxisAlignment.start,
-            children: [
-              if (prefix != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 16),
-                  child: Text(
-                    prefix!,
-                    style: AppTextStyles.body15.copyWith(
-                      color: AppColors.current.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              Expanded(
-                child: TextField(
-                  keyboardType: keyboardType,
-                  maxLines: maxLines,
-                  style: AppTextStyles.body15
-                      .copyWith(color: AppColors.current.textPrimary),
-                  decoration: InputDecoration(
-                    hintText: placeholder,
-                    hintStyle: AppTextStyles.body15
-                        .copyWith(color: AppColors.current.gray400),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: prefix != null ? 6 : 16,
-                      vertical: isSingleLine ? 0 : 14,
-                    ),
-                    isCollapsed: isSingleLine,
-                  ),
-                  textAlignVertical:
-                      isSingleLine ? TextAlignVertical.center : null,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
