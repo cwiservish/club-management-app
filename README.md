@@ -74,6 +74,7 @@ Do NOT jump to the final answer before completing the above.
 While analyzing:
 - Infer missing details intelligently and clearly ask questions.
 - If this involves code/systems, identify and consider all related files, dependencies, and flows — not just the given snippet.
+- Before writing any code, scan the existing codebase to understand the project structure, naming conventions, folder patterns, and how similar things are already done.
 
 After questions are answered (or if proceeding with assumptions), then:
 - Execute the solution step-by-step.
