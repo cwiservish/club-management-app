@@ -4,9 +4,8 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/club_event.dart';
+import '../models/schedule_models.dart';
 import 'my_rsvp_dialog.dart';
-
-enum RsvpStatus { accepted, declined, unknown }
 
 class ScheduleEventCard extends StatelessWidget {
   final ClubEvent event;
@@ -66,7 +65,6 @@ class ScheduleEventCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-
                       Text(
                         _shortDay(event.dateTime.weekday),
                         style: AppTextStyles.dateDay.copyWith(
@@ -140,7 +138,7 @@ class ScheduleEventCard extends StatelessWidget {
   }
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Private helpers ──────────────────────────────────────────────────────────
 
 class _Col extends StatelessWidget {
   final double width;

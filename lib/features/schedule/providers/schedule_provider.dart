@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/club_event.dart';
 import '../../../core/enums/event_type.dart';
+import '../models/schedule_models.dart';
 import '../services/schedule_service.dart';
+
+export '../models/schedule_models.dart';
 
 const _scheduleSentinel = Object();
 
@@ -19,6 +22,8 @@ class ScheduleState {
     this.filter,
     required this.monthView,
   });
+
+  // ── Filtered + sorted event list ─────────────────────────────────────────
 
   List<ClubEvent> get filtered {
     return events
@@ -42,6 +47,31 @@ class ScheduleState {
     return List.generate(7, (i) => monday.add(Duration(days: i)));
   }
 
+  // ── Pre-computed month sections for the list view ────────────────────────
+  // Groups and sorts events by month. The page renders this directly.
+
+  List<ScheduleMonthSection> get monthSections {
+    final grouped = <DateTime, List<ClubEvent>>{};
+    for (final event in filtered) {
+      final key = DateTime(event.dateTime.year, event.dateTime.month);
+      grouped.putIfAbsent(key, () => []).add(event);
+    }
+    for (final events in grouped.values) {
+      events.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    }
+    final sortedKeys = grouped.keys.toList()
+      ..sort((a, b) => a.year != b.year
+          ? a.year.compareTo(b.year)
+          : a.month.compareTo(b.month));
+    return sortedKeys
+        .map((date) => ScheduleMonthSection(
+              monthDate: date,
+              monthName: _monthName(date.month),
+              events: grouped[date]!,
+            ))
+        .toList();
+  }
+
   ScheduleState copyWith({
     List<ClubEvent>? events,
     DateTime? selectedDate,
@@ -58,6 +88,16 @@ class ScheduleState {
     );
   }
 }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+String _monthName(int month) => const [
+      'January', 'February', 'March',    'April',
+      'May',     'June',     'July',     'August',
+      'September','October', 'November', 'December',
+    ][month - 1];
+
+// ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class ScheduleNotifier extends Notifier<ScheduleState> {
   @override
@@ -82,19 +122,17 @@ class ScheduleNotifier extends Notifier<ScheduleState> {
   void setMonthView(bool v) => state = state.copyWith(monthView: v);
 
   void updateRsvp(String eventId, String status) {
-    // For now, assume current user ID is "me"
-    const currentUserId = "me";
+    const currentUserId = 'me';
 
     final newEvents = state.events.map((e) {
       if (e.id != eventId) return e;
 
-      // Remove current user from all lists first
-      final newYes = e.rsvpYes.where((id) => id != currentUserId).toList();
-      final newNo = e.rsvpNo.where((id) => id != currentUserId).toList();
+      final newYes   = e.rsvpYes.where((id) => id != currentUserId).toList();
+      final newNo    = e.rsvpNo.where((id) => id != currentUserId).toList();
       final newMaybe = e.rsvpMaybe.where((id) => id != currentUserId).toList();
 
       if (status == 'going') newYes.add(currentUserId);
-      if (status == 'no') newNo.add(currentUserId);
+      if (status == 'no')    newNo.add(currentUserId);
       if (status == 'maybe') newMaybe.add(currentUserId);
 
       return e.copyWith(rsvpYes: newYes, rsvpNo: newNo, rsvpMaybe: newMaybe);
@@ -103,6 +141,8 @@ class ScheduleNotifier extends Notifier<ScheduleState> {
     state = state.copyWith(events: newEvents);
   }
 }
+
+// ─── Providers ────────────────────────────────────────────────────────────────
 
 final scheduleServiceProvider =
     Provider<ScheduleService>((ref) => ScheduleService());
