@@ -21,6 +21,7 @@ import '../../features/notification_preferences/pages/notification_preferences_p
 import '../../features/invoice/pages/invoice_page.dart';
 import '../../features/invoice/pages/invoice_form_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
+import '../../features/event_details/models/event_detail_model.dart';
 import '../../features/event_details/pages/event_detail_page.dart' as ed;
 import '../../features/event_details/pages/event_edit_page.dart';
 import '../../shell/app_shell.dart';
@@ -197,7 +198,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     pageBuilder: (context, state) => NoTransitionPage(
                       child: ed.EventDetailPage(
                         eventId: state.pathParameters['eventId']!,
-                        activeTab: ed.EventDetailTab.details,
+                        activeTab: EventDetailTab.details,
                       ),
                     ),
                   ),
@@ -206,7 +207,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     pageBuilder: (context, state) => NoTransitionPage(
                       child: ed.EventDetailPage(
                         eventId: state.pathParameters['eventId']!,
-                        activeTab: ed.EventDetailTab.availability,
+                        activeTab: EventDetailTab.availability,
                       ),
                     ),
                   ),
@@ -215,7 +216,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     pageBuilder: (context, state) => NoTransitionPage(
                       child: ed.EventDetailPage(
                         eventId: state.pathParameters['eventId']!,
-                        activeTab: ed.EventDetailTab.assignments,
+                        activeTab: EventDetailTab.assignments,
                       ),
                     ),
                   ),
