@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
 import 'core/config/environment_config.dart';
+import 'core/common_providers/current_user_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,5 +21,12 @@ void main() async {
     statusBarIconBrightness: Brightness.dark,
   ));
 
-  runApp(const ProviderScope(child: Playbook365App()));
+  final container = ProviderContainer();
+  // Eagerly initialize providers that the router depends on
+  await container.read(currentUserProvider.future);
+
+  runApp(UncontrolledProviderScope(
+    container: container,
+    child: const Playbook365App(),
+  ));
 }

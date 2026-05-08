@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../features/auth/providers/auth_provider.dart';
+import '../common_providers/current_user_provider.dart';
 import 'permission_checker.dart';
 
 /// Conditionally renders [child] based on whether the current user holds
@@ -40,7 +39,7 @@ class RoleGuard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
+    final user = ref.watch(currentUserProvider).value;
 
     if (user == null || !PermissionChecker.hasPermission(user.role, permission)) {
       return fallback ?? const SizedBox.shrink();
@@ -66,7 +65,7 @@ class RoleGuardAll extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
+    final user = ref.watch(currentUserProvider).value;
 
     if (user == null || !PermissionChecker.hasAll(user.role, permissions)) {
       return fallback ?? const SizedBox.shrink();

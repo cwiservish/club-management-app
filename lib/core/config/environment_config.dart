@@ -37,6 +37,10 @@ abstract final class EnvironmentConfig {
   static String get baseUrl => _values['API_BASE_URL'] as String;
   static int get timeoutSeconds => int.parse(_values['API_TIMEOUT_SECONDS'] as String);
   static bool get enableLogging => (_values['ENABLE_LOGGING'] as String) == 'true';
+  static String get fusionAuthBaseUrl => _values['FUSIONAUTH_BASE_URL'] as String? ?? '';
+  static String get fusionAuthAppId => _values['FUSIONAUTH_APP_ID'] as String? ?? '';
+  static String get fusionAuthTenantId => _values['FUSIONAUTH_TENANT_ID'] as String? ?? '';
+  static String get fusionAuthApiKey => _values['FUSIONAUTH_API_KEY'] as String? ?? '';
 
   static Map<String, dynamic> _values = {};
 

@@ -1,34 +1,49 @@
+import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../services/auth_service.dart';
+import '../../../core/common_providers/current_user_provider.dart';
 
-import '../../../core/enums/user_role.dart';
-import '../../../core/models/user_model.dart';
+final authServiceProvider = Provider<AuthService>((ref) {
+  return AuthService(Dio());
+});
 
-/// Sample authenticated user — matches the "Jamie Davis / Parent" persona
-/// used throughout the design. Replace with real auth once backend is wired.
-const _sampleUser = AppUser(
-  id: 'u1',
-  displayName: 'Jamie Davis',
-  email: 'jamie.davis@email.com',
-  role: UserRole.parent,
-  teamId: 'team_u14_boys',
-);
-
-/// Manages the currently signed-in user.
-///
-/// `state == null` means unauthenticated (reserved for the login flow).
-/// Call [setUser] after a successful sign-in, [signOut] to clear.
-class CurrentUserNotifier extends Notifier<AppUser?> {
+class AuthNotifier extends AsyncNotifier<void> {
   @override
-  AppUser? build() => _sampleUser;
+  FutureOr<void> build() {
+    // Initial state
+    return null;
+  }
 
-  void setUser(AppUser user) => state = user;
-  void signOut() => state = null;
+  Future<void> login(String email, String password) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final authService = ref.read(authServiceProvider);
+      final user = await authService.login(email, password);
+      if (user != null) {
+        await ref.read(currentUserProvider.notifier).setUser(user);
+      } else {
+        throw Exception('Login failed: Invalid user data received');
+      }
+    });
+  }
+
+  Future<void> forgotPassword(String email) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(authServiceProvider).forgotPassword(email);
+    });
+  }
+
+  Future<void> logout() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(authServiceProvider).logout();
+      await ref.read(currentUserProvider.notifier).clearUser();
+    });
+  }
 }
 
-/// The currently signed-in user.
-///
-/// Read in widgets via `ref.watch(currentUserProvider)`.
-/// Write via `ref.read(currentUserProvider.notifier).setUser(...)`.
-final currentUserProvider = NotifierProvider<CurrentUserNotifier, AppUser?>(
-  CurrentUserNotifier.new,
+final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, void>(
+  AuthNotifier.new,
 );

@@ -5,6 +5,8 @@ import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../common_providers/theme_provider.dart';
+import '../common_providers/current_user_provider.dart';
+import '../../features/auth/providers/auth_provider.dart';
 import '../constants/app_assets.dart';
 import 'custom_svg_icon.dart';
 
@@ -77,12 +79,14 @@ class _AccountDrawer extends ConsumerWidget {
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   final AppColors colors;
   const _Header({required this.colors});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider).value;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 28, 28, 24),
       decoration: BoxDecoration(
@@ -109,7 +113,7 @@ class _Header extends StatelessWidget {
               const SizedBox(height: 16),
               // Name
               Text(
-                'Ayla Becher',
+                user?.displayName ?? 'User',
                 style: AppTextStyles.heading22.copyWith(color: colors.textPrimary),
               ),
               const SizedBox(height: 6),
@@ -127,7 +131,7 @@ class _Header extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      'Player',
+                      user?.role.name.toUpperCase() ?? 'PLAYER',
                       style: AppTextStyles.heading14.copyWith(
                         color: colors.isDark ? colors.actionAccent : colors.primary,
                       ),
@@ -135,7 +139,7 @@ class _Header extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'ayla@example.com',
+                    user?.email ?? '',
                     style: AppTextStyles.label13.copyWith(color: colors.gray500),
                   ),
                 ],
@@ -386,12 +390,12 @@ class _SportIdCard extends StatelessWidget {
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
-class _Footer extends StatelessWidget {
+class _Footer extends ConsumerWidget {
   final AppColors colors;
   const _Footer({required this.colors});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = colors.isDark;
 
     return Container(
@@ -418,7 +422,10 @@ class _Footer extends StatelessWidget {
             svgAsset: AppAssets.logoutIcon,
             label: 'Log out',
             colors: colors,
-            onTap: () {},
+            onTap: () {
+              Navigator.pop(context);
+              ref.read(authNotifierProvider.notifier).logout();
+            },
           ),
           SizedBox(height: 4,),
           Divider(

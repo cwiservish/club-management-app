@@ -8,6 +8,8 @@ class AppTextField extends StatelessWidget {
   final int minLines;
   final int maxLines;
   final bool autofocus;
+  final bool obscureText;
+  final Widget? suffixIcon;
   final ValueChanged<String>? onChanged;
 
   const AppTextField({
@@ -17,6 +19,8 @@ class AppTextField extends StatelessWidget {
     this.minLines = 1,
     this.maxLines = 1,
     this.autofocus = false,
+    this.obscureText = false,
+    this.suffixIcon,
     this.onChanged,
   });
 
@@ -32,6 +36,7 @@ class AppTextField extends StatelessWidget {
       child: TextField(
       controller: controller,
       autofocus: autofocus,
+      obscureText: obscureText,
       minLines: minLines,
       maxLines: maxLines,
       onChanged: onChanged,
@@ -40,6 +45,7 @@ class AppTextField extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: AppTextStyles.body16.copyWith(color: colors.textSecondary),
+        suffixIcon: suffixIcon,
         filled: true,
         fillColor: colors.isDark ? colors.background : colors.gray100,
         contentPadding: const EdgeInsets.all(14),

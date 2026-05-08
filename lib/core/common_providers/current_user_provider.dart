@@ -15,7 +15,10 @@ import '../models/user_model.dart';
 class CurrentUserNotifier extends AsyncNotifier<AppUser?> {
   @override
   Future<AppUser?> build() async {
-    return ref.read(appStorageProvider).readUser();
+    print('[CurrentUserProvider] Initializing...');
+    final user = await ref.read(appStorageProvider).readUser();
+    print('[CurrentUserProvider] Loaded user: ${user?.email}');
+    return user;
   }
 
   Future<void> setUser(AppUser user) async {

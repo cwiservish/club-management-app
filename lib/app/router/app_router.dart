@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart'; // ignore: unused_import
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,6 +24,8 @@ import '../../features/schedule/pages/schedule_page.dart';
 import '../../features/event_details/models/event_detail_model.dart';
 import '../../features/event_details/pages/event_detail_page.dart' as ed;
 import '../../features/event_details/pages/event_edit_page.dart';
+import '../../features/auth/pages/login_page.dart';
+import '../../features/auth/pages/forgot_password_page.dart';
 import '../../shell/app_shell.dart';
 import 'app_routes.dart';
 
@@ -47,21 +49,46 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.splash,
     refreshListenable: listenable,
     redirect: (context, state) {
-      debugPrint('[Router] → ${state.matchedLocation}');
       final userState = ref.read(currentUserProvider);
+      
+      debugPrint('[Router] Path: ${state.matchedLocation}, Loading: ${userState.isLoading}, HasValue: ${userState.hasValue}, User: ${userState.value?.email}');
 
       if (userState.isLoading) {
         return state.matchedLocation == AppRoutes.splash ? null : AppRoutes.splash;
       }
 
-      if (state.matchedLocation == AppRoutes.splash) return AppRoutes.home;
+      final isLoggedIn = userState.value != null;
+      final isLoggingIn = state.matchedLocation == AppRoutes.login;
+      final isForgotPassword = state.matchedLocation == AppRoutes.forgotPassword;
+      final isSplash = state.matchedLocation == AppRoutes.splash;
+
+      debugPrint('[Router] isLoggedIn: $isLoggedIn, isLoggingIn: $isLoggingIn, isForgotPassword: $isForgotPassword, isSplash: $isSplash');
+
+      if (!isLoggedIn) {
+        if (isLoggingIn || isForgotPassword) return null;
+        debugPrint('[Router] Redirecting to Login');
+        return AppRoutes.login;
+      }
+
+      if (isSplash || isLoggingIn) {
+        debugPrint('[Router] Redirecting to Home');
+        return AppRoutes.home;
+      }
 
       return null;
     },
     routes: [
       GoRoute(
+        path: AppRoutes.forgotPassword,
+        builder: (context, state) => const ForgotPasswordPage(),
+      ),
+      GoRoute(
         path: AppRoutes.splash,
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) => const LoginPage(),
       ),
 
       StatefulShellRoute.indexedStack(
