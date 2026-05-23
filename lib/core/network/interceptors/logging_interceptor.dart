@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -12,6 +13,7 @@ import 'package:flutter/foundation.dart';
 /// └──────────────────────────────────────────────────────
 ///
 /// ┌── [←] 200 POST /auth/login  (142ms)
+/// │   Body:    {user: {id: 1, email: "coach@club.com"}}
 /// └──────────────────────────────────────────────────────
 ///
 /// ┌── [✗] 401 GET /roster  (88ms)
@@ -32,7 +34,7 @@ class LoggingInterceptor extends Interceptor {
         debugPrint('│   Query:   ${options.queryParameters}');
       }
       if (options.data != null) {
-        debugPrint('│   Body:    ${options.data}');
+        debugPrint('│   Body:    ${_sanitiseBody(options.data)}');
       }
       debugPrint('└$_divider');
     }
@@ -51,6 +53,9 @@ class LoggingInterceptor extends Interceptor {
         '${response.requestOptions.path}'
         '${elapsed != null ? '  (${elapsed}ms)' : ''}',
       );
+      if (response.data != null) {
+        debugPrint('│   Body:    ${_sanitiseBody(response.data)}');
+      }
       debugPrint('└$_divider');
     }
     handler.next(response);
@@ -68,7 +73,7 @@ class LoggingInterceptor extends Interceptor {
       );
       debugPrint('│   ${err.type.name}: ${err.message}');
       if (err.response?.data != null) {
-        debugPrint('│   Response: ${err.response?.data}');
+        debugPrint('│   Response: ${_sanitiseBody(err.response?.data)}');
       }
       debugPrint('└$_divider');
     }
@@ -87,7 +92,35 @@ class LoggingInterceptor extends Interceptor {
   Map<String, dynamic> _sanitiseHeaders(Map<String, dynamic> headers) {
     return {
       for (final e in headers.entries)
-        e.key: e.key.toLowerCase() == 'authorization' ? 'Bearer [redacted]' : e.value,
+        e.key: e.key.toLowerCase() == 'authorization'
+            ? (e.value.toString().startsWith('Bearer ') ? 'Bearer [redacted]' : '[redacted]')
+            : e.value,
     };
+  }
+
+  /// Recursively redacts sensitive keys like password, token, secret.
+  Object? _sanitiseBody(Object? data) {
+    if (data is Map) {
+      return {
+        for (final e in data.entries)
+          e.key.toString().toLowerCase().contains('password') ||
+                  e.key.toString().toLowerCase().contains('secret') ||
+                  e.key.toString().toLowerCase().contains('token')
+              ? e.key: '[redacted]'
+              : e.value is Map || e.value is List ? _sanitiseBody(e.value) : e.value,
+      };
+    }
+    if (data is List) {
+      return data.map((item) => _sanitiseBody(item)).toList();
+    }
+    if (data is String) {
+      try {
+        final decoded = json.decode(data);
+        if (decoded is Map || decoded is List) {
+          return json.encode(_sanitiseBody(decoded));
+        }
+      } catch (_) {}
+    }
+    return data;
   }
 }

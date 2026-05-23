@@ -141,8 +141,8 @@ class RosterActionButtons extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          Expanded(child: RosterNavButton(label: 'Statistics', onTap: onStatisticsTap)),
-          const SizedBox(width: 12),
+          // Expanded(child: RosterNavButton(label: 'Statistics', onTap: onStatisticsTap)),
+          // const SizedBox(width: 12),
           Expanded(child: RosterNavButton(label: 'Attendance', onTap: onAttendanceTap)),
         ],
       ),

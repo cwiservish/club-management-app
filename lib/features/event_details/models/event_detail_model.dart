@@ -46,4 +46,4 @@ class EventDetailModel {
 
 // ─── Tab enum ─────────────────────────────────────────────────────────────────
 
-enum EventDetailTab { details, availability, assignments }
+enum EventDetailTab { details, availability }

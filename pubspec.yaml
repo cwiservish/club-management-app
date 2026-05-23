@@ -35,9 +35,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - config/env.dev.json
-    - config/env.staging.json
-    - config/env.prod.json
+    - config/env.json
     - assets/svgs/
 
   # Uncomment and add font files under assets/fonts/ to use Inter

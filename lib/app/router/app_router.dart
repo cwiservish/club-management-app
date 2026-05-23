@@ -239,15 +239,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     ),
                   ),
                   GoRoute(
-                    path: AppRoutes.eventDetailAssignments,
-                    pageBuilder: (context, state) => NoTransitionPage(
-                      child: ed.EventDetailPage(
-                        eventId: state.pathParameters['eventId']!,
-                        activeTab: EventDetailTab.assignments,
-                      ),
-                    ),
-                  ),
-                  GoRoute(
                     path: AppRoutes.eventDetailEdit,
                     builder: (context, state) => EventEditPage(
                       eventId: state.pathParameters['eventId']!,

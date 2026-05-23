@@ -3,9 +3,24 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
 import '../../../core/common_providers/current_user_provider.dart';
+import '../../../core/config/environment_config.dart';
+import '../../../core/network/interceptors/logging_interceptor.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService(Dio());
+  final timeout = Duration(seconds: EnvironmentConfig.timeoutSeconds);
+  final dio = Dio(
+    BaseOptions(
+      connectTimeout: timeout,
+      receiveTimeout: timeout,
+      sendTimeout: timeout,
+    ),
+  );
+
+  dio.interceptors.addAll([
+    if (EnvironmentConfig.enableLogging) LoggingInterceptor(),
+  ]);
+
+  return AuthService(dio);
 });
 
 class AuthNotifier extends AsyncNotifier<void> {

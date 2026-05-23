@@ -29,12 +29,10 @@ abstract class AppRoutes {
   static const eventDetailBase = '/event/:eventId';
   static const eventDetailDetails      = 'details';
   static const eventDetailAvailability = 'availability';
-  static const eventDetailAssignments  = 'assignments';
 
   static const eventDetailEdit = 'edit';
 
   static String eventDetails(String id)      => '/event/$id/details';
   static String eventAvailability(String id) => '/event/$id/availability';
-  static String eventAssignments(String id)  => '/event/$id/assignments';
   static String eventEdit(String id)         => '/event/$id/edit';
 }

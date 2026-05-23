@@ -10,7 +10,6 @@ import '../models/event_detail_model.dart';
 import '../widgets/event_detail_tab_bar.dart';
 import 'event_details_tab_page.dart';
 import 'event_availability_tab_page.dart';
-import 'event_assignment_tab_page.dart';
 
 // ─── Event Detail Shell ────────────────────────────────────────────────────────
 // Renders SubHeader + tab bar; delegates content to the active tab page.
@@ -45,7 +44,6 @@ class EventDetailPage extends ConsumerWidget {
               child: switch (activeTab) {
                 EventDetailTab.details      => EventDetailsTabPage(eventId: eventId),
                 EventDetailTab.availability => EventAvailabilityTabPage(eventId: eventId),
-                EventDetailTab.assignments  => const EventAssignmentTabPage(),
               },
             ),
           ],

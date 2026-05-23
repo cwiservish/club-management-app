@@ -40,12 +40,6 @@ class EventDetailTabBar extends ConsumerWidget {
             onTap:    () => context.replace(AppRoutes.eventAvailability(eventId)),
             colors:   colors,
           ),
-          EventDetailTabItem(
-            label:    'Assignments',
-            isActive: activeTab == EventDetailTab.assignments,
-            onTap:    () => context.replace(AppRoutes.eventAssignments(eventId)),
-            colors:   colors,
-          ),
         ],
       ),
     );

@@ -5,12 +5,10 @@ import '../../models/event_detail_model.dart';
 
 class LogisticsSection extends StatelessWidget {
   final EventDetailModel event;
-  final VoidCallback onAssignmentsTap;
 
   const LogisticsSection({
     super.key,
     required this.event,
-    required this.onAssignmentsTap,
   });
 
   @override
@@ -58,17 +56,7 @@ class LogisticsSection extends StatelessWidget {
             icon: Icons.access_time,
             label: 'Arrival Time',
             value: event.arrivalTime,
-            borderBottom: true,
-          ),
-          _LogisticsRow(
-            icon: Icons.assignment_outlined,
-            iconBgColor: colors.primaryLight,
-            iconColor: colors.actionAccent,
-            label: 'My Assignments',
-            value: 'View or Add Tasks',
-            showArrow: true,
             borderBottom: false,
-            onTap: onAssignmentsTap,
           ),
         ],
       ),
@@ -85,7 +73,6 @@ class _LogisticsRow extends StatelessWidget {
   final String? subtitle;
   final bool showArrow;
   final bool borderBottom;
-  final VoidCallback? onTap;
 
   const _LogisticsRow({
     required this.icon,
@@ -96,7 +83,6 @@ class _LogisticsRow extends StatelessWidget {
     this.subtitle,
     this.showArrow = false,
     this.borderBottom = true,
-    this.onTap,
   });
 
   @override
@@ -105,54 +91,51 @@ class _LogisticsRow extends StatelessWidget {
     final resolvedIconBg = iconBgColor ?? colors.gray100;
     final resolvedIconColor = iconColor ?? colors.textSecondary;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          border: borderBottom
-              ? Border(bottom: BorderSide(color: colors.border.withValues(alpha: 0.5)))
-              : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: resolvedIconBg,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 16, color: resolvedIconColor),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        border: borderBottom
+            ? Border(bottom: BorderSide(color: colors.border.withValues(alpha: 0.5)))
+            : null,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: resolvedIconBg,
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            child: Icon(icon, size: 16, color: resolvedIconColor),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: AppTextStyles.label12.copyWith(color: colors.textSecondary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 1),
                   Text(
-                    label,
-                    style: AppTextStyles.label12.copyWith(color: colors.textSecondary),
+                    subtitle!,
+                    style: AppTextStyles.body14.copyWith(color: colors.textSecondary),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 1),
-                    Text(
-                      subtitle!,
-                      style: AppTextStyles.body14.copyWith(color: colors.textSecondary),
-                    ),
-                  ],
                 ],
-              ),
+              ],
             ),
-            if (showArrow)
-              Icon(Icons.chevron_right, size: 20, color: colors.textSecondary),
-          ],
-        ),
+          ),
+          if (showArrow)
+            Icon(Icons.chevron_right, size: 20, color: colors.textSecondary),
+        ],
       ),
     );
   }

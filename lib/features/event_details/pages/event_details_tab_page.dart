@@ -33,8 +33,6 @@ class EventDetailsTabPage extends ConsumerWidget {
           const SizedBox(height: 16),
           LogisticsSection(
             event: state.event,
-            onAssignmentsTap: () =>
-                context.go(AppRoutes.eventAssignments(eventId)),
           ),
           const SizedBox(height: 20),
           // ── Duplicate Event button ─────────────────────────────────────

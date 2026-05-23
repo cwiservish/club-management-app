@@ -26,61 +26,26 @@ class SettingsScreen extends ConsumerWidget {
                   color: AppColors.current.surface,
                   child: Column(
                     children: [
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
                           children: [
-                            TeamInfoCard(
+                            const TeamInfoCard(
                               teamName: '12 Girls ECNL RL',
                               record: 'Record: 13-9-3',
                             ),
-                            SizedBox(height: 24),
+                            const SizedBox(height: 24),
                             SettingsMenuItem(
                               title: 'Photos',
                               onTap: () => context.push(AppRoutes.photos),
                             ),
-                            SizedBox(height: 12),
-                            SettingsMenuItem(
-                              title: 'Statistics',
-                              onTap: () => context.push(AppRoutes.statistics),
-                            ),
-                            SizedBox(height: 12),
+                            const SizedBox(height: 12),
                             SettingsMenuItem(
                               title: 'Files',
                               onTap: () => context.push(AppRoutes.files),
                             ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 24),
-                      Divider(height: 1, thickness: 1),
-                      SizedBox(height: 24),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          children: [
-                            SettingsMenuItem(
-                              title: 'Invoicing',
-                              onTap: () => context.push(AppRoutes.invoicing),
-                            ),
-                            SizedBox(height: 12),
-                            SettingsMenuItem(
-                              title: 'Tracking',
-                              onTap: () => context.push(AppRoutes.tracking),
-                            ),
-                            SizedBox(height: 12),
-                            SettingsMenuItem(title: 'Registration Insurance'),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 24),
-                      Divider(height: 1, thickness: 1),
-                      SizedBox(height: 24),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          children: [
+                            const SizedBox(height: 12),
                             SettingsMenuItem(
                               title: 'Notification Preferences',
                               onTap: () => context.push(AppRoutes.notificationPreferences),
@@ -88,7 +53,7 @@ class SettingsScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      SizedBox(height: 48),
+                      const SizedBox(height: 48),
                     ],
                   ),
                 ),

@@ -44,14 +44,14 @@ void showAddMenu(BuildContext context) {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _MenuOption(
-                          icon: '+',
-                          label: 'Team',
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            _showNewTeamModal(context);
-                          },
-                        ),
+                        // _MenuOption(
+                        //   icon: '+',
+                        //   label: 'Team',
+                        //   onTap: () {
+                        //     Navigator.of(context).pop();
+                        //     _showNewTeamModal(context);
+                        //   },
+                        // ),
                         _MenuOption(
                           icon: '+',
                           label: 'Event',
@@ -71,20 +71,21 @@ void showAddMenu(BuildContext context) {
                         _MenuOption(
                           icon: '+',
                           label: 'Chat',
+                          borderBottom: false,
                           onTap: () {
                             Navigator.of(context).pop();
                             _showNewChatModal(context);
                           },
                         ),
-                        _MenuOption(
-                          icon: '+',
-                          label: 'Invoice',
-                          borderBottom: false,
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            context.push('${AppRoutes.invoicing}/${AppRoutes.invoicingNew}');
-                          },
-                        ),
+                        // _MenuOption(
+                        //   icon: '+',
+                        //   label: 'Invoice',
+                        //   borderBottom: false,
+                        //   onTap: () {
+                        //     Navigator.of(context).pop();
+                        //     context.push('${AppRoutes.invoicing}/${AppRoutes.invoicingNew}');
+                        //   },
+                        // ),
                       ],
                     ),
                   ),
@@ -157,6 +158,7 @@ class _MenuOption extends StatelessWidget {
 
 // ─── Modal Implementations ──────────────────────────────────────────────────
 
+/*
 void _showNewTeamModal(BuildContext context) {
   showModalBottomSheet(
     context: context,
@@ -259,6 +261,7 @@ class _NewTeamModal extends StatelessWidget {
     );
   }
 }
+*/
 
 void _showNewPlayerModal(BuildContext context) {
   showModalBottomSheet(

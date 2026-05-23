@@ -190,26 +190,6 @@ class _Content extends StatelessWidget {
             },
           ),
         ),
-        const SizedBox(height: 24),
-
-        // SportID Card
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'SPORTID CARD',
-                style: AppTextStyles.heading12.copyWith(
-                  color: colors.gray400,
-                  letterSpacing: 0.6,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const _SportIdCard(),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -276,117 +256,7 @@ class _NavRow extends StatelessWidget {
   }
 }
 
-// ─── SportID Card ─────────────────────────────────────────────────────────────
 
-class _SportIdCard extends StatelessWidget {
-  const _SportIdCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 160,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF20242A), Color(0xFF3A414C)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
-            // Player photo area (right side)
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: 130,
-              child: Stack(
-                children: [
-                  Container(color: const Color(0xFF2B3038)),
-                  // Gradient fade from card bg to transparent
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [Color(0xFF20242A), Colors.transparent],
-                      ),
-                    ),
-                  ),
-                  const Center(
-                    child: Icon(
-                      Icons.person,
-                      size: 64,
-                      color: Colors.white24,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Top: logo text
-            Positioned(
-              top: 20,
-              left: 20,
-              child: Text(
-                'Playbook365',
-                style: AppTextStyles.heading13.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-
-            // Bottom left: QR + ID
-            Positioned(
-              left: 20,
-              bottom: 20,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.qr_code_2,
-                      size: 28,
-                      color: Color(0xFF20242A),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text('#84729-110', style: AppTextStyles.label12.copyWith(color: Colors.white70)),
-                      const SizedBox(width: 6),
-                      Text('·', style: AppTextStyles.label12.copyWith(color: Colors.white30)),
-                      const SizedBox(width: 6),
-                      Text('2025-2026', style: AppTextStyles.label12.copyWith(color: Colors.white70)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
@@ -427,40 +297,18 @@ class _Footer extends ConsumerWidget {
               ref.read(authNotifierProvider.notifier).logout();
             },
           ),
-          SizedBox(height: 4,),
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: colors.border.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 4),
-          _FooterRow(
-            svgAsset: AppAssets.userMinusIcon,
-            label: 'Leave team',
-            colors: colors,
-            isDestructive: true,
-            onTap: () {},
-          ),
-          _FooterRow(
-            svgAsset: AppAssets.trashIcon,
-            label: 'Delete account',
-            colors: colors,
-            isDestructive: true,
-            onTap: () {},
-          ),
         ],
       ),
     );
   }
 }
 
-class _FooterRow extends StatefulWidget {
+class _FooterRow extends StatelessWidget {
   final IconData? icon;
   final String? svgAsset;
   final String label;
   final AppColors colors;
   final Widget? trailing;
-  final bool isDestructive;
   final VoidCallback onTap;
 
   const _FooterRow({
@@ -469,64 +317,40 @@ class _FooterRow extends StatefulWidget {
     required this.label,
     required this.colors,
     this.trailing,
-    this.isDestructive = false,
     required this.onTap,
   });
 
   @override
-  State<_FooterRow> createState() => _FooterRowState();
-}
-
-class _FooterRowState extends State<_FooterRow> {
-  bool _pressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    final colors = widget.colors;
-    final color = widget.isDestructive
-        ? (colors.isDark ? colors.rsvpNo : const Color(0xFFDC2626))
-        : colors.textPrimary;
+    final color = colors.textPrimary;
+    final overlayColor = colors.isDark ? colors.card : const Color(0xFFF9FAFB);
+    final iconColor = colors.gray500;
 
-    final overlayColor = widget.isDestructive
-        ? (colors.isDark
-            ? const Color(0xFFEF4444).withValues(alpha: 0.1)
-            : const Color(0xFFFEF2F2))
-        : (colors.isDark ? colors.card : const Color(0xFFF9FAFB));
-
-    final iconColor = widget.isDestructive ? color : colors.gray500;
-    final iconWidget = widget.svgAsset != null
-        ? CustomSvgIcon(assetPath: widget.svgAsset!, color: iconColor, size: 20)
-        : Icon(widget.icon, size: 20, color: iconColor);
+    final iconWidget = svgAsset != null
+        ? CustomSvgIcon(assetPath: svgAsset!, color: iconColor, size: 20)
+        : Icon(icon, size: 20, color: iconColor);
 
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        onTap: widget.onTap,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         splashColor: overlayColor,
         highlightColor: overlayColor,
-        onTapDown: widget.isDestructive ? (_) => setState(() => _pressed = true) : null,
-        onTapUp: widget.isDestructive ? (_) => setState(() => _pressed = false) : null,
-        onTapCancel: widget.isDestructive ? () => setState(() => _pressed = false) : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           child: Row(
             children: [
-              AnimatedScale(
-                scale: (widget.isDestructive && _pressed) ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 150),
-                child: iconWidget,
-              ),
+              iconWidget,
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  widget.label,
-                  style: (widget.isDestructive ? AppTextStyles.heading14 : AppTextStyles.heading15)
-                      .copyWith(color: color),
+                  label,
+                  style: AppTextStyles.heading15.copyWith(color: color),
                 ),
               ),
-              if (widget.trailing != null) widget.trailing!,
+              if (trailing != null) trailing!,
             ],
           ),
         ),
@@ -534,6 +358,7 @@ class _FooterRowState extends State<_FooterRow> {
     );
   }
 }
+
 
 // ─── Theme switch ─────────────────────────────────────────────────────────────
 
