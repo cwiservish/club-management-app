@@ -1,30 +1,29 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
-import '../common_providers/theme_provider.dart';
+import '../common_providers/user_teams_provider.dart';
 import '../constants/app_assets.dart';
 import 'account_drawer.dart';
 import 'add_menu_dialog.dart';
 import 'custom_svg_icon.dart';
 
-class AppHeader extends StatefulWidget {
+class AppHeader extends ConsumerStatefulWidget {
   final void Function(String team)? onTeamChanged;
 
   const AppHeader({super.key, this.onTeamChanged});
 
   @override
-  State<AppHeader> createState() => _AppHeaderState();
+  ConsumerState<AppHeader> createState() => _AppHeaderState();
 }
 
-class _AppHeaderState extends State<AppHeader> {
-  String _selectedTeam = '12 Girls ECNL RL';
+class _AppHeaderState extends ConsumerState<AppHeader> {
+  String? _selectedTeamOverride;
 
-  static const _teams = ['12 Girls ECNL RL', '08 Girls ECNL RL'];
-
-  void _showTeamMenu(BuildContext context) {
+  void _showTeamMenu(BuildContext context, List<String> teams, String activeTeam) {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -63,16 +62,16 @@ class _AppHeaderState extends State<AppHeader> {
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: _teams.asMap().entries.map((entry) {
+                        children: teams.asMap().entries.map((entry) {
                           final index = entry.key;
                           final team = entry.value;
                           return _TeamOption(
                             name: team,
-                            isActive: team == _selectedTeam,
-                            borderBottom: index < _teams.length - 1,
+                            isActive: team == activeTeam,
+                            borderBottom: index < teams.length - 1,
                             onTap: () {
                               Navigator.of(ctx).pop();
-                              setState(() => _selectedTeam = team);
+                              setState(() => _selectedTeamOverride = team);
                               widget.onTeamChanged?.call(team);
                             },
                           );
@@ -98,6 +97,14 @@ class _AppHeaderState extends State<AppHeader> {
     final borderColor = AppColors.current.border;
     final pillBgColor = AppColors.current.card;
 
+    final teamsAsync = ref.watch(userTeamsProvider);
+    final teams = teamsAsync.maybeWhen(
+      data: (list) => list.map((t) => t.name).toList(),
+      orElse: () => ['12 Girls ECNL RL', '08 Girls ECNL RL'],
+    );
+
+    final activeTeam = _selectedTeamOverride ?? (teams.isNotEmpty ? teams.first : '');
+
     return Container(
       height: 53 + topPadding,
       decoration: BoxDecoration(
@@ -121,7 +128,7 @@ class _AppHeaderState extends State<AppHeader> {
           const SizedBox(width: 34),
           const Spacer(),
           GestureDetector(
-            onTap: () => _showTeamMenu(context),
+            onTap: () => _showTeamMenu(context, teams, activeTeam),
             child: Container(
               height: 37,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -140,7 +147,7 @@ class _AppHeaderState extends State<AppHeader> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _selectedTeam,
+                    activeTeam,
                     style: AppTextStyles.body16.copyWith(
                       color: textColor,
                       fontWeight: FontWeight.w600,

@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
+import '../../../core/local_storage/app_storage.dart';
 import '../../../core/common_providers/current_user_provider.dart';
+import '../../../core/common_providers/user_teams_provider.dart';
 import '../../../core/config/environment_config.dart';
 import '../../../core/network/interceptors/logging_interceptor.dart';
 
@@ -20,7 +22,7 @@ final authServiceProvider = Provider<AuthService>((ref) {
     if (EnvironmentConfig.enableLogging) LoggingInterceptor(),
   ]);
 
-  return AuthService(dio);
+  return AuthService(dio, ref.read(appStorageProvider));
 });
 
 class AuthNotifier extends AsyncNotifier<void> {
@@ -37,6 +39,7 @@ class AuthNotifier extends AsyncNotifier<void> {
       final user = await authService.login(email, password);
       if (user != null) {
         await ref.read(currentUserProvider.notifier).setUser(user);
+        ref.invalidate(userTeamsProvider);
       } else {
         throw Exception('Login failed: Invalid user data received');
       }
@@ -55,6 +58,7 @@ class AuthNotifier extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       await ref.read(authServiceProvider).logout();
       await ref.read(currentUserProvider.notifier).clearUser();
+      ref.invalidate(userTeamsProvider);
     });
   }
 }

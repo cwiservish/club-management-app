@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/user_model.dart';
+import '../models/team_model.dart';
 import 'local_storage_service.dart'; // LocalStorageService used inside AppStorage
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
@@ -10,6 +11,7 @@ import 'local_storage_service.dart'; // LocalStorageService used inside AppStora
 abstract final class _Keys {
   static const authToken = 'auth_token';
   static const currentUser = 'current_user';
+  static const userTeams = 'user_teams';
 }
 
 // ─── AppStorage ───────────────────────────────────────────────────────────────
@@ -43,6 +45,20 @@ class AppStorage {
   }
 
   Future<void> deleteUser() => _storage.delete(_Keys.currentUser);
+
+  // ─── Teams ───────────────────────────────────────────────────────────────────
+
+  Future<void> saveTeams(List<Team> teams) =>
+      _storage.write(_Keys.userTeams, jsonEncode(teams.map((t) => t.toJson()).toList()));
+
+  Future<List<Team>> readTeams() async {
+    final raw = await _storage.read(_Keys.userTeams);
+    if (raw == null) return [];
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded.map((e) => Team.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<void> deleteTeams() => _storage.delete(_Keys.userTeams);
 
   // ─── Clear all (logout) ──────────────────────────────────────────────────────
 
