@@ -26,15 +26,25 @@ class LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (kDebugMode) {
-      debugPrint('┌── [→] ${options.method} ${options.uri}');
+      debugPrint('┌── [→] Request: ${options.method} ${options.uri}');
       if (options.headers.isNotEmpty) {
-        debugPrint('│   Headers: ${_sanitiseHeaders(options.headers)}');
+        debugPrint('│   Headers:');
+        _sanitiseHeaders(options.headers).forEach((key, value) {
+          debugPrint('│     $key: $value');
+        });
       }
       if (options.queryParameters.isNotEmpty) {
-        debugPrint('│   Query:   ${options.queryParameters}');
+        debugPrint('│   Query Parameters:');
+        options.queryParameters.forEach((key, value) {
+          debugPrint('│     $key: $value');
+        });
       }
       if (options.data != null) {
-        debugPrint('│   Body:    ${_sanitiseBody(options.data)}');
+        debugPrint('│   Request Body (JSON):');
+        final formattedBody = _formatJson(options.data);
+        for (final line in formattedBody.split('\n')) {
+          debugPrint('│     $line');
+        }
       }
       debugPrint('└$_divider');
     }
@@ -48,13 +58,17 @@ class LoggingInterceptor extends Interceptor {
     if (kDebugMode) {
       final elapsed = _elapsed(response.requestOptions);
       debugPrint(
-        '┌── [←] ${response.statusCode} '
+        '┌── [←] Response: ${response.statusCode} '
         '${response.requestOptions.method} '
         '${response.requestOptions.path}'
         '${elapsed != null ? '  (${elapsed}ms)' : ''}',
       );
       if (response.data != null) {
-        debugPrint('│   Body:    ${_sanitiseBody(response.data)}');
+        debugPrint('│   Response Body (JSON):');
+        final formattedBody = _formatJson(response.data);
+        for (final line in formattedBody.split('\n')) {
+          debugPrint('│     $line');
+        }
       }
       debugPrint('└$_divider');
     }
@@ -66,14 +80,18 @@ class LoggingInterceptor extends Interceptor {
     if (kDebugMode) {
       final elapsed = _elapsed(err.requestOptions);
       debugPrint(
-        '┌── [✗] ${err.response?.statusCode ?? 'N/A'} '
+        '┌── [✗] Error: ${err.response?.statusCode ?? 'N/A'} '
         '${err.requestOptions.method} '
         '${err.requestOptions.path}'
         '${elapsed != null ? '  (${elapsed}ms)' : ''}',
       );
       debugPrint('│   ${err.type.name}: ${err.message}');
       if (err.response?.data != null) {
-        debugPrint('│   Response: ${_sanitiseBody(err.response?.data)}');
+        debugPrint('│   Response Body (JSON):');
+        final formattedBody = _formatJson(err.response?.data);
+        for (final line in formattedBody.split('\n')) {
+          debugPrint('│     $line');
+        }
       }
       debugPrint('└$_divider');
     }
@@ -88,6 +106,20 @@ class LoggingInterceptor extends Interceptor {
     return DateTime.now().millisecondsSinceEpoch - start;
   }
 
+  /// Format data into a pretty JSON string
+  String _formatJson(dynamic data) {
+    try {
+      const encoder = JsonEncoder.withIndent('  ');
+      if (data is String) {
+        final decoded = json.decode(data);
+        return encoder.convert(decoded);
+      }
+      return encoder.convert(data);
+    } catch (_) {
+      return data.toString();
+    }
+  }
+
   /// Redacts the Authorization header value so tokens never appear in logs.
   Map<String, dynamic> _sanitiseHeaders(Map<String, dynamic> headers) {
     return {
@@ -96,31 +128,5 @@ class LoggingInterceptor extends Interceptor {
             ? (e.value.toString().startsWith('Bearer ') ? 'Bearer [redacted]' : '[redacted]')
             : e.value,
     };
-  }
-
-  /// Recursively redacts sensitive keys like password, token, secret.
-  Object? _sanitiseBody(Object? data) {
-    if (data is Map) {
-      return {
-        for (final e in data.entries)
-          e.key.toString().toLowerCase().contains('password') ||
-                  e.key.toString().toLowerCase().contains('secret') ||
-                  e.key.toString().toLowerCase().contains('token')
-              ? e.key: '[redacted]'
-              : e.value is Map || e.value is List ? _sanitiseBody(e.value) : e.value,
-      };
-    }
-    if (data is List) {
-      return data.map((item) => _sanitiseBody(item)).toList();
-    }
-    if (data is String) {
-      try {
-        final decoded = json.decode(data);
-        if (decoded is Map || decoded is List) {
-          return json.encode(_sanitiseBody(decoded));
-        }
-      } catch (_) {}
-    }
-    return data;
   }
 }

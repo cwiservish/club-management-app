@@ -4,8 +4,24 @@ import 'package:go_router/go_router.dart';
 import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
+import '../models/team_model.dart';
 
-void showAddMenu(BuildContext context) {
+// ─── AddMenuViewModel (MVVM) ──────────────────────────────────────────────────
+class AddMenuViewModel {
+  final Team? activeTeam;
+
+  const AddMenuViewModel(this.activeTeam);
+
+  /// If is_coach is true then show player, chat option only (hide event).
+  /// Else show event, player, and chat.
+  bool get showEvent => activeTeam == null ? true : !activeTeam!.isCoach;
+  bool get showPlayer => true;
+  bool get showChat => true;
+}
+
+void showAddMenu(BuildContext context, {Team? activeTeam}) {
+  final viewModel = AddMenuViewModel(activeTeam);
+  
   showGeneralDialog(
     context: context,
     barrierDismissible: true,
@@ -44,48 +60,34 @@ void showAddMenu(BuildContext context) {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // _MenuOption(
-                        //   icon: '+',
-                        //   label: 'Team',
-                        //   onTap: () {
-                        //     Navigator.of(context).pop();
-                        //     _showNewTeamModal(context);
-                        //   },
-                        // ),
-                        _MenuOption(
-                          icon: '+',
-                          label: 'Event',
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            context.push(AppRoutes.eventEdit('new'));
-                          },
-                        ),
-                        _MenuOption(
-                          icon: '+',
-                          label: 'Player',
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            _showNewPlayerModal(context);
-                          },
-                        ),
-                        _MenuOption(
-                          icon: '+',
-                          label: 'Chat',
-                          borderBottom: false,
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            _showNewChatModal(context);
-                          },
-                        ),
-                        // _MenuOption(
-                        //   icon: '+',
-                        //   label: 'Invoice',
-                        //   borderBottom: false,
-                        //   onTap: () {
-                        //     Navigator.of(context).pop();
-                        //     context.push('${AppRoutes.invoicing}/${AppRoutes.invoicingNew}');
-                        //   },
-                        // ),
+                        if (viewModel.showEvent)
+                          _MenuOption(
+                            icon: '+',
+                            label: 'Event',
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              context.push(AppRoutes.eventEdit('new'));
+                            },
+                          ),
+                        if (viewModel.showPlayer)
+                          _MenuOption(
+                            icon: '+',
+                            label: 'Player',
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              _showNewPlayerModal(context);
+                            },
+                          ),
+                        if (viewModel.showChat)
+                          _MenuOption(
+                            icon: '+',
+                            label: 'Chat',
+                            borderBottom: false,
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              _showNewChatModal(context);
+                            },
+                          ),
                       ],
                     ),
                   ),

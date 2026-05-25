@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../core/common_providers/theme_provider.dart';
 import '../core/shared_widgets/app_bottom_nav_bar.dart';
 import '../features/messages/providers/unread_count_provider.dart';
+import '../features/home/providers/home_provider.dart';
 
 /// Playbook365 — App Shell
 ///
@@ -29,11 +30,16 @@ class AppShell extends ConsumerWidget {
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: navigationShell.currentIndex,
         messagesBadgeCount: unreadCount,
-        onTap: (index) => navigationShell.goBranch(
-          index,
-          // Tapping the active tab again pops to the branch's initial route.
-          initialLocation: index == navigationShell.currentIndex,
-        ),
+        onTap: (index) {
+          if (index == 0) {
+            ref.read(homeProvider.notifier).refresh();
+          }
+          navigationShell.goBranch(
+            index,
+            // Tapping the active tab again pops to the branch's initial route.
+            initialLocation: index == navigationShell.currentIndex,
+          );
+        },
       ),
     );
   }

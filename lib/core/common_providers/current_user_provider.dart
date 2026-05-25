@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../local_storage/app_storage.dart';
 import '../models/user_model.dart';
+import '../network/token_storage.dart';
 
 // ─── CurrentUserNotifier ──────────────────────────────────────────────────────
 
@@ -18,6 +19,13 @@ class CurrentUserNotifier extends AsyncNotifier<AppUser?> {
     print('[CurrentUserProvider] Initializing...');
     final user = await ref.read(appStorageProvider).readUser();
     print('[CurrentUserProvider] Loaded user: ${user?.email}');
+
+    // Eagerly re-hydrate authTokenProvider on startup
+    final token = await ref.read(appStorageProvider).readToken();
+    if (token != null) {
+      ref.read(authTokenProvider.notifier).setToken(token);
+    }
+
     return user;
   }
 

@@ -1,6 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/enums/event_type.dart';
 import '../../../core/models/club_event.dart';
+import '../../../core/local_storage/app_storage.dart';
+import '../../../core/network/token_storage.dart';
+import '../../../core/common_providers/user_teams_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/home_models.dart';
 import '../services/home_service.dart';
 
@@ -119,6 +124,34 @@ class HomeNotifier extends Notifier<HomeState> {
   }
 
   void setFilter(EventType? f) => state = state.copyWith(filter: f);
+
+  /// Triggers API refreshes for home data (e.g. active teams) and reloads local events.
+  Future<void> refresh() async {
+    try {
+      var token = ref.read(authTokenProvider);
+      if (token == null) {
+        token = await ref.read(appStorageProvider).readToken();
+        if (token != null) {
+          ref.read(authTokenProvider.notifier).setToken(token);
+        }
+      }
+
+      if (token != null) {
+        final authService = ref.read(authServiceProvider);
+        final teams = await authService.fetchTeams(token);
+        await ref.read(appStorageProvider).saveTeams(teams);
+        ref.invalidate(userTeamsProvider);
+      }
+    } catch (e) {
+      // Print/log the error so that developers can see it, but don't disrupt the user UI.
+      debugPrint('Error refreshing home data: $e');
+    } finally {
+      // Reload the events list
+      state = state.copyWith(
+        events: ref.read(homeServiceProvider).getEvents(),
+      );
+    }
+  }
 }
 
 // ─── Providers ────────────────────────────────────────────────────────────────

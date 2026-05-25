@@ -7,6 +7,7 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../common_providers/user_teams_provider.dart';
 import '../constants/app_assets.dart';
+import '../models/team_model.dart';
 import 'account_drawer.dart';
 import 'add_menu_dialog.dart';
 import 'custom_svg_icon.dart';
@@ -98,12 +99,21 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
     final pillBgColor = AppColors.current.card;
 
     final teamsAsync = ref.watch(userTeamsProvider);
-    final teams = teamsAsync.maybeWhen(
-      data: (list) => list.map((t) => t.name).toList(),
-      orElse: () => ['12 Girls ECNL RL', '08 Girls ECNL RL'],
+    final List<Team> teamsList = teamsAsync.maybeWhen(
+      data: (list) => list,
+      orElse: () => <Team>[],
     );
 
-    final activeTeam = _selectedTeamOverride ?? (teams.isNotEmpty ? teams.first : '');
+    final teams = teamsList.map((t) => t.name).toList();
+    final activeTeamName = _selectedTeamOverride ?? (teams.isNotEmpty ? teams.first : '');
+
+    Team? activeTeamObj;
+    for (final t in teamsList) {
+      if (t.name == activeTeamName) {
+        activeTeamObj = t;
+        break;
+      }
+    }
 
     return Container(
       height: 53 + topPadding,
@@ -128,7 +138,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
           const SizedBox(width: 34),
           const Spacer(),
           GestureDetector(
-            onTap: () => _showTeamMenu(context, teams, activeTeam),
+            onTap: () => _showTeamMenu(context, teams, activeTeamName),
             child: Container(
               height: 37,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -147,7 +157,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    activeTeam,
+                    activeTeamName,
                     style: AppTextStyles.body16.copyWith(
                       color: textColor,
                       fontWeight: FontWeight.w600,
@@ -162,7 +172,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
           ),
           const Spacer(),
           InkWell(
-            onTap: () => showAddMenu(context),
+            onTap: () => showAddMenu(context, activeTeam: activeTeamObj),
             child: CustomSvgIcon(
               assetPath: AppAssets.plusIcon,
               color: textColor,

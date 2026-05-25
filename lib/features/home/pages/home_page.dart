@@ -27,18 +27,30 @@ class HomeScreen extends ConsumerWidget {
           children: [
             const AppHeader(),
             Expanded(
-              child: viewModels.isEmpty
-                  ? const HomeEmptyState()
-                  : ListView.separated(
-                      padding:          const EdgeInsets.symmetric(vertical: 10),
-                      itemCount:        viewModels.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (_, i) => HomeCard(
-                        viewModel: viewModels[i],
-                        onEventDetails: () =>
-                            context.push(AppRoutes.eventDetails(viewModels[i].id)),
+              child: RefreshIndicator(
+                onRefresh: () => ref.read(homeProvider.notifier).refresh(),
+                child: viewModels.isEmpty
+                    ? SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.7,
+                          child: const Center(
+                            child: HomeEmptyState(),
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding:          const EdgeInsets.symmetric(vertical: 10),
+                        itemCount:        viewModels.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (_, i) => HomeCard(
+                          viewModel: viewModels[i],
+                          onEventDetails: () =>
+                              context.push(AppRoutes.eventDetails(viewModels[i].id)),
+                        ),
                       ),
-                    ),
+              ),
             ),
           ],
         ),

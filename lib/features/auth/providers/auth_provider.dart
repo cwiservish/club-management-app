@@ -7,6 +7,7 @@ import '../../../core/common_providers/current_user_provider.dart';
 import '../../../core/common_providers/user_teams_provider.dart';
 import '../../../core/config/environment_config.dart';
 import '../../../core/network/interceptors/logging_interceptor.dart';
+import '../../../core/network/token_storage.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
   final timeout = Duration(seconds: EnvironmentConfig.timeoutSeconds);
@@ -38,6 +39,10 @@ class AuthNotifier extends AsyncNotifier<void> {
       final authService = ref.read(authServiceProvider);
       final user = await authService.login(email, password);
       if (user != null) {
+        // Sync token in memory
+        final token = await ref.read(appStorageProvider).readToken();
+        ref.read(authTokenProvider.notifier).setToken(token);
+
         await ref.read(currentUserProvider.notifier).setUser(user);
         ref.invalidate(userTeamsProvider);
       } else {
@@ -58,6 +63,7 @@ class AuthNotifier extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       await ref.read(authServiceProvider).logout();
       await ref.read(currentUserProvider.notifier).clearUser();
+      ref.read(authTokenProvider.notifier).setToken(null);
       ref.invalidate(userTeamsProvider);
     });
   }

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../core/config/environment_config.dart';
+import '../../../core/network/api_endpoints.dart';
 import '../../../core/models/user_model.dart';
 import '../../../core/enums/user_role.dart';
 import '../../../core/local_storage/app_storage.dart';
@@ -14,10 +15,12 @@ class AuthService {
   Future<List<Team>> fetchTeams(String token) async {
     try {
       final response = await _dio.post(
-        'http://qa.playbook365.com/apps/club/teams',
+        '${ApiEndpoints.baseUrl}${ApiEndpoints.clubTeamsList}',
         data: '',
         options: Options(
           headers: {
+            'Accept': '*/*',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'Authorization': 'Bearer $token',
           },
         ),
@@ -26,7 +29,7 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
         if (data is Map<String, dynamic> && data['success'] == true) {
-          final teamsList = data['data']?['teams'];
+          final teamsList = data['data']?['grid'];
           if (teamsList is List) {
             return teamsList
                 .map((t) => Team.fromJson(t is Map<String, dynamic> ? t : {}))
@@ -35,12 +38,28 @@ class AuthService {
           return [];
         } else {
           final msg = data is Map ? data['message'] : null;
+          if (msg is String && msg.contains('Unauthorized')) {
+            throw 'Unauthorized access';
+          }
           throw msg ?? 'Failed to retrieve teams: success was false';
         }
       } else {
+        if (response.statusCode == 401) {
+          throw 'Unauthorized access';
+        }
         throw 'Failed to fetch teams from server (status: ${response.statusCode})';
       }
     } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw 'Unauthorized access';
+      }
+      final responseData = e.response?.data;
+      if (responseData is Map) {
+        final msg = responseData['message'];
+        if (msg is String && msg.contains('Unauthorized')) {
+          throw 'Unauthorized access';
+        }
+      }
       throw 'Network error while fetching teams: ${e.message}';
     } catch (e) {
       rethrow;
