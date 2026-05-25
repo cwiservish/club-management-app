@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
+import '../common_providers/selected_team_provider.dart';
 import '../common_providers/user_teams_provider.dart';
 import '../constants/app_assets.dart';
 import '../models/team_model.dart';
@@ -22,9 +23,7 @@ class AppHeader extends ConsumerStatefulWidget {
 }
 
 class _AppHeaderState extends ConsumerState<AppHeader> {
-  String? _selectedTeamOverride;
-
-  void _showTeamMenu(BuildContext context, List<String> teams, String activeTeam) {
+  void _showTeamMenu(BuildContext context, List<Team> teamsList, Team? activeTeam) {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -63,17 +62,17 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: teams.asMap().entries.map((entry) {
+                        children: teamsList.asMap().entries.map((entry) {
                           final index = entry.key;
                           final team = entry.value;
                           return _TeamOption(
-                            name: team,
-                            isActive: team == activeTeam,
-                            borderBottom: index < teams.length - 1,
+                            name: team.name,
+                            isActive: team.uuid == activeTeam?.uuid,
+                            borderBottom: index < teamsList.length - 1,
                             onTap: () {
                               Navigator.of(ctx).pop();
-                              setState(() => _selectedTeamOverride = team);
-                              widget.onTeamChanged?.call(team);
+                              ref.read(selectedTeamProvider.notifier).selectTeam(team);
+                              widget.onTeamChanged?.call(team.name);
                             },
                           );
                         }).toList(),
@@ -104,16 +103,8 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
       orElse: () => <Team>[],
     );
 
-    final teams = teamsList.map((t) => t.name).toList();
-    final activeTeamName = _selectedTeamOverride ?? (teams.isNotEmpty ? teams.first : '');
-
-    Team? activeTeamObj;
-    for (final t in teamsList) {
-      if (t.name == activeTeamName) {
-        activeTeamObj = t;
-        break;
-      }
-    }
+    final activeTeam = ref.watch(selectedTeamProvider);
+    final activeTeamName = activeTeam?.name ?? '';
 
     return Container(
       height: 53 + topPadding,
@@ -138,7 +129,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
           const SizedBox(width: 34),
           const Spacer(),
           GestureDetector(
-            onTap: () => _showTeamMenu(context, teams, activeTeamName),
+            onTap: () => _showTeamMenu(context, teamsList, activeTeam),
             child: Container(
               height: 37,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -172,7 +163,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
           ),
           const Spacer(),
           InkWell(
-            onTap: () => showAddMenu(context, activeTeam: activeTeamObj),
+            onTap: () => showAddMenu(context, activeTeam: activeTeam),
             child: CustomSvgIcon(
               assetPath: AppAssets.plusIcon,
               color: textColor,

@@ -18,5 +18,6 @@ abstract final class ApiEndpoints {
   // ─── Team ──────────────────────────────────────────────────────────────────
 
   static const String clubTeamsList = '/apps/club/teams/list';
+  static String teamPlayersList(String teamUuid) => '/apps/club/teams/$teamUuid/players/list';
 
 }

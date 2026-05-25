@@ -5,6 +5,7 @@ import '../../../core/enums/player_position.dart';
 
 class RosterMember {
   final String id;
+  final int? playerId;
   final String firstName;
   final String lastName;
   final MemberRole role;
@@ -25,6 +26,7 @@ class RosterMember {
 
   const RosterMember({
     required this.id,
+    this.playerId,
     required this.firstName,
     required this.lastName,
     required this.role,
@@ -44,9 +46,13 @@ class RosterMember {
     required this.avatarColor,
   });
 
-  String get fullName => '$firstName $lastName';
-  String get initials =>
-      '${firstName[0].toUpperCase()}${lastName[0].toUpperCase()}';
+  String get fullName => '$firstName $lastName'.trim();
+  String get initials {
+    final f = firstName.isNotEmpty ? firstName[0].toUpperCase() : '';
+    final l = lastName.isNotEmpty ? lastName[0].toUpperCase() : '';
+    final combined = '$f$l';
+    return combined.isNotEmpty ? combined : '?';
+  }
 
   String get positionLabel {
     switch (position) {
