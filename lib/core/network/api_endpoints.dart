@@ -29,4 +29,6 @@ abstract final class ApiEndpoints {
   static const String photosList = '/apps/club/teams/files/list';
   static const String photoSave = '/apps/club/teams/gallery/save';
   static const String photoRemove = '/apps/club/teams/gallery/remove';
+  static const String filesList = '/apps/club/teams/files/list';
+  static const String filesSave = '/apps/club/teams/files/save';
 }
