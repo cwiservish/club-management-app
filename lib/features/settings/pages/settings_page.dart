@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/common_providers/selected_team_provider.dart';
 import '../../../core/common_providers/theme_provider.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../widgets/team_info_card.dart';
@@ -14,6 +15,8 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeModeProvider);
+    final activeTeam = ref.watch(selectedTeamProvider);
+
     return Scaffold(
       backgroundColor: AppColors.current.background,
       body: SafeArea(
@@ -31,9 +34,8 @@ class SettingsScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
                           children: [
-                            const TeamInfoCard(
-                              teamName: '12 Girls ECNL RL',
-                              record: 'Record: 13-9-3',
+                            TeamInfoCard(
+                              team: activeTeam,
                             ),
                             const SizedBox(height: 24),
                             SettingsMenuItem(

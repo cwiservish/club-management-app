@@ -40,7 +40,7 @@ class NotificationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -67,35 +67,39 @@ class NotificationEmailRow extends StatelessWidget {
   final String label;
   final String value;
   final bool showDivider;
+  final VoidCallback? onTap;
+
   const NotificationEmailRow({
     super.key,
     required this.label,
     required this.value,
     this.showDivider = true,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        border: showDivider
-            ? Border(bottom: BorderSide(color: AppColors.current.gray100))
-            : null,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: AppTextStyles.body15.copyWith(
-                color: AppColors.current.textPrimary,
-                fontWeight: FontWeight.w500,
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          border: showDivider
+              ? Border(bottom: BorderSide(color: AppColors.current.gray100))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: AppTextStyles.body15.copyWith(
+                  color: AppColors.current.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
-          GestureDetector(
-            child: Row(
+            Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
@@ -123,8 +127,8 @@ class NotificationEmailRow extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -211,7 +215,7 @@ class NotificationToggle extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 2,
                   offset: const Offset(0, 1),
                 ),
@@ -238,7 +242,7 @@ class NotificationInfoBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.current.primaryLight,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.current.primary.withOpacity(0.2)),
+        border: Border.all(color: AppColors.current.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,7 +252,7 @@ class NotificationInfoBox extends StatelessWidget {
             height: 24,
             margin: const EdgeInsets.only(top: 1),
             decoration: BoxDecoration(
-              color: AppColors.current.primary.withOpacity(0.1),
+              color: AppColors.current.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,

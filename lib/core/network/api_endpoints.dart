@@ -22,4 +22,6 @@ abstract final class ApiEndpoints {
   static String playerProfile(String teamUuid, String playerUuid) =>
       '/apps/club/teams/$teamUuid/players/$playerUuid/profile';
   static const String assignParent = '/apps/club/players/parents/assign';
+  static const String customerNotificationsList = '/apps/club/customer/notifications/list';
+  static const String customerNotificationsSave = '/apps/club/customer/notifications/save';
 }
