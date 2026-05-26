@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/player_profile_models.dart';
+import '../models/assign_parent_models.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
 import 'roster_provider.dart';
 
@@ -63,6 +64,41 @@ class PlayerProfileNotifier extends Notifier<PlayerProfileState> {
     if (activeTeam != null) {
       await fetchProfile(activeTeam.uuid, playerUuid);
     }
+  }
+
+  /// Assigns a family member to the current player
+  Future<AssignParentResponse> assignParent(String email) async {
+    final activeTeam = ref.read(selectedTeamProvider);
+    if (activeTeam == null) {
+      throw 'No team selected';
+    }
+
+    final response = await ref.read(rosterServiceProvider).assignParent(
+          teamUuid: activeTeam.uuid,
+          playerUuid: playerUuid,
+          organizationId: activeTeam.organizationId.toString(),
+          email: email,
+        );
+
+    // If API returns updated parent list, update local state
+    if (response.data != null) {
+      final updatedParents = response.data!.parents;
+      if (state.profile != null) {
+        final updatedProfile = PlayerProfileResponse(
+          success: state.profile!.success,
+          message: state.profile!.message,
+          data: PlayerProfileData(
+            player: state.profile!.data.player,
+            parents: updatedParents,
+          ),
+        );
+        state = state.copyWith(profile: updatedProfile);
+      } else {
+        await refresh();
+      }
+    }
+
+    return response;
   }
 }
 

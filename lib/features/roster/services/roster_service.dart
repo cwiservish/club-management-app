@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
+import '../../../core/exceptions/network_exception.dart';
 import '../models/players_list_models.dart';
 import '../models/player_profile_models.dart';
+import '../models/assign_parent_models.dart';
 import '../models/roster_member.dart';
 import '../../../core/models/sample_data.dart';
 
@@ -72,5 +75,101 @@ class RosterService {
       message: response.message ?? '',
       data: PlayerProfileData.fromJson(dataMap),
     );
+  }
+
+  /// Assigns / invites a family member (parent) to a player.
+  Future<AssignParentResponse> assignParent({
+    required String teamUuid,
+    required String playerUuid,
+    required String organizationId,
+    required String email,
+  }) async {
+    const endpoint = ApiEndpoints.assignParent;
+    final requestBody = AssignParentRequest(
+      teamUuid: teamUuid,
+      playerUuid: playerUuid,
+      organizationId: organizationId,
+      email: email,
+    ).toJson();
+
+    // Print Request JSON in logs
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}$endpoint');
+    debugPrint('[API Request Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    try {
+      final response = await _apiClient.post(
+        endpoint,
+        body: requestBody,
+      );
+
+      final dataMap = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+
+      // Construct response map for printing
+      final rawResponseMap = {
+        'success': response.success,
+        'message': response.message ?? '',
+        'data': response.data,
+      };
+
+      // Print Response JSON in logs
+      debugPrint('════════════════════════════════════════════════════════════════');
+      debugPrint('[API Response] POST $endpoint');
+      debugPrint('[API Response Body]:');
+      debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
+      debugPrint('════════════════════════════════════════════════════════════════');
+
+      return AssignParentResponse(
+        success: response.success,
+        message: response.message ?? '',
+        data: AssignParentData.fromJson(dataMap),
+      );
+    } catch (e) {
+      Map<String, dynamic>? errorData;
+      String? errorMessage;
+      bool success = false;
+
+      if (e is DioException) {
+        final responseData = e.response?.data;
+        if (responseData is Map<String, dynamic>) {
+          errorData = responseData;
+          success = responseData['success'] == true;
+          errorMessage = responseData['message']?.toString();
+        }
+      } else if (e is NetworkException) {
+        errorMessage = e.message;
+      }
+
+      if (errorData != null) {
+        // Print Error Response JSON in logs if present
+        debugPrint('════════════════════════════════════════════════════════════════');
+        debugPrint('[API Response Error Body] POST $endpoint');
+        debugPrint(const JsonEncoder.withIndent('  ').convert(errorData));
+        debugPrint('════════════════════════════════════════════════════════════════');
+
+        final dataMap = errorData['data'] is Map<String, dynamic>
+            ? errorData['data'] as Map<String, dynamic>
+            : <String, dynamic>{};
+
+        return AssignParentResponse(
+          success: success,
+          message: errorMessage ?? 'Something went wrong',
+          data: AssignParentData.fromJson(dataMap),
+        );
+      }
+
+      debugPrint('════════════════════════════════════════════════════════════════');
+      debugPrint('[API Request Error] POST $endpoint: $e');
+      debugPrint('════════════════════════════════════════════════════════════════');
+
+      return AssignParentResponse(
+        success: false,
+        message: e is NetworkException ? e.message : e.toString(),
+      );
+    }
   }
 }

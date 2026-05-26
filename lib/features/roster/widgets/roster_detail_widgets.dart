@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/enums/member_role.dart';
 import '../models/roster_member.dart';
 import '../models/roster_detail_contact.dart';
+import '../providers/player_profile_provider.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Profile Section
@@ -695,22 +697,79 @@ class _RosterEditPlayerSheetState extends State<RosterEditPlayerSheet> {
 // Add Family Sheet
 // ══════════════════════════════════════════════════════════════════════════════
 
-class RosterAddFamilySheet extends StatefulWidget {
-  const RosterAddFamilySheet({super.key});
+class RosterAddFamilySheet extends ConsumerStatefulWidget {
+  final String memberId;
+  const RosterAddFamilySheet({super.key, required this.memberId});
 
   @override
-  State<RosterAddFamilySheet> createState() => _RosterAddFamilySheetState();
+  ConsumerState<RosterAddFamilySheet> createState() => _RosterAddFamilySheetState();
 }
 
-class _RosterAddFamilySheetState extends State<RosterAddFamilySheet> {
-  final _firstNameCtrl = TextEditingController();
-  final _lastNameCtrl  = TextEditingController();
+class _RosterAddFamilySheetState extends ConsumerState<RosterAddFamilySheet> {
+  final _emailCtrl = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    _firstNameCtrl.dispose();
-    _lastNameCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
+  }
+
+  void _onSave() async {
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty) {
+      _showSnackBar('Please enter an email address', isError: true);
+      return;
+    }
+
+    // Simple email format validation
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+    if (!emailRegex.hasMatch(email)) {
+      _showSnackBar('Please enter a valid email address', isError: true);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await ref.read(playerProfileProvider(widget.memberId).notifier).assignParent(email);
+      
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+
+      if (response.success) {
+        _showSnackBar(response.message, isError: false);
+        Navigator.pop(context); // Close sheet on success
+      } else {
+        // Show message from API response (already assigned or failed)
+        _showSnackBar(response.message, isError: !response.success);
+        
+        // If it is already assigned, the parent is still updated and returned in data, so we can close the sheet!
+        if (response.message.toLowerCase().contains('already assigned')) {
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showSnackBar(e.toString(), isError: true);
+    }
+  }
+
+  void _showSnackBar(String message, {required bool isError}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        backgroundColor: isError ? AppColors.current.error : Colors.green.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   @override
@@ -728,15 +787,61 @@ class _RosterAddFamilySheetState extends State<RosterAddFamilySheet> {
           RosterSheetHeader(
             title: 'New Family Member',
             onCancel: () => Navigator.pop(context),
-            onSave: () => Navigator.pop(context),
+            onSave: _isLoading ? () {} : _onSave,
           ),
+          if (_isLoading)
+            LinearProgressIndicator(
+              color: AppColors.current.primary,
+              backgroundColor: AppColors.current.primaryLight,
+              minHeight: 3,
+            ),
           SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 40),
-            child: RosterFormCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                RosterFormField(label: 'First Name', controller: _firstNameCtrl, hint: 'e.g. Jane'),
-                const RosterFieldDivider(),
-                RosterFormField(label: 'Last Name', controller: _lastNameCtrl, hint: 'e.g. Doe'),
+                RosterFormCard(
+                  children: [
+                    RosterFormField(
+                      label: 'Email Address',
+                      controller: _emailCtrl,
+                      hint: 'e.g. parent@yopmail.com',
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.current.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: _isLoading ? null : _onSave,
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'Send Invitation',
+                            style: AppTextStyles.heading14.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
               ],
             ),
           ),

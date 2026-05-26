@@ -190,7 +190,7 @@ class RosterDetailPage extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const RosterAddFamilySheet(),
+      builder: (_) => RosterAddFamilySheet(memberId: memberId),
     );
   }
 }
