@@ -19,5 +19,6 @@ abstract final class ApiEndpoints {
 
   static const String clubTeamsList = '/apps/club/teams/list';
   static String teamPlayersList(String teamUuid) => '/apps/club/teams/$teamUuid/players/list';
-
+  static String playerProfile(String teamUuid, String playerUuid) =>
+      '/apps/club/teams/$teamUuid/players/$playerUuid/profile';
 }

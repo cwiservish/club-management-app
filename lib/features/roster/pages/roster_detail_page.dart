@@ -3,16 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_text_styles.dart';
 import '../../../core/common_providers/theme_provider.dart';
 import '../models/roster_detail_contact.dart';
 import '../models/roster_member.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
 import '../providers/roster_detail_provider.dart';
+import '../providers/player_profile_provider.dart';
 import '../widgets/roster_detail_widgets.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Roster Detail Page
+// Roster Detail Page (Player Profile)
 // ══════════════════════════════════════════════════════════════════════════════
 
 class RosterDetailPage extends ConsumerWidget {
@@ -22,8 +24,38 @@ class RosterDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeModeProvider);
+
+    // Fetch the local fallback roster member immediately to populate name/initials
     final member = ref.watch(rosterDetailProvider(memberId));
-    final contacts = buildRosterDetailContacts(member);
+
+    // Watch the dynamic player profile API state
+    final profileState = ref.watch(playerProfileProvider(memberId));
+    final profile = profileState.profile?.data.player;
+    final parents = profileState.profile?.data.parents ?? [];
+
+    // Dynamically build contact list from API parents list, falling back to local mock data
+    final List<RosterDetailContact> contacts = [];
+    if (parents.isNotEmpty) {
+      for (final p in parents) {
+        final initials = p.name.isNotEmpty
+            ? p.name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').join().toUpperCase()
+            : 'P';
+        final clippedInitials = initials.substring(0, initials.length.clamp(0, 2));
+
+        contacts.add(RosterDetailContact(
+          name: p.name,
+          initials: clippedInitials,
+          relation: 'Parent',
+          email: p.email,
+          phone: p.mobile,
+        ));
+      }
+    } else {
+      // Fallback
+      contacts.addAll(buildRosterDetailContacts(member));
+    }
+
+    final isEditable = profile?.isEditable ?? true;
 
     return Scaffold(
       backgroundColor: AppColors.current.card,
@@ -35,40 +67,107 @@ class RosterDetailPage extends ConsumerWidget {
             SubHeader(
               title: '',
               leftLabel: 'Roster',
-              rightText: 'Edit',
-              onRightTap: () => _showEditSheet(context, member),
+              rightText: isEditable ? 'Edit' : null,
+              onRightTap: isEditable ? () => _showEditSheet(context, member) : null,
             ),
+            // Indent active loading indicator below the subheader
+            if (profileState.isLoading)
+              LinearProgressIndicator(
+                color: AppColors.current.primary,
+                backgroundColor: AppColors.current.primaryLight,
+                minHeight: 3,
+              ),
             Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    RosterProfileSection(
-                      member: member,
-                      onAvatarTap: () => _showEditSheet(context, member),
-                    ),
-                    RosterActionButtons(
-                      // onStatisticsTap: () => context.push(AppRoutes.statistics),
-                      onAttendanceTap: () => context.push(
-                        '${AppRoutes.roster}/${AppRoutes.rosterDetail}/${AppRoutes.rosterAttendance}',
-                        extra: memberId,
+              child: profileState.errorMessage != null && profileState.profile == null
+                  ? _buildErrorView(context, ref, profileState.errorMessage!)
+                  : RefreshIndicator(
+                      color: AppColors.current.primary,
+                      onRefresh: () => ref.read(playerProfileProvider(memberId).notifier).refresh(),
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RosterProfileSection(
+                              member: member,
+                              imageUrl: profile?.imageUrl ?? '',
+                              jerseyNo: profile?.jerseyNo,
+                              position: profile?.primaryPosition,
+                              onAvatarTap: isEditable ? () => _showEditSheet(context, member) : () {},
+                            ),
+                            RosterActionButtons(
+                              onAttendanceTap: () => context.push(
+                                '${AppRoutes.roster}/${AppRoutes.rosterDetail}/${AppRoutes.rosterAttendance}',
+                                extra: memberId,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            RosterFamilyContactsSection(
+                              contacts: contacts,
+                              onContactTap: (c) => _showContactDialog(context, c),
+                              onAddFamilyTap: () => _showAddFamilySheet(context),
+                            ),
+                            const SizedBox(height: 32),
+                          ],
+                        ),
                       ),
                     ),
-                    RosterFamilyContactsSection(
-                      contacts: contacts,
-                      onContactTap: (c) => _showContactDialog(context, c),
-                      onAddFamilyTap: () => _showAddFamilySheet(context),
-                    ),
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildErrorView(BuildContext context, WidgetRef ref, String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: AppColors.current.error,
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load player profile',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.current.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.current.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.current.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () => ref.read(playerProfileProvider(memberId).notifier).refresh(),
+              child: const Text('Try Again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Sheet helpers ─────────────────────────────────────────────────────────
 
   void _showEditSheet(BuildContext context, RosterMember member) {
     showModalBottomSheet(

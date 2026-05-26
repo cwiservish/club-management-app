@@ -12,15 +12,33 @@ import '../models/roster_detail_contact.dart';
 class RosterProfileSection extends StatelessWidget {
   final RosterMember member;
   final VoidCallback onAvatarTap;
+  final String? imageUrl;
+  final String? jerseyNo;
+  final String? position;
 
   const RosterProfileSection({
     super.key,
     required this.member,
     required this.onAvatarTap,
+    this.imageUrl,
+    this.jerseyNo,
+    this.position,
   });
 
   @override
   Widget build(BuildContext context) {
+    final String apiJersey = (jerseyNo ?? '').trim().toUpperCase();
+    final String displayJersey = (apiJersey.isNotEmpty && apiJersey != 'N/A')
+        ? jerseyNo!
+        : (member.jerseyNumber?.toString() ?? '');
+
+    final String apiPosition = (position ?? '').trim();
+    final String displayPosition = apiPosition.isNotEmpty
+        ? position!
+        : member.positionFull;
+
+    final isJerseyValid = displayJersey.trim().isNotEmpty && displayJersey.trim().toUpperCase() != 'N/A';
+
     return Container(
       color: AppColors.current.surface,
       padding: const EdgeInsets.all(20),
@@ -44,15 +62,17 @@ class RosterProfileSection extends StatelessWidget {
                 ],
               ),
               alignment: Alignment.center,
-              child: Text(
-                member.initials,
-                style: TextStyle(
-                  fontFamily: AppTextStyles.fontFamily,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.current.primary,
-                ),
-              ),
+              child: imageUrl != null && imageUrl!.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        imageUrl!,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => _buildInitials(),
+                      ),
+                    )
+                  : _buildInitials(),
             ),
           ),
           const SizedBox(width: 20),
@@ -73,14 +93,14 @@ class RosterProfileSection extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    if (member.role == MemberRole.player && member.jerseyNumber != null) ...[
-                      RosterJerseyBadge(number: member.jerseyNumber!),
+                    if (member.role == MemberRole.player && isJerseyValid) ...[
+                      RosterJerseyBadge(jerseyNo: displayJersey),
                       const SizedBox(width: 8),
                     ],
-                    if (member.positionFull.isNotEmpty || member.staffTitle != null)
+                    if (displayPosition.isNotEmpty || member.staffTitle != null)
                       Text(
                         member.role == MemberRole.player
-                            ? member.positionFull
+                            ? displayPosition
                             : (member.staffTitle ?? ''),
                         style: AppTextStyles.body14.copyWith(
                           color: AppColors.current.textSecondary,
@@ -96,14 +116,30 @@ class RosterProfileSection extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildInitials() {
+    return Text(
+      member.initials,
+      style: TextStyle(
+        fontFamily: AppTextStyles.fontFamily,
+        fontSize: 32,
+        fontWeight: FontWeight.w800,
+        color: AppColors.current.primary,
+      ),
+    );
+  }
 }
 
 class RosterJerseyBadge extends StatelessWidget {
-  final int number;
-  const RosterJerseyBadge({super.key, required this.number});
+  final String jerseyNo;
+  const RosterJerseyBadge({super.key, required this.jerseyNo});
 
   @override
   Widget build(BuildContext context) {
+    final clean = jerseyNo.trim().toUpperCase();
+    if (clean.isEmpty || clean == 'N/A') return const SizedBox.shrink();
+
+    final label = clean.startsWith('#') ? clean : '#$clean';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
@@ -119,7 +155,7 @@ class RosterJerseyBadge extends StatelessWidget {
         ],
       ),
       child: Text(
-        '#$number',
+        label,
         style: AppTextStyles.heading14.copyWith(color: AppColors.current.primary),
       ),
     );
@@ -131,18 +167,15 @@ class RosterJerseyBadge extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 
 class RosterActionButtons extends StatelessWidget {
-  final VoidCallback? onStatisticsTap;
   final VoidCallback? onAttendanceTap;
-  const RosterActionButtons({super.key, this.onStatisticsTap, this.onAttendanceTap});
+  const RosterActionButtons({super.key, this.onAttendanceTap});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         children: [
-          // Expanded(child: RosterNavButton(label: 'Statistics', onTap: onStatisticsTap)),
-          // const SizedBox(width: 12),
           Expanded(child: RosterNavButton(label: 'Attendance', onTap: onAttendanceTap)),
         ],
       ),
@@ -320,24 +353,47 @@ class RosterContactRow extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        contact.isEmail ? Icons.mail_outline : Icons.phone_outlined,
-                        size: 14,
-                        color: AppColors.current.gray400,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          contact.value,
-                          style: AppTextStyles.body13.copyWith(color: AppColors.current.textSecondary),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                  if (contact.email.isNotEmpty) ...[
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.mail_outline,
+                          size: 14,
+                          color: AppColors.current.gray400,
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            contact.email,
+                            style: AppTextStyles.body13.copyWith(color: AppColors.current.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (contact.phone.isNotEmpty) ...[
+                    if (contact.email.isNotEmpty) const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.phone_outlined,
+                          size: 14,
+                          color: AppColors.current.gray400,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            contact.phone,
+                            style: AppTextStyles.body13.copyWith(color: AppColors.current.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
