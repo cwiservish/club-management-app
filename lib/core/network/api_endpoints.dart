@@ -24,4 +24,9 @@ abstract final class ApiEndpoints {
   static const String assignParent = '/apps/club/players/parents/assign';
   static const String customerNotificationsList = '/apps/club/customer/notifications/list';
   static const String customerNotificationsSave = '/apps/club/customer/notifications/save';
+
+  // ─── Photos / Files ────────────────────────────────────────────────────────
+  static const String photosList = '/apps/club/teams/files/list';
+  static const String photoSave = '/apps/club/teams/gallery/save';
+  static const String photoRemove = '/apps/club/teams/gallery/remove';
 }

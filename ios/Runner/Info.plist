@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires access to your photo library to let you select and upload team photos.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires access to your camera to let you take and upload photos of team events.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires access to your microphone if recording audio with videos.</string>
 </dict>
 </plist>
