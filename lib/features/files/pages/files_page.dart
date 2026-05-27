@@ -8,6 +8,7 @@ import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
 import '../providers/files_provider.dart';
 import '../widgets/files_widgets.dart';
+import '../models/file_item.dart';
 
 class FilesPage extends ConsumerWidget {
   const FilesPage({super.key});
@@ -111,6 +112,64 @@ class FilesPage extends ConsumerWidget {
     );
   }
 
+  void _confirmDelete(BuildContext context, WidgetRef ref, FileItem file) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: AppColors.current.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(
+          'Delete Document',
+          style: AppTextStyles.heading16.copyWith(color: AppColors.current.textPrimary),
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete this document?',
+          style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              final idInt = int.tryParse(file.id) ?? 0;
+              final success = await ref.read(filesProvider.notifier).deleteFile(idInt);
+              if (context.mounted) {
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Document deleted successfully!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  final error = ref.read(filesProvider).errorMessage ?? 'Failed to delete document';
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(error),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeModeProvider);
@@ -187,6 +246,7 @@ class FilesPage extends ConsumerWidget {
                                         child: FileCard(
                                           file: file,
                                           onDownloadTap: () {},
+                                          onDeleteTap: () => _confirmDelete(context, ref, file),
                                         ),
                                       )),
                               ],

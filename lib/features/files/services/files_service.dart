@@ -124,4 +124,56 @@ class FilesService {
       );
     }
   }
+
+  /// Removes / deletes a document by ID.
+  Future<FileRemoveResponse> removeFile(int id) async {
+    const endpoint = ApiEndpoints.filesRemove;
+
+    // Log the request parameters
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Request] Multipart POST ${ApiEndpoints.baseUrl}$endpoint');
+    debugPrint('[Form Fields]:');
+    debugPrint('  id: $id');
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    try {
+      final formData = FormData.fromMap({
+        'id': id.toString(),
+      });
+
+      final response = await _apiClient.post(
+        endpoint,
+        body: formData,
+      );
+
+      // Construct response map for printing
+      final rawResponseMap = {
+        'success': response.success,
+        'message': response.message ?? '',
+        'data': response.data,
+      };
+
+      // Print Response JSON in logs
+      debugPrint('════════════════════════════════════════════════════════════════');
+      debugPrint('[API Response] POST $endpoint');
+      debugPrint('[API Response Body]:');
+      debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
+      debugPrint('════════════════════════════════════════════════════════════════');
+
+      final responseDataMap = <String, dynamic>{
+        'success': response.success,
+        'message': response.message ?? '',
+      };
+
+      return FileRemoveResponse.fromJson(responseDataMap);
+    } catch (e) {
+      debugPrint('════════════════════════════════════════════════════════════════');
+      debugPrint('[API Request Error] POST $endpoint: $e');
+      debugPrint('════════════════════════════════════════════════════════════════');
+      return FileRemoveResponse(
+        success: false,
+        message: e.toString(),
+      );
+    }
+  }
 }

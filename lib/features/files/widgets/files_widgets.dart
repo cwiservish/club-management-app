@@ -92,8 +92,14 @@ class FilesSectionLabel extends StatelessWidget {
 class FileCard extends StatelessWidget {
   final FileItem file;
   final VoidCallback onDownloadTap;
+  final VoidCallback onDeleteTap;
 
-  const FileCard({super.key, required this.file, required this.onDownloadTap});
+  const FileCard({
+    super.key,
+    required this.file,
+    required this.onDownloadTap,
+    required this.onDeleteTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -167,6 +173,22 @@ class FileCard extends StatelessWidget {
                 assetPath: AppAssets.downloadIcon,
                 size: 20,
                 color: AppColors.current.gray400,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          // Delete button
+          InkWell(
+            onTap: onDeleteTap,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: Colors.red.withOpacity(0.8),
               ),
             ),
           ),

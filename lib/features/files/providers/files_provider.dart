@@ -117,6 +117,28 @@ class FilesNotifier extends Notifier<FilesState> {
       return false;
     }
   }
+
+  /// Removes / deletes a document by ID.
+  Future<bool> deleteFile(int id) async {
+    state = state.copyWith(errorMessage: null);
+    try {
+      final response = await ref.read(filesServiceProvider).removeFile(id);
+      if (response.success) {
+        state = state.copyWith(
+          files: state.files.where((f) => f.id != id.toString()).toList(),
+        );
+        return true;
+      } else {
+        state = state.copyWith(
+          errorMessage: response.message.isNotEmpty ? response.message : 'Failed to delete file',
+        );
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+      return false;
+    }
+  }
 }
 
 // ─── Riverpod Providers ──────────────────────────────────────────────────────

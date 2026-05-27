@@ -105,3 +105,22 @@ class FileSaveResponse {
     );
   }
 }
+
+// ─── File Removing Models ────────────────────────────────────────────────────
+
+class FileRemoveResponse {
+  final bool success;
+  final String message;
+
+  const FileRemoveResponse({
+    required this.success,
+    required this.message,
+  });
+
+  factory FileRemoveResponse.fromJson(Map<String, dynamic> json) {
+    return FileRemoveResponse(
+      success: _parseBool(json['success']),
+      message: _parseString(json['message']),
+    );
+  }
+}
