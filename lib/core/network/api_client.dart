@@ -44,6 +44,15 @@ class ApiClient {
 
   final Dio _dio;
 
+  // ─── Path Helper ──────────────────────────────────────────────────────────
+
+  String _cleanPath(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    return path.startsWith('/') ? path.substring(1) : path;
+  }
+
   // ─── GET ──────────────────────────────────────────────────────────────────
 
   Future<ApiResponse> get(
@@ -54,7 +63,7 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        path,
+        _cleanPath(path),
         queryParameters: queryParameters,
         cancelToken: cancelToken,
         options: options,
@@ -75,7 +84,7 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
-        path,
+        _cleanPath(path),
         data: body,
         cancelToken: cancelToken,
         options: options,
@@ -96,7 +105,7 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.put<Map<String, dynamic>>(
-        path,
+        _cleanPath(path),
         data: body,
         cancelToken: cancelToken,
         options: options,
@@ -117,7 +126,7 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.patch<Map<String, dynamic>>(
-        path,
+        _cleanPath(path),
         data: body,
         cancelToken: cancelToken,
         options: options,
@@ -138,7 +147,7 @@ class ApiClient {
   }) async {
     try {
       await _dio.delete<void>(
-        path,
+        _cleanPath(path),
         data: body,
         cancelToken: cancelToken,
         options: options,
@@ -165,10 +174,13 @@ class ApiClient {
 ///   3. [ErrorInterceptor]   — DioException → NetworkException (must be last)
 final apiClientProvider = Provider<ApiClient>((ref) {
   final timeout = Duration(seconds: EnvironmentConfig.timeoutSeconds);
+  final baseUrl = ApiEndpoints.baseUrl.endsWith('/')
+      ? ApiEndpoints.baseUrl
+      : '${ApiEndpoints.baseUrl}/';
 
   final dio = Dio(
     BaseOptions(
-      baseUrl: ApiEndpoints.baseUrl,
+      baseUrl: baseUrl,
       connectTimeout: timeout,
       receiveTimeout: timeout,
       sendTimeout: timeout,

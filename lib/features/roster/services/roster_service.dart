@@ -5,6 +5,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/exceptions/network_exception.dart';
 import '../models/players_list_models.dart';
+import '../models/staff_list_models.dart';
 import '../models/player_profile_models.dart';
 import '../models/assign_parent_models.dart';
 import '../models/roster_member.dart';
@@ -19,19 +20,85 @@ class RosterService {
 
   /// Fetches players for a given team from the API.
   Future<PlayersListResponse> fetchPlayers(String teamUuid) async {
+    final requestBody = {
+      'team_uuid': teamUuid,
+    };
+
+    // Print Request JSON in logs
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.teamPlayersList}');
+    debugPrint('[API Request Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
     final response = await _apiClient.post(
-      ApiEndpoints.teamPlayersList(teamUuid),
-      body: {}, // empty body as specified in the curl/postman request
+      ApiEndpoints.teamPlayersList,
+      body: requestBody,
     );
 
     final dataMap = response.data is Map<String, dynamic>
         ? response.data as Map<String, dynamic>
         : <String, dynamic>{};
 
+    // Construct response map for printing
+    final rawResponseMap = {
+      'success': response.success,
+      'message': response.message ?? '',
+      'data': response.data,
+    };
+
+    // Print Response JSON in logs
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Response] POST ${ApiEndpoints.teamPlayersList}');
+    debugPrint('[API Response Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
     return PlayersListResponse(
       success: response.success,
       message: response.message ?? '',
       data: PlayersListData.fromJson(dataMap),
+    );
+  }
+
+  /// Fetches staff members for a given team from the API.
+  Future<StaffListResponse> fetchStaff(String teamUuid) async {
+    final requestBody = StaffListRequest(teamUuid: teamUuid).toJson();
+
+    // Print Request JSON in logs
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.teamStaffList}');
+    debugPrint('[API Request Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    final response = await _apiClient.post(
+      ApiEndpoints.teamStaffList,
+      body: requestBody,
+    );
+
+    final dataMap = response.data is Map<String, dynamic>
+        ? response.data as Map<String, dynamic>
+        : <String, dynamic>{};
+
+    // Construct response map for printing
+    final rawResponseMap = {
+      'success': response.success,
+      'message': response.message ?? '',
+      'data': response.data,
+    };
+
+    // Print Response JSON in logs
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Response] POST ${ApiEndpoints.teamStaffList}');
+    debugPrint('[API Response Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    return StaffListResponse(
+      success: response.success,
+      message: response.message ?? '',
+      data: StaffListData.fromJson(dataMap),
     );
   }
 

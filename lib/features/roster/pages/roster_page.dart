@@ -148,7 +148,7 @@ class RosterScreen extends ConsumerWidget {
                                     if (staff.isNotEmpty)
                                       ...staff.map((m) => RosterListRow(
                                             member: m,
-                                            onTap: () => _openDetail(context, m),
+                                            onTap: null,
                                           )),
                                   ],
                                 ),

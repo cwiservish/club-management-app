@@ -12,24 +12,23 @@ abstract final class ApiEndpoints {
   ApiEndpoints._();
 
   // ─── Base ──────────────────────────────────────────────────────────────────
-  static const String baseUrl = 'https://qa.playbook365.com';
+  static const String baseUrl = 'https://qa.playbook365.com/apps/club';
 
 
   // ─── Team ──────────────────────────────────────────────────────────────────
-
-  static const String clubTeamsList = '/apps/club/teams/list';
-  static String teamPlayersList(String teamUuid) => '/apps/club/teams/$teamUuid/players/list';
-  static String playerProfile(String teamUuid, String playerUuid) =>
-      '/apps/club/teams/$teamUuid/players/$playerUuid/profile';
-  static const String assignParent = '/apps/club/players/parents/assign';
-  static const String customerNotificationsList = '/apps/club/customer/notifications/list';
-  static const String customerNotificationsSave = '/apps/club/customer/notifications/save';
+  static const String clubTeamsList = '/team/list';
+  static const String teamPlayersList = '/team/player/list';
+  static const String teamStaffList = '/team/staff/list';
+  static String playerProfile(String teamUuid, String playerUuid) => '/teams/$teamUuid/players/$playerUuid/profile';
+  static const String assignParent = '/players/parents/assign';
+  static const String customerNotificationsList = '/customer/notifications/list';
+  static const String customerNotificationsSave = '/customer/notifications/save';
 
   // ─── Photos / Files ────────────────────────────────────────────────────────
-  static const String photosList = '/apps/club/teams/files/list';
-  static const String photoSave = '/apps/club/teams/gallery/save';
-  static const String photoRemove = '/apps/club/teams/gallery/remove';
-  static const String filesList = '/apps/club/teams/files/list';
-  static const String filesSave = '/apps/club/teams/files/save';
-  static const String filesRemove = '/apps/club/teams/files/remove';
+  static const String photosList = '/teams/files/list';
+  static const String photoSave = '/teams/gallery/save';
+  static const String photoRemove = '/teams/gallery/remove';
+  static const String filesList = '/teams/files/list';
+  static const String filesSave = '/teams/files/save';
+  static const String filesRemove = '/teams/files/remove';
 }

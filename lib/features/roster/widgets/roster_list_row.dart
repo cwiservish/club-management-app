@@ -6,9 +6,9 @@ import '../../../core/enums/member_role.dart';
 
 class RosterListRow extends StatelessWidget {
   final RosterMember member;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
-  const RosterListRow({super.key, required this.member, required this.onTap});
+  const RosterListRow({super.key, required this.member, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -75,12 +75,13 @@ class RosterListRow extends StatelessWidget {
                 ],
               ),
             ),
-            // Chevron
-            Icon(
-              Icons.chevron_right,
-              color: AppColors.current.gray400,
-              size: 20,
-            ),
+            // Chevron (only if clickable)
+            if (onTap != null)
+              Icon(
+                Icons.chevron_right,
+                color: AppColors.current.gray400,
+                size: 20,
+              ),
           ],
         ),
       ),

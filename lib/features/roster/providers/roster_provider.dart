@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/players_list_models.dart';
+import '../models/staff_list_models.dart';
 import '../models/roster_member.dart';
 import '../../../core/enums/member_role.dart';
 import '../../../core/enums/player_position.dart';
@@ -79,13 +81,20 @@ class RosterNotifier extends Notifier<RosterState> {
     );
   }
 
-  /// Fetches players from the API for the selected team UUID.
+  /// Fetches players and staff from the API for the selected team UUID.
   Future<void> fetchPlayers(String teamUuid) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      final response = await ref.read(rosterServiceProvider).fetchPlayers(teamUuid);
-      
-      final members = response.data.grid.map((p) {
+      final service = ref.read(rosterServiceProvider);
+      final results = await Future.wait([
+        service.fetchPlayers(teamUuid),
+        service.fetchStaff(teamUuid),
+      ]);
+
+      final playersResponse = results[0] as PlayersListResponse;
+      final staffResponse = results[1] as StaffListResponse;
+
+      final playerMembers = playersResponse.data.grid.map((p) {
         return RosterMember(
           id: p.uuid,
           playerId: p.playerId,
@@ -101,8 +110,25 @@ class RosterNotifier extends Notifier<RosterState> {
         );
       }).toList();
 
+      final staffMembers = staffResponse.data.grid.map((s) {
+        return RosterMember(
+          id: s.uuid,
+          firstName: s.firstName,
+          lastName: s.lastName,
+          role: MemberRole.staff,
+          staffTitle: 'ID: ${s.staffId}',
+          phone: s.mobile,
+          email: s.email,
+          attendancePercent: 95, // Mock default staff attendance percentage
+          avatarColor: _getRandomColor(s.name),
+        );
+      }).toList();
+
+      // Combine both lists
+      final allMembersList = [...playerMembers, ...staffMembers];
+
       state = state.copyWith(
-        allMembers: members,
+        allMembers: allMembersList,
         isLoading: false,
       );
     } catch (e) {

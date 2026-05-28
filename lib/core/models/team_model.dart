@@ -20,6 +20,8 @@ class Team {
   final String role;
   final bool isCoach;
   final bool isParent;
+  final String code;
+  final List<TeamPlayer> players;
 
   Team({
     required this.teamId,
@@ -43,6 +45,8 @@ class Team {
     required this.role,
     required this.isCoach,
     required this.isParent,
+    required this.code,
+    required this.players,
   });
 
   factory Team.fromJson(Map<String, dynamic> json) {
@@ -68,6 +72,8 @@ class Team {
       role: _parseString(json['role']),
       isCoach: _parseBool(json['is_coach']),
       isParent: _parseBool(json['is_parent']),
+      code: _parseString(json['code']),
+      players: _parsePlayersList(json['players']),
     );
   }
 
@@ -93,6 +99,8 @@ class Team {
     'role': role,
     'is_coach': isCoach,
     'is_parent': isParent,
+    'code': code,
+    'players': players.map((p) => p.toJson()).toList(),
   };
 
   // ─── Type-Safe Parsing Helpers ────────────────────────────────────────────────
@@ -130,4 +138,61 @@ class Team {
     }
     return [];
   }
+
+  static List<TeamPlayer> _parsePlayersList(dynamic value) {
+    if (value == null) return [];
+    if (value is List) {
+      return value
+          .map((e) => TeamPlayer.fromJson(e is Map<String, dynamic> ? e : {}))
+          .toList();
+    }
+    return [];
+  }
 }
+
+class TeamPlayer {
+  final int playerId;
+  final String uuid;
+  final String firstName;
+  final String lastName;
+  final String name;
+  final String profileImageUrl;
+  final String imageUrl;
+  final String profileUrl;
+
+  TeamPlayer({
+    required this.playerId,
+    required this.uuid,
+    required this.firstName,
+    required this.lastName,
+    required this.name,
+    required this.profileImageUrl,
+    required this.imageUrl,
+    required this.profileUrl,
+  });
+
+  factory TeamPlayer.fromJson(Map<String, dynamic> json) {
+    return TeamPlayer(
+      playerId: Team._parseInt(json['player_id']),
+      uuid: Team._parseString(json['uuid']),
+      firstName: Team._parseString(json['first_name']),
+      lastName: Team._parseString(json['last_name']),
+      name: Team._parseString(json['name']),
+      profileImageUrl: Team._parseString(json['profile_image_url']),
+      imageUrl: Team._parseString(json['image_url']),
+      profileUrl: Team._parseString(json['profile_url']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'player_id': playerId,
+    'uuid': uuid,
+    'first_name': firstName,
+    'last_name': lastName,
+    'name': name,
+    'profile_image_url': profileImageUrl,
+    'image_url': imageUrl,
+    'profile_url': profileUrl,
+  };
+}
+
