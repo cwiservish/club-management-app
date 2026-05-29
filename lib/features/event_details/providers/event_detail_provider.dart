@@ -71,9 +71,6 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
 
 // ─── Providers ────────────────────────────────────────────────────────────────
 
-final eventDetailServiceProvider =
-    Provider<EventDetailService>((ref) => EventDetailService());
-
 final eventDetailProvider =
     NotifierProvider.family<EventDetailNotifier, EventDetailState, String>(
   EventDetailNotifier.new,

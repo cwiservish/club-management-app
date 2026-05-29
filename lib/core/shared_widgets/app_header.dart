@@ -164,10 +164,13 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
           const Spacer(),
           InkWell(
             onTap: () => showAddMenu(context, activeTeam: activeTeam),
-            child: CustomSvgIcon(
-              assetPath: AppAssets.plusIcon,
-              color: textColor,
-              size: 18,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: CustomSvgIcon(
+                assetPath: AppAssets.plusIcon,
+                color: textColor,
+                size: 18,
+              ),
             ),
           ),
           const SizedBox(width: 16),

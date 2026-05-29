@@ -1,9 +1,22 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/models/api_response.dart';
+import '../../../core/config/environment_config.dart';
+import '../models/event_dropdown_options_models.dart';
 import '../models/event_detail_model.dart';
 import '../models/event_player_model.dart';
 
 class EventDetailService {
+  final ApiClient _apiClient;
+  final Dio _dio;
+
+  EventDetailService(this._apiClient, this._dio);
+
   EventDetailModel getEventDetail(String eventId) {
-    // TODO: fetch by eventId when backend is ready
     return const EventDetailModel(
       id:              '1',
       name:            'Practice',
@@ -20,7 +33,6 @@ class EventDetailService {
   }
 
   List<EventPlayerModel> getEventPlayers(String eventId) {
-    // TODO: fetch by eventId when backend is ready
     return const [
       EventPlayerModel(id: 1, name: 'Kinsley Weston',   number: '1',  status: PlayerStatus.going, note: ''),
       EventPlayerModel(id: 2, name: 'Kinley Kirkes',    number: '5',  status: PlayerStatus.going, note: ''),
@@ -31,4 +43,139 @@ class EventDetailService {
       EventPlayerModel(id: 7, name: 'Emma Smith',       number: '4',  status: PlayerStatus.none,  note: ''),
     ];
   }
+
+  /// Fetches timezone and dropdown options for the given team.
+  Future<EventDropdownOptionsResponse> fetchEventDropdownOptions(EventDropdownOptionsRequest request) async {
+    final queryParams = request.toJson();
+
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Request] GET ${ApiEndpoints.baseUrl}${ApiEndpoints.eventDropdownOptions}');
+    debugPrint('[API Request Query Parameters]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(queryParams));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    final response = await _apiClient.get(
+      ApiEndpoints.eventDropdownOptions,
+      queryParameters: queryParams,
+    );
+
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Response] GET ${ApiEndpoints.eventDropdownOptions}');
+    debugPrint('[success]: ${response.success}');
+    debugPrint('[message]: ${response.message}');
+    debugPrint('[data type]: ${response.data.runtimeType}');
+
+    // Print full raw data to reveal actual structure
+    try {
+      debugPrint('[data full]:');
+      debugPrint(const JsonEncoder.withIndent('  ').convert(response.data));
+    } catch (_) {
+      debugPrint('[data raw]: ${response.data}');
+    }
+
+    // Print top-level keys if data is a map
+    if (response.data is Map) {
+      final dataMap = response.data as Map;
+      debugPrint('[data keys]: ${dataMap.keys.toList()}');
+      for (final key in dataMap.keys) {
+        final val = dataMap[key];
+        debugPrint('  [$key] => type: ${val.runtimeType}, value: ${val is List ? "List(${val.length})" : val}');
+      }
+    }
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    return EventDropdownOptionsResponse.fromJson({
+      'success': response.success,
+      'message': response.message,
+      // The API returns {"timezones":[...]} with no nested "data" key,
+      // so we pass rawJson directly as the data payload.
+      'data': response.data ?? response.rawJson,
+    });
+  }
+
+  /// Saves / adds a new event to the team.
+  Future<ApiResponse> saveEvent(Map<String, dynamic> body) async {
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventSave}');
+    debugPrint('[API Request Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(body));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    final response = await _apiClient.post(
+      ApiEndpoints.eventSave,
+      body: body,
+    );
+
+    final rawResponseMap = {
+      'success': response.success,
+      'message': response.message ?? '',
+      'data': response.data,
+    };
+
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Response] POST ${ApiEndpoints.eventSave}');
+    debugPrint('[API Response Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    return response;
+  }
+
+  /// Searches Google Places Autocomplete API.
+  Future<List<Map<String, dynamic>>> fetchPlacesAutocomplete(String input) async {
+    final apiKey = EnvironmentConfig.googleMapsApiKey;
+    if (apiKey.isEmpty) {
+      debugPrint('[Google Places] API key is empty. Skipping autocomplete call.');
+      return [];
+    }
+
+    try {
+      const url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
+      final response = await _dio.get(url, queryParameters: {
+        'input': input,
+        'key': apiKey,
+        'types': 'establishment|geocode',
+      });
+
+      if (response.statusCode == 200 && response.data != null) {
+        final predictions = response.data['predictions'];
+        if (predictions is List) {
+          return predictions.map((e) => Map<String, dynamic>.from(e)).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('[Google Places] Autocomplete error: $e');
+    }
+    return [];
+  }
+
+  /// Fetches place geometry details from Place ID.
+  Future<Map<String, dynamic>?> fetchPlaceDetails(String placeId) async {
+    final apiKey = EnvironmentConfig.googleMapsApiKey;
+    if (apiKey.isEmpty) return null;
+
+    try {
+      const url = 'https://maps.googleapis.com/maps/api/place/details/json';
+      final response = await _dio.get(url, queryParameters: {
+        'place_id': placeId,
+        'key': apiKey,
+        'fields': 'geometry',
+      });
+
+      if (response.statusCode == 200 && response.data != null) {
+        final result = response.data['result'];
+        if (result is Map<String, dynamic>) {
+          return result;
+        }
+      }
+    } catch (e) {
+      debugPrint('[Google Places] Place details error: $e');
+    }
+    return null;
+  }
 }
+
+final eventDetailServiceProvider = Provider<EventDetailService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return EventDetailService(apiClient, Dio());
+});

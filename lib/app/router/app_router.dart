@@ -23,7 +23,7 @@ import '../../features/invoice/pages/invoice_form_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
 import '../../features/event_details/models/event_detail_model.dart';
 import '../../features/event_details/pages/event_detail_page.dart' as ed;
-import '../../features/event_details/pages/event_edit_page.dart';
+import '../../features/event_details/pages/event_add_page.dart';
 import '../../features/auth/pages/login_page.dart';
 import '../../features/auth/pages/forgot_password_page.dart';
 import '../../shell/app_shell.dart';
