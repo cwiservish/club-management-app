@@ -19,10 +19,12 @@ abstract final class ApiEndpoints {
   static const String clubTeamsList = '/team/list';
   static const String teamPlayersList = '/team/player/list';
   static const String teamStaffList = '/team/staff/list';
-  static String playerProfile(String teamUuid, String playerUuid) => '/teams/$teamUuid/players/$playerUuid/profile';
+  static const String playerProfile = '/team/player/profile';
   static const String assignParent = '/players/parents/assign';
-  static const String customerNotificationsList = '/customer/notifications/list';
-  static const String customerNotificationsSave = '/customer/notifications/save';
+  static const String playerPositions = '/team/player/positions';
+  static const String playerSave = '/team/player/save';
+  static const String customerNotificationsList = '/customer/notification/list';
+  static const String customerNotificationsSave = '/customer/notification/save';
 
   // ─── Photos / Files ────────────────────────────────────────────────────────
   static const String photosList = '/teams/files/list';

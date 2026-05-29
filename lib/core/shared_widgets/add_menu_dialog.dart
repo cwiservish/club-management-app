@@ -1,10 +1,16 @@
 import 'dart:ui';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../models/team_model.dart';
+import '../../features/roster/providers/roster_provider.dart';
+import '../../features/roster/models/player_positions_models.dart';
 
 // ─── AddMenuViewModel (MVVM) ──────────────────────────────────────────────────
 class AddMenuViewModel {
@@ -75,7 +81,7 @@ void showAddMenu(BuildContext context, {Team? activeTeam}) {
                             label: 'Player',
                             onTap: () {
                               Navigator.of(context).pop();
-                              _showNewPlayerModal(context);
+                              _showNewPlayerModal(context, activeTeam: activeTeam);
                             },
                           ),
                         if (viewModel.showChat)
@@ -265,19 +271,209 @@ class _NewTeamModal extends StatelessWidget {
 }
 */
 
-void _showNewPlayerModal(BuildContext context) {
+void _showNewPlayerModal(BuildContext context, {Team? activeTeam}) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => _NewPlayerModal(),
+    builder: (context) => _NewPlayerModal(activeTeam: activeTeam),
   );
 }
 
-class _NewPlayerModal extends StatelessWidget {
+class _NewPlayerModal extends ConsumerStatefulWidget {
+  final Team? activeTeam;
+
+  const _NewPlayerModal({super.key, this.activeTeam});
+
+  @override
+  ConsumerState<_NewPlayerModal> createState() => _NewPlayerModalState();
+}
+
+class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
+  final _formKey = GlobalKey<FormState>();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _jerseyController = TextEditingController();
+
+  List<PlayerPositionModel> _positions = [];
+  PlayerPositionModel? _selectedPosition;
+  bool _isLoadingPositions = false;
+  String? _positionsError;
+
+  bool _isSaving = false;
+  bool _isDropdownOpen = false;
+
+  XFile? _pickedImage;
+  Uint8List? _pickedImageBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPositions();
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _jerseyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchPositions() async {
+    final teamUuid = widget.activeTeam?.uuid;
+    if (teamUuid == null || teamUuid.isEmpty) {
+      setState(() {
+        _positionsError = 'No active team selected';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingPositions = true;
+      _positionsError = null;
+    });
+
+    try {
+      final rosterService = ref.read(rosterServiceProvider);
+      final response = await rosterService.fetchPlayerPositions(teamUuid);
+      if (response.success) {
+        setState(() {
+          _positions = response.positions;
+          _isLoadingPositions = false;
+        });
+      } else {
+        setState(() {
+          _positionsError = response.message.isNotEmpty ? response.message : 'Failed to fetch positions';
+          _isLoadingPositions = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _positionsError = e.toString();
+        _isLoadingPositions = false;
+      });
+    }
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 500,
+        maxHeight: 500,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _pickedImage = image;
+          _pickedImageBytes = bytes;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to pick image: $e'),
+          backgroundColor: AppColors.current.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _savePlayer() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedPosition == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please select a player position'),
+          backgroundColor: AppColors.current.error,
+        ),
+      );
+      return;
+    }
+
+    final teamUuid = widget.activeTeam?.uuid;
+    if (teamUuid == null || teamUuid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('No active team selected'),
+          backgroundColor: AppColors.current.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    String? imageBase64;
+    if (_pickedImageBytes != null) {
+      final mimeType = _pickedImage!.path.endsWith('.jpg') || _pickedImage!.path.endsWith('.jpeg')
+          ? 'image/jpeg'
+          : 'image/png';
+      imageBase64 = 'data:$mimeType;base64,${base64Encode(_pickedImageBytes!)}';
+    }
+
+    try {
+      final rosterService = ref.read(rosterServiceProvider);
+      final response = await rosterService.savePlayer(
+        teamUuid: teamUuid,
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        jersey: _jerseyController.text.trim(),
+        primaryPosition: _selectedPosition!.key,
+        imageBase64: imageBase64,
+      );
+
+      final message = response.message;
+      if (response.success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message != null && message.isNotEmpty ? message : 'Player saved successfully'),
+              backgroundColor: AppColors.current.success,
+            ),
+          );
+          // Refresh the roster list automatically
+          ref.read(rosterProvider.notifier).refresh();
+          Navigator.pop(context);
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message != null && message.isNotEmpty ? message : 'Failed to save player'),
+              backgroundColor: AppColors.current.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.current.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.current;
+    final viewInsets = MediaQuery.of(context).viewInsets;
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: BoxDecoration(
@@ -309,53 +505,104 @@ class _NewPlayerModal extends StatelessWidget {
                 ),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Text('Save', style: AppTextStyles.body15.copyWith(color: colors.primary, fontWeight: FontWeight.w700)),
-                  ),
+                  child: _isSaving
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.primary,
+                          ),
+                        )
+                      : GestureDetector(
+                          onTap: _savePlayer,
+                          child: Text(
+                            'Save',
+                            style: AppTextStyles.body15.copyWith(
+                              color: colors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                 ),
               ],
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                Center(
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    margin: const EdgeInsets.only(bottom: 24),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: 20 + viewInsets.bottom,
+                ),
+                children: [
+                  Center(
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        margin: const EdgeInsets.only(bottom: 24),
+                        decoration: BoxDecoration(
+                          color: colors.border,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: colors.surface, width: 4),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: _pickedImageBytes != null
+                            ? Image.memory(
+                                _pickedImageBytes!,
+                                fit: BoxFit.cover,
+                              )
+                            : Icon(Icons.camera_alt, color: colors.textSecondary, size: 32),
+                      ),
+                    ),
+                  ),
+                  Container(
                     decoration: BoxDecoration(
-                      color: colors.border,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: colors.surface, width: 4),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
+                      color: colors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: colors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildFormField(
+                          label: 'FIRST NAME',
+                          placeholder: 'e.g. Preston',
+                          controller: _firstNameController,
+                          validator: (val) =>
+                              val == null || val.trim().isEmpty ? 'First name is required' : null,
+                        ),
+                        Divider(height: 1, color: colors.border),
+                        _buildFormField(
+                          label: 'LAST NAME',
+                          placeholder: 'e.g. Cole',
+                          controller: _lastNameController,
+                          validator: (val) =>
+                              val == null || val.trim().isEmpty ? 'Last name is required' : null,
+                        ),
+                        Divider(height: 1, color: colors.border),
+                        _buildFormField(
+                          label: 'JERSEY NUMBER',
+                          placeholder: 'e.g. 8',
+                          controller: _jerseyController,
+                          keyboardType: TextInputType.number,
+                          validator: (val) =>
+                              val == null || val.trim().isEmpty ? 'Jersey number is required' : null,
+                        ),
+                        Divider(height: 1, color: colors.border),
+                        _buildDropdownField(label: 'POSITION'),
                       ],
                     ),
-                    child: Icon(Icons.camera_alt, color: colors.textSecondary, size: 32),
                   ),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: colors.border),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildTextField('FIRST NAME', 'e.g. Preston'),
-                      Divider(height: 1, color: colors.border),
-                      _buildTextField('LAST NAME', 'e.g. Cole'),
-                      Divider(height: 1, color: colors.border),
-                      _buildTextField('JERSEY NUMBER', 'e.g. 8'),
-                      Divider(height: 1, color: colors.border),
-                      _buildTextField('POSITION', 'Select position...'),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -363,26 +610,234 @@ class _NewPlayerModal extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField(String label, String placeholder) {
+  Widget _buildFormField({
+    required String label,
+    required String placeholder,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    final colors = AppColors.current;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: AppTextStyles.label11.copyWith(color: AppColors.current.textSecondary, fontWeight: FontWeight.w600, letterSpacing: 0.8)),
+          Text(
+            label,
+            style: AppTextStyles.label11.copyWith(
+              color: colors.textSecondary,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+            ),
+          ),
           const SizedBox(height: 4),
-          TextField(
-            style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary, fontWeight: FontWeight.w500),
+          TextFormField(
+            controller: controller,
+            keyboardType: keyboardType,
+            validator: validator,
+            style: AppTextStyles.body16.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w500,
+            ),
             decoration: InputDecoration(
               hintText: placeholder,
-              hintStyle: AppTextStyles.body16.copyWith(color: AppColors.current.textSecondary.withValues(alpha: 0.5)),
+              hintStyle: AppTextStyles.body16.copyWith(
+                color: colors.textSecondary.withValues(alpha: 0.5),
+              ),
               border: InputBorder.none,
               isDense: true,
               contentPadding: EdgeInsets.zero,
+              errorStyle: TextStyle(
+                color: colors.error,
+                fontSize: 12,
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String label,
+  }) {
+    final colors = AppColors.current;
+    return FormField<PlayerPositionModel>(
+      initialValue: _selectedPosition,
+      validator: (val) => val == null ? 'Position is required' : null,
+      builder: (FormFieldState<PlayerPositionModel> fieldState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Tap target row
+            InkWell(
+              onTap: _isLoadingPositions
+                  ? null
+                  : () {
+                      setState(() {
+                        _isDropdownOpen = !_isDropdownOpen;
+                      });
+                    },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
+                            style: AppTextStyles.label11.copyWith(
+                              color: colors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _selectedPosition?.label ?? 'Select position...',
+                            style: AppTextStyles.body16.copyWith(
+                              color: _selectedPosition == null
+                                  ? colors.textSecondary.withValues(alpha: 0.5)
+                                  : colors.textPrimary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_isLoadingPositions)
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colors.primary,
+                        ),
+                      )
+                    else
+                      AnimatedRotation(
+                        turns: _isDropdownOpen ? 0.5 : 0.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(
+                          Icons.keyboard_arrow_down,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Error Text (if any)
+            if (fieldState.hasError)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Text(
+                  fieldState.errorText!,
+                  style: TextStyle(
+                    color: colors.error,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+
+            // Positions fetching error
+            if (_positionsError != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _positionsError!,
+                        style: TextStyle(
+                          color: colors.error,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: _fetchPositions,
+                      child: Text(
+                        'Retry',
+                        style: TextStyle(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Scrollable list directly below
+            if (_isDropdownOpen && _positions.isNotEmpty) ...[
+              Divider(height: 1, color: colors.border),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 180),
+                color: colors.background.withValues(alpha: 0.03),
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: _positions.length,
+                    itemBuilder: (context, index) {
+                      final pos = _positions[index];
+                      final isSelected = _selectedPosition == pos;
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedPosition = pos;
+                            _isDropdownOpen = false;
+                            fieldState.didChange(pos);
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: colors.border.withValues(alpha: 0.3),
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                pos.label,
+                                style: AppTextStyles.body16.copyWith(
+                                  color: isSelected ? colors.primary : colors.textPrimary,
+                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(
+                                  Icons.check,
+                                  color: colors.primary,
+                                  size: 20,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }

@@ -10,11 +10,13 @@ class ApiResponse {
   final dynamic data;
   final String? message;
   final bool success;
+  final Map<String, dynamic> rawJson;
 
   const ApiResponse({
     required this.data,
     required this.success,
     this.message,
+    this.rawJson = const {},
   });
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) {
@@ -22,6 +24,7 @@ class ApiResponse {
       success: (json['success'] as bool?) ?? true,
       message: json['message'] as String?,
       data: json['data'],
+      rawJson: json,
     );
   }
 
