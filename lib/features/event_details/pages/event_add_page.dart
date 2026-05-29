@@ -5,6 +5,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/config/environment_config.dart';
 import '../providers/event_edit_provider.dart';
+import '../models/event_dropdown_options_models.dart';
 import '../services/event_detail_service.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
@@ -15,6 +16,9 @@ import '../widgets/event_edit_inline_field.dart';
 import '../widgets/event_edit_list_row.dart';
 import '../widgets/event_edit_notify_card.dart';
 import '../widgets/event_edit_toggle_row.dart';
+import '../../home/providers/home_provider.dart';
+import '../../../core/common_providers/selected_team_provider.dart';
+import '../../../core/models/club_event.dart';
 
 // ─── Predefined Soccer Complexes for Oklahoma (Fallback) ──────────────────
 
@@ -74,6 +78,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
   bool _timeTbd    = false;
   bool _trackAvail = true;
   bool _canceled   = false;
+  bool _hasPrepopulatedTimezone = false;
 
   // Controllers
   final _eventNameController       = TextEditingController(text: '');
@@ -95,6 +100,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
   String _latitude                 = '';
   String _longitude                = '';
   String _flagColor                = '#434332';
+  int? _dbId;
 
   // Flag Color Swatches
   final Map<String, String> _colorSwatches = {
@@ -107,6 +113,87 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
     'Grape': '#8E24AA',
     'Teal': '#009688',
   };
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.eventId != 'new') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _populateExistingEvent();
+      });
+    }
+  }
+
+  void _populateExistingEvent() {
+    try {
+      final homeState = ref.read(homeProvider);
+      ClubEvent? foundEvent;
+      for (final e in homeState.events) {
+        if (e.id == widget.eventId) {
+          foundEvent = e;
+          break;
+        }
+      }
+
+      if (foundEvent != null) {
+        debugPrint('═══ [EventEdit] Auto-fill Event Details ═══');
+        debugPrint('title: ${foundEvent.title}');
+        debugPrint('location: ${foundEvent.location}');
+        debugPrint('locationDetails: ${foundEvent.locationDetails}');
+        debugPrint('opponent: ${foundEvent.opponent}');
+        debugPrint('extraLabel/subtitle: ${foundEvent.subtitle}');
+        debugPrint('notes: ${foundEvent.notes}');
+        debugPrint('flagColor: ${foundEvent.flagColor}');
+        debugPrint('============================================');
+
+        setState(() {
+          _dbId = foundEvent!.dbId;
+          _eventNameController.text = foundEvent.title;
+          _timeTbd = foundEvent.timeTbd;
+          _selectedDateTime = foundEvent.dateTime;
+          _durationMinutes = foundEvent.duration.inMinutes;
+          _locationName = foundEvent.location;
+          _locationDetailsController.text = foundEvent.locationDetails ?? '';
+          _trackAvail = foundEvent.rsvpRequired;
+          _opponentController.text = foundEvent.opponent ?? '';
+          _extraLabelController.text = foundEvent.subtitle;
+          _notesController.text = foundEvent.notes ?? '';
+          _uniformColorController.text = foundEvent.uniformColor ?? '';
+
+          // Map flag color robustly
+          final parsedFlagColor = foundEvent.flagColor;
+          if (parsedFlagColor != null && parsedFlagColor.isNotEmpty) {
+            if (parsedFlagColor.startsWith('#')) {
+              _flagColor = parsedFlagColor;
+            } else {
+              final lowerColor = parsedFlagColor.toLowerCase().trim();
+              if (lowerColor.contains('green') || lowerColor == 'emerald') {
+                _flagColor = '#00897B'; // Emerald
+              } else if (lowerColor.contains('teal')) {
+                _flagColor = '#009688'; // Teal
+              } else if (lowerColor.contains('blue') || lowerColor == 'sapphire') {
+                _flagColor = '#1E88E5'; // Sapphire
+              } else if (lowerColor.contains('red') || lowerColor == 'crimson') {
+                _flagColor = '#E53935'; // Crimson
+              } else if (lowerColor.contains('amber') || lowerColor == 'yellow') {
+                _flagColor = '#FFB300'; // Amber
+              } else if (lowerColor.contains('purple') || lowerColor == 'grape') {
+                _flagColor = '#8E24AA'; // Grape
+              } else if (lowerColor.contains('black') || lowerColor == 'blackberry') {
+                _flagColor = '#434332'; // Blackberry
+              } else if (lowerColor == 'charcoal') {
+                _flagColor = '#212121';
+              } else {
+                _flagColor = parsedFlagColor;
+              }
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error populating event details: $e');
+    }
+  }
 
   Color _hexToColor(String hex) {
     try {
@@ -1287,6 +1374,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
     }
 
     final success = await notifier.saveEvent(
+      id: widget.eventId != 'new' ? _dbId : null,
       eventName: eventName,
       startTime: _formatApiDateTime(_selectedDateTime),
       timezone: state.selectedTimezone!.key,
@@ -1324,6 +1412,84 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
           SnackBar(
             content: Text(errMsg != null && errMsg.isNotEmpty ? errMsg : 'Failed to save event'),
             backgroundColor: AppColors.current.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _onDelete(EventEditState state, EventEditNotifier notifier) async {
+    final colors = AppColors.current;
+    
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.background,
+        title: Text(
+          'Delete Event',
+          style: AppTextStyles.heading18.copyWith(color: colors.textPrimary),
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete this event?',
+          style: AppTextStyles.body16.copyWith(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w600),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.error,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final success = await notifier.deleteEvent(_dbId);
+
+    if (success) {
+      if (mounted) {
+        final successMsg = ref.read(eventEditProvider).saveSuccessMessage;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(successMsg != null && successMsg.isNotEmpty ? successMsg : 'Event deleted successfully'),
+            backgroundColor: colors.primary,
+          ),
+        );
+        
+        final activeTeam = ref.read(selectedTeamProvider);
+        if (activeTeam != null) {
+          ref.read(homeProvider.notifier).fetchEvents(activeTeam.uuid);
+        }
+
+        Navigator.maybePop(context);
+        
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      }
+    } else {
+      if (mounted) {
+        final errMsg = ref.read(eventEditProvider).saveError;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errMsg != null && errMsg.isNotEmpty ? errMsg : 'Failed to delete event'),
+            backgroundColor: colors.error,
           ),
         );
       }
@@ -1619,6 +1785,34 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
     final timezoneState = ref.watch(eventEditProvider);
     final notifier = ref.read(eventEditProvider.notifier);
     final colors = AppColors.current;
+    final isEdit = widget.eventId != 'new';
+
+    // Pre-select matching timezone for existing event
+    if (isEdit && !_hasPrepopulatedTimezone && timezoneState.timezones.isNotEmpty) {
+      final homeState = ref.read(homeProvider);
+      ClubEvent? foundEvent;
+      for (final e in homeState.events) {
+        if (e.id == widget.eventId) {
+          foundEvent = e;
+          break;
+        }
+      }
+      if (foundEvent != null && foundEvent.timezone != null) {
+        TimezoneModel? matchingTz;
+        for (final tz in timezoneState.timezones) {
+          if (tz.key.toLowerCase().trim() == foundEvent.timezone!.toLowerCase().trim()) {
+            matchingTz = tz;
+            break;
+          }
+        }
+        if (matchingTz != null) {
+          _hasPrepopulatedTimezone = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            notifier.selectTimezone(matchingTz!);
+          });
+        }
+      }
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -1626,16 +1820,22 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
           children: [
             const AppHeader(),
             SubHeader(
-              title:      'Add Event',
+              title:      isEdit ? 'Edit Event' : 'Add Event',
               leftIcon:   Icons.close,
-              leftLabel:  'Close',
+                                  leftLabel:  'Close',
               onLeftTap:  timezoneState.isSaving ? null : () => Navigator.maybePop(context),
               rightText:  timezoneState.isSaving ? 'Saving...' : 'Save',
               onRightTap: timezoneState.isSaving ? null : () => _onSave(timezoneState, notifier),
             ),
             Expanded(
               child: RefreshIndicator(
-                onRefresh: () => notifier.refreshTimezones(),
+                onRefresh: () async {
+                  await notifier.refreshTimezones();
+                  final activeTeam = ref.read(selectedTeamProvider);
+                  if (activeTeam != null) {
+                    await ref.read(homeProvider.notifier).fetchEvents(activeTeam.uuid);
+                  }
+                },
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(19, 20, 19, 40),
@@ -1837,14 +2037,15 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-
-                    // ── Danger Zone ──────────────────────────────────────────────
-                    EventEditDangerCard(
-                      canceled:          _canceled,
-                      onCanceledChanged: (v) => setState(() => _canceled = v),
-                      onDelete:          () {},
-                    ),
+                    if (isEdit) ...[
+                      const SizedBox(height: 20),
+                      // ── Danger Zone ──────────────────────────────────────────────
+                      EventEditDangerCard(
+                        canceled:          _canceled,
+                        onCanceledChanged: (v) => setState(() => _canceled = v),
+                        onDelete:          () => _onDelete(timezoneState, notifier),
+                      ),
+                    ],
                   ],
                 ),
               ),

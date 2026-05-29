@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/club_event.dart';
 import '../../../core/enums/event_type.dart';
+import '../../../core/common_providers/selected_team_provider.dart';
+import '../../../core/network/api_client.dart';
 import '../models/schedule_models.dart';
 import '../services/schedule_service.dart';
 
@@ -14,6 +16,8 @@ class ScheduleState {
   final DateTime displayMonth;
   final EventType? filter;
   final bool monthView;
+  final bool isLoading;
+  final String? errorMessage;
 
   const ScheduleState({
     required this.events,
@@ -21,6 +25,8 @@ class ScheduleState {
     required this.displayMonth,
     this.filter,
     required this.monthView,
+    this.isLoading = false,
+    this.errorMessage,
   });
 
   // ── Filtered + sorted event list ─────────────────────────────────────────
@@ -78,6 +84,8 @@ class ScheduleState {
     DateTime? displayMonth,
     Object? filter = _scheduleSentinel,
     bool? monthView,
+    bool? isLoading,
+    String? errorMessage,
   }) {
     return ScheduleState(
       events: events ?? this.events,
@@ -85,6 +93,8 @@ class ScheduleState {
       displayMonth: displayMonth ?? this.displayMonth,
       filter: filter == _scheduleSentinel ? this.filter : filter as EventType?,
       monthView: monthView ?? this.monthView,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }
@@ -102,13 +112,48 @@ String _monthName(int month) => const [
 class ScheduleNotifier extends Notifier<ScheduleState> {
   @override
   ScheduleState build() {
+    final activeTeam = ref.watch(selectedTeamProvider);
     final now = DateTime.now();
+
+    // Fetch reactively when team changes
+    if (activeTeam != null) {
+      Future.microtask(() => fetchEvents(activeTeam.uuid));
+    }
+
     return ScheduleState(
-      events: ref.read(scheduleServiceProvider).getEvents(),
+      events: const [],
       selectedDate: now,
       displayMonth: DateTime(now.year, now.month, 1),
       monthView: false,
+      isLoading: activeTeam != null,
     );
+  }
+
+  /// Fetch events from QA API.
+  Future<void> fetchEvents(String teamUuid) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final fetched = await ref.read(scheduleServiceProvider).fetchScheduleEvents(teamUuid);
+      state = state.copyWith(
+        events: fetched,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  /// Triggers API refresh.
+  Future<void> refresh() async {
+    final activeTeam = ref.read(selectedTeamProvider);
+    if (activeTeam != null) {
+      await fetchEvents(activeTeam.uuid);
+    } else {
+      state = state.copyWith(isLoading: false);
+    }
   }
 
   void selectDate(DateTime date) => state = state.copyWith(selectedDate: date);
@@ -144,8 +189,10 @@ class ScheduleNotifier extends Notifier<ScheduleState> {
 
 // ─── Providers ────────────────────────────────────────────────────────────────
 
-final scheduleServiceProvider =
-    Provider<ScheduleService>((ref) => ScheduleService());
+final scheduleServiceProvider = Provider<ScheduleService>((ref) {
+  final apiClient = ref.read(apiClientProvider);
+  return ScheduleService(apiClient);
+});
 
 final scheduleProvider =
     NotifierProvider<ScheduleNotifier, ScheduleState>(ScheduleNotifier.new);

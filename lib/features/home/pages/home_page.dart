@@ -18,7 +18,9 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeModeProvider);
-    final viewModels = ref.watch(homeProvider).viewModels;
+    final homeState = ref.watch(homeProvider);
+    final viewModels = homeState.viewModels;
+    final isLoading = homeState.isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.current.surface,
@@ -29,27 +31,33 @@ class HomeScreen extends ConsumerWidget {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () => ref.read(homeProvider.notifier).refresh(),
-                child: viewModels.isEmpty
-                    ? SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.7,
-                          child: const Center(
-                            child: HomeEmptyState(),
-                          ),
+                child: isLoading && viewModels.isEmpty
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.current.primary,
                         ),
                       )
-                    : ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding:          const EdgeInsets.symmetric(vertical: 10),
-                        itemCount:        viewModels.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) => HomeCard(
-                          viewModel: viewModels[i],
-                          onEventDetails: () =>
-                              context.push(AppRoutes.eventDetails(viewModels[i].id)),
-                        ),
-                      ),
+                    : viewModels.isEmpty
+                        ? SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.7,
+                              child: const Center(
+                                child: HomeEmptyState(),
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding:          const EdgeInsets.symmetric(vertical: 10),
+                            itemCount:        viewModels.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 10),
+                            itemBuilder: (_, i) => HomeCard(
+                              viewModel: viewModels[i],
+                              onEventDetails: () =>
+                                  context.push(AppRoutes.eventDetails(viewModels[i].id)),
+                            ),
+                          ),
               ),
             ),
           ],

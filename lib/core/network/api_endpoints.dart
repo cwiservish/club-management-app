@@ -23,8 +23,13 @@ abstract final class ApiEndpoints {
   static const String assignParent = '/players/parents/assign';
   static const String playerPositions = '/team/player/positions';
   static const String playerSave = '/team/player/save';
+  static const String teamEventsList = '/teams/event/list';
+  static const String teamEventsAll = '/teams/event/all';
+  static const String eventAvailability = '/teams/event/availability';
+  static const String eventAttendeeSave = '/teams/event-attendee/save';
   static const String eventDropdownOptions = '/teams/event/dropdownoptions';
   static const String eventSave = '/teams/event/save';
+  static const String eventRemove = '/teams/event/remove';
   static const String customerNotificationsList = '/customer/notification/list';
   static const String customerNotificationsSave = '/customer/notification/save';
 

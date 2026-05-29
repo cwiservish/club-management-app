@@ -4,7 +4,9 @@ import '../../../core/enums/event_type.dart';
 import '../../../core/models/club_event.dart';
 import '../../../core/local_storage/app_storage.dart';
 import '../../../core/network/token_storage.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/common_providers/user_teams_provider.dart';
+import '../../../core/common_providers/selected_team_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/home_models.dart';
 import '../services/home_service.dart';
@@ -22,11 +24,15 @@ class HomeState {
   final Map<String, HomeRsvp> userRsvps;
 
   final EventType? filter;
+  final bool isLoading;
+  final String? errorMessage;
 
   const HomeState({
     required this.events,
     required this.userRsvps,
     this.filter,
+    this.isLoading = false,
+    this.errorMessage,
   });
 
   // ── Filtered event list ──────────────────────────────────────────────────
@@ -50,10 +56,18 @@ class HomeState {
       int maybe = event.rsvpMaybe.length;
       int no    = event.rsvpNo.length;
 
-      // Add the current user's vote on top
-      if (userChoice == HomeRsvp.going) going++;
-      if (userChoice == HomeRsvp.maybe) maybe++;
-      if (userChoice == HomeRsvp.no)    no++;
+      // Only adjust counts if user has changed their selection from what was parsed.
+      final bool hadGoing = event.rsvpYes.contains('me');
+      final bool hadMaybe = event.rsvpMaybe.contains('me');
+      final bool hadNo = event.rsvpNo.contains('me');
+
+      if (userChoice == HomeRsvp.going && !hadGoing) going++;
+      if (userChoice == HomeRsvp.maybe && !hadMaybe) maybe++;
+      if (userChoice == HomeRsvp.no && !hadNo) no++;
+
+      if (hadGoing && userChoice != HomeRsvp.going) going--;
+      if (hadMaybe && userChoice != HomeRsvp.maybe) maybe--;
+      if (hadNo && userChoice != HomeRsvp.no) no--;
 
       // Format date / time strings
       final dt  = event.dateTime;
@@ -65,7 +79,7 @@ class HomeState {
         id:           event.id,
         date:         date,
         timeRange:    timeRange,
-        type:         event.typeLabel,
+        type:         event.title,
         location:     event.location,
         goingCount:   going,
         maybeCount:   maybe,
@@ -79,11 +93,15 @@ class HomeState {
     List<ClubEvent>? events,
     Map<String, HomeRsvp>? userRsvps,
     Object? filter = _sentinel,
+    bool? isLoading,
+    String? errorMessage,
   }) {
     return HomeState(
       events:    events    ?? this.events,
       userRsvps: userRsvps ?? this.userRsvps,
       filter:    filter == _sentinel ? this.filter : filter as EventType?,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }
@@ -92,8 +110,10 @@ class HomeState {
 
 String _fmtTime(DateTime t) {
   final h = t.hour > 12 ? t.hour - 12 : (t.hour == 0 ? 12 : t.hour);
-  final m = t.minute.toString().padLeft(2, '0');
-  return '$h:$m ${t.hour >= 12 ? 'PM' : 'AM'}';
+  final hStr = h.toString().padLeft(2, '0');
+  final mStr = t.minute.toString().padLeft(2, '0');
+  final period = t.hour >= 12 ? 'PM' : 'AM';
+  return '$hStr : $mStr $period';
 }
 
 String _monthName(int month) => const [
@@ -107,10 +127,51 @@ String _monthName(int month) => const [
 class HomeNotifier extends Notifier<HomeState> {
   @override
   HomeState build() {
+    final activeTeam = ref.watch(selectedTeamProvider);
+
+    // Fetch reactively when team changes
+    if (activeTeam != null) {
+      Future.microtask(() => fetchEvents(activeTeam.uuid));
+    }
+
     return HomeState(
-      events:    ref.read(homeServiceProvider).getEvents(),
+      events:    const [],
       userRsvps: const {},
+      isLoading: activeTeam != null,
     );
+  }
+
+  /// Fetches events for the selected team from QA API.
+  Future<void> fetchEvents(String teamUuid) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final fetched = await ref.read(homeServiceProvider).fetchEvents(teamUuid);
+      
+      // Initialize RSVP choices mapping based on whether parsed lists contain 'me'
+      final Map<String, HomeRsvp> initialRsvps = {};
+      for (final event in fetched) {
+        if (event.rsvpYes.contains('me')) {
+          initialRsvps[event.id] = HomeRsvp.going;
+        } else if (event.rsvpMaybe.contains('me')) {
+          initialRsvps[event.id] = HomeRsvp.maybe;
+        } else if (event.rsvpNo.contains('me')) {
+          initialRsvps[event.id] = HomeRsvp.no;
+        } else {
+          initialRsvps[event.id] = HomeRsvp.none;
+        }
+      }
+
+      state = state.copyWith(
+        events: fetched,
+        userRsvps: initialRsvps,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+      );
+    }
   }
 
   /// Toggle RSVP: tapping the same option again deselects it.
@@ -147,17 +208,22 @@ class HomeNotifier extends Notifier<HomeState> {
       debugPrint('Error refreshing home data: $e');
     } finally {
       // Reload the events list
-      state = state.copyWith(
-        events: ref.read(homeServiceProvider).getEvents(),
-      );
+      final activeTeam = ref.read(selectedTeamProvider);
+      if (activeTeam != null) {
+        await fetchEvents(activeTeam.uuid);
+      } else {
+        state = state.copyWith(isLoading: false);
+      }
     }
   }
 }
 
 // ─── Providers ────────────────────────────────────────────────────────────────
 
-final homeServiceProvider =
-    Provider<HomeService>((ref) => HomeService());
+final homeServiceProvider = Provider<HomeService>((ref) {
+  final apiClient = ref.read(apiClientProvider);
+  return HomeService(apiClient);
+});
 
 final homeProvider =
     NotifierProvider<HomeNotifier, HomeState>(HomeNotifier.new);

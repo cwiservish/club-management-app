@@ -14,8 +14,8 @@ class ScheduleEventCard extends StatelessWidget {
   const ScheduleEventCard({super.key, required this.event, this.rsvpStatus});
 
   RsvpStatus _deriveStatus() {
-    if (event.rsvpYes.isNotEmpty) return RsvpStatus.accepted;
-    if (event.rsvpNo.isNotEmpty)  return RsvpStatus.declined;
+    if (event.rsvpYes.contains('me')) return RsvpStatus.accepted;
+    if (event.rsvpNo.contains('me'))  return RsvpStatus.declined;
     return RsvpStatus.unknown;
   }
 

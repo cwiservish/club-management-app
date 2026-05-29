@@ -21,8 +21,6 @@ class MyRsvpDialog extends ConsumerWidget {
     if (latestEvent.rsvpYes.contains('me')) currentStatus = 'going';
     else if (latestEvent.rsvpNo.contains('me')) currentStatus = 'no';
     else if (latestEvent.rsvpMaybe.contains('me')) currentStatus = 'maybe';
-    else if (latestEvent.rsvpYes.isNotEmpty) currentStatus = 'going'; // fallback
-    else if (latestEvent.rsvpNo.isNotEmpty) currentStatus = 'no';
 
     final colors = AppColors.current;
 
@@ -88,7 +86,7 @@ class MyRsvpDialog extends ConsumerWidget {
                     _buildSegment(
                       context,
                       ref,
-                      label: 'Going',
+                      label: '${latestEvent.rsvpYes.length} Going',
                       value: 'going',
                       currentStatus: currentStatus,
                     ),
@@ -96,7 +94,7 @@ class MyRsvpDialog extends ConsumerWidget {
                     _buildSegment(
                       context,
                       ref,
-                      label: 'Maybe',
+                      label: '${latestEvent.rsvpMaybe.length} Maybe',
                       value: 'maybe',
                       currentStatus: currentStatus,
                     ),
@@ -104,7 +102,7 @@ class MyRsvpDialog extends ConsumerWidget {
                     _buildSegment(
                       context,
                       ref,
-                      label: 'No',
+                      label: '${latestEvent.rsvpNo.length} No',
                       value: 'no',
                       currentStatus: currentStatus,
                     ),

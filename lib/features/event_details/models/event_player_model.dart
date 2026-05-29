@@ -6,6 +6,7 @@ enum PlayerStatus { going, maybe, no, none }
 
 class EventPlayerModel {
   final int id;
+  final int? playerId;
   final String name;
   final String number;
   final String? imageUrl;
@@ -14,6 +15,7 @@ class EventPlayerModel {
 
   const EventPlayerModel({
     required this.id,
+    this.playerId,
     required this.name,
     required this.number,
     this.imageUrl,
@@ -26,6 +28,7 @@ class EventPlayerModel {
   EventPlayerModel copyWith({PlayerStatus? status, String? note}) {
     return EventPlayerModel(
       id:       id,
+      playerId: playerId,
       name:     name,
       number:   number,
       imageUrl: imageUrl,

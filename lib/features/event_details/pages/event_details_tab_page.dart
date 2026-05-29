@@ -9,6 +9,9 @@ import '../widgets/details/event_header_card.dart';
 import '../widgets/details/rsvp_section.dart';
 import '../widgets/details/logistics_section.dart';
 
+import '../../home/providers/home_provider.dart';
+import '../../../core/common_providers/selected_team_provider.dart';
+
 class EventDetailsTabPage extends ConsumerWidget {
   final String eventId;
 
@@ -20,21 +23,29 @@ class EventDetailsTabPage extends ConsumerWidget {
     final notifier = ref.read(eventDetailProvider(eventId).notifier);
     final colors = AppColors.current;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 20),
-      child: Column(
-        children: [
-          EventHeaderCard(event: state.event),
-          const SizedBox(height: 16),
-          RsvpSection(
-            selected: state.event.myRsvp,
-            onSelect: notifier.setRsvp,
-          ),
-          const SizedBox(height: 16),
-          LogisticsSection(
-            event: state.event,
-          ),
-          const SizedBox(height: 20),
+    return RefreshIndicator(
+      onRefresh: () async {
+        final activeTeam = ref.read(selectedTeamProvider);
+        if (activeTeam != null) {
+          await ref.read(homeProvider.notifier).fetchEvents(activeTeam.uuid);
+        }
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 20),
+        child: Column(
+          children: [
+            EventHeaderCard(event: state.event),
+            const SizedBox(height: 16),
+            RsvpSection(
+              selected: state.event.myRsvp,
+              onSelect: notifier.setRsvp,
+            ),
+            const SizedBox(height: 16),
+            LogisticsSection(
+              event: state.event,
+            ),
+            const SizedBox(height: 20),
           // ── Duplicate Event button ─────────────────────────────────────
           SizedBox(
             width: double.infinity,
@@ -58,6 +69,7 @@ class EventDetailsTabPage extends ConsumerWidget {
           const SizedBox(height: 40),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

@@ -18,6 +18,15 @@ class ClubEvent {
   final List<String> rsvpNo;
   final List<String> rsvpMaybe;
 
+  final bool timeTbd;
+  final String? timeLabel;
+  final String? locationDetails;
+  final String? uniformColor;
+  final String? arrivalTime;
+  final String? flagColor;
+  final int? dbId;
+  final String? timezone;
+
   const ClubEvent({
     required this.id,
     required this.title,
@@ -33,6 +42,14 @@ class ClubEvent {
     this.rsvpYes = const [],
     this.rsvpNo = const [],
     this.rsvpMaybe = const [],
+    this.timeTbd = false,
+    this.timeLabel,
+    this.locationDetails,
+    this.uniformColor,
+    this.arrivalTime,
+    this.flagColor,
+    this.dbId,
+    this.timezone,
   });
 
   ClubEvent copyWith({
@@ -50,6 +67,14 @@ class ClubEvent {
     List<String>? rsvpYes,
     List<String>? rsvpNo,
     List<String>? rsvpMaybe,
+    bool? timeTbd,
+    String? timeLabel,
+    String? locationDetails,
+    String? uniformColor,
+    String? arrivalTime,
+    String? flagColor,
+    int? dbId,
+    String? timezone,
   }) {
     return ClubEvent(
       id: id ?? this.id,
@@ -66,6 +91,14 @@ class ClubEvent {
       rsvpYes: rsvpYes ?? this.rsvpYes,
       rsvpNo: rsvpNo ?? this.rsvpNo,
       rsvpMaybe: rsvpMaybe ?? this.rsvpMaybe,
+      timeTbd: timeTbd ?? this.timeTbd,
+      timeLabel: timeLabel ?? this.timeLabel,
+      locationDetails: locationDetails ?? this.locationDetails,
+      uniformColor: uniformColor ?? this.uniformColor,
+      arrivalTime: arrivalTime ?? this.arrivalTime,
+      flagColor: flagColor ?? this.flagColor,
+      dbId: dbId ?? this.dbId,
+      timezone: timezone ?? this.timezone,
     );
   }
 

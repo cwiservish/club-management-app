@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
-import '../../../core/network/models/api_response.dart';
 import '../../../core/config/environment_config.dart';
 import '../models/event_dropdown_options_models.dart';
 import '../models/event_detail_model.dart';
 import '../models/event_player_model.dart';
+import '../models/event_save_models.dart';
+import '../models/event_delete_models.dart';
+import '../models/event_availability_models.dart';
 
 class EventDetailService {
   final ApiClient _apiClient;
@@ -93,8 +95,9 @@ class EventDetailService {
     });
   }
 
-  /// Saves / adds a new event to the team.
-  Future<ApiResponse> saveEvent(Map<String, dynamic> body) async {
+  /// Saves / adds / edits an event.
+  Future<EventSaveResponse> saveEvent(EventSaveRequest request) async {
+    final body = request.toJson();
     debugPrint('════════════════════════════════════════════════════════════════');
     debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventSave}');
     debugPrint('[API Request Body]:');
@@ -118,7 +121,96 @@ class EventDetailService {
     debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
     debugPrint('════════════════════════════════════════════════════════════════');
 
-    return response;
+    return EventSaveResponse.fromJson(rawResponseMap);
+  }
+
+  /// Deletes / removes an event.
+  Future<EventDeleteResponse> deleteEvent(EventDeleteRequest request) async {
+    final body = request.toJson();
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventRemove}');
+    debugPrint('[API Request Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(body));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    final response = await _apiClient.post(
+      ApiEndpoints.eventRemove,
+      body: body,
+    );
+
+    final rawResponseMap = {
+      'success': response.success,
+      'message': response.message ?? '',
+      'data': response.data,
+    };
+
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Response] POST ${ApiEndpoints.eventRemove}');
+    debugPrint('[API Response Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    return EventDeleteResponse.fromJson(rawResponseMap);
+  }
+
+  /// Fetches event availability from API.
+  Future<EventAvailabilityResponse> fetchEventAvailability(EventAvailabilityRequest request) async {
+    final body = request.toJson();
+
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventAvailability}');
+    debugPrint('[API Request Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(body));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    final response = await _apiClient.post(
+      ApiEndpoints.eventAvailability,
+      body: body,
+    );
+
+    final rawResponseMap = {
+      'success': response.success,
+      'message': response.message ?? '',
+      'data': response.data,
+    };
+
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Response] POST ${ApiEndpoints.eventAvailability}');
+    debugPrint('[API Response Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    return EventAvailabilityResponse.fromJson(rawResponseMap);
+  }
+
+  /// Saves event attendee notes to API.
+  Future<EventAttendeeSaveResponse> saveEventAttendee(EventAttendeeSaveRequest request) async {
+    final body = request.toJson();
+
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventAttendeeSave}');
+    debugPrint('[API Request Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(body));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    final response = await _apiClient.post(
+      ApiEndpoints.eventAttendeeSave,
+      body: body,
+    );
+
+    final rawResponseMap = {
+      'success': response.success,
+      'message': response.message ?? '',
+      'data': response.data,
+    };
+
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Response] POST ${ApiEndpoints.eventAttendeeSave}');
+    debugPrint('[API Response Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    return EventAttendeeSaveResponse.fromJson(rawResponseMap);
   }
 
   /// Searches Google Places Autocomplete API.

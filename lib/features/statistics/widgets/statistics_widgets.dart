@@ -45,7 +45,7 @@ class StatisticsTeamSection extends StatelessWidget {
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 1.85,
+            childAspectRatio: 1.4,
           ),
           itemCount: stats.length,
           itemBuilder: (_, i) => StatisticsTeamCard(stat: stats[i]),
@@ -62,7 +62,7 @@ class StatisticsTeamCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.current.surface,
         borderRadius: BorderRadius.circular(12),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../providers/event_detail_provider.dart';
-import '../models/event_player_model.dart';
 import '../widgets/availability/player_group.dart';
 import '../widgets/dialogs/text_input_dialog.dart';
 import '../widgets/event_status_picker_sheet.dart';
@@ -25,7 +24,22 @@ class EventAvailabilityTabPage extends ConsumerWidget {
           initialText: p.note,
           placeholder: 'Type note here...',
           primaryLabel: 'Save',
-          onConfirm: (text) => notifier.updatePlayerNote(p.id, text),
+          onConfirm: (text) async {
+            final result = await notifier.updatePlayerNote(p.id, text);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    result.message,
+                    style: TextStyle(
+                      color: colors.isDark ? colors.gray900 : Colors.white,
+                    ),
+                  ),
+                  backgroundColor: result.success ? colors.success : colors.error,
+                ),
+              );
+            }
+          },
         );
 
     void showMessageAll() => showTextInputDialog(
@@ -59,39 +73,100 @@ class EventAvailabilityTabPage extends ConsumerWidget {
       );
     }
 
+    if (state.isLoading && state.players.isEmpty) {
+      return ColoredBox(
+        color: colors.card,
+        child: Center(
+          child: CircularProgressIndicator(
+            color: colors.primary,
+          ),
+        ),
+      );
+    }
+
+    if (state.errorMessage != null && state.players.isEmpty) {
+      return ColoredBox(
+        color: colors.card,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  color: colors.error,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  state.errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => notifier.refresh(),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.isDark ? colors.gray900 : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return ColoredBox(
       color: colors.card,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          PlayerGroup(
-            title:       'GOING',
-            players:     state.goingPlayers,
-            onNoteTap:   showNote,
-            onStatusTap: showStatusPicker,
-          ),
-          PlayerGroup(
-            title:       'MAYBE',
-            players:     state.maybePlayers,
-            onNoteTap:   showNote,
-            onStatusTap: showStatusPicker,
-          ),
-          PlayerGroup(
-            title:       'NOT GOING',
-            players:     state.noPlayers,
-            onNoteTap:   showNote,
-            onStatusTap: showStatusPicker,
-          ),
-          PlayerGroup(
-            title:          "HAVEN'T REPLIED",
-            players:        state.unrepliedPlayers,
-            showMessageAll: true,
-            onMessageAll:   showMessageAll,
-            onNoteTap:      showNote,
-            onStatusTap:    showStatusPicker,
-          ),
-          const SizedBox(height: 40),
-        ],
+      child: RefreshIndicator(
+        onRefresh: () => notifier.refresh(),
+        color: colors.primary,
+        backgroundColor: colors.background,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            PlayerGroup(
+              title:       'GOING',
+              players:     state.goingPlayers,
+              onNoteTap:   showNote,
+              onStatusTap: showStatusPicker,
+            ),
+            PlayerGroup(
+              title:       'MAYBE',
+              players:     state.maybePlayers,
+              onNoteTap:   showNote,
+              onStatusTap: showStatusPicker,
+            ),
+            PlayerGroup(
+              title:       'NOT GOING',
+              players:     state.noPlayers,
+              onNoteTap:   showNote,
+              onStatusTap: showStatusPicker,
+            ),
+            PlayerGroup(
+              title:          "HAVEN'T REPLIED",
+              players:        state.unrepliedPlayers,
+              showMessageAll: true,
+              onMessageAll:   showMessageAll,
+              onNoteTap:      showNote,
+              onStatusTap:    showStatusPicker,
+            ),
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }

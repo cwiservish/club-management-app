@@ -4,6 +4,9 @@ import '../../../core/common_providers/selected_team_provider.dart';
 import '../models/event_dropdown_options_models.dart';
 import '../services/event_detail_service.dart';
 
+import '../models/event_save_models.dart';
+import '../models/event_delete_models.dart';
+
 class EventEditState {
   final List<TimezoneModel> timezones;
   final TimezoneModel? selectedTimezone;
@@ -139,6 +142,7 @@ class EventEditNotifier extends Notifier<EventEditState> {
 
   /// Sends the formatted payload to create/save the event.
   Future<bool> saveEvent({
+    dynamic id,
     required String eventName,
     required String startTime,
     required String timezone,
@@ -169,51 +173,92 @@ class EventEditNotifier extends Notifier<EventEditState> {
       saveSuccessMessage: null,
     );
 
-    final payload = {
-      'team_uuid': activeTeam.uuid,
-      'event_name': eventName,
-      'start_time': startTime,
-      'timezone': timezone,
-      'time_tbd': timeTbd,
-      'duration': duration,
-      'location': location,
-      'latitude': latitude,
-      'longitude': longitude,
-      'location_details': locationDetails,
-      'arrival_early': arrivalEarly,
-      'track_availability': trackAvailability,
-      'flag_color': flagColor,
-      'uniform_color': uniformColor,
-      'opponant': opponent, // exact key expected by the API
-      'extra_label': extraLabel,
-      'notes': notes,
-      'status': 1,
-      'notification_enabled': notificationEnabled,
-    };
-
-    debugPrint('═══ [EventEdit] saveEvent payload ═══');
-    debugPrint(payload.toString());
+    final request = EventSaveRequest(
+      teamUuid: activeTeam.uuid,
+      eventName: eventName,
+      id: id,
+      startTime: startTime,
+      timezone: timezone,
+      timeTbd: timeTbd,
+      duration: duration,
+      location: location,
+      latitude: latitude,
+      longitude: longitude,
+      locationDetails: locationDetails.isNotEmpty ? locationDetails : null,
+      arrivalEarly: arrivalEarly,
+      trackAvailability: trackAvailability,
+      flagColor: flagColor,
+      uniformColor: uniformColor,
+      opponent: opponent,
+      extraLabel: extraLabel,
+      notes: notes,
+      status: 1,
+      notificationEnabled: notificationEnabled,
+    );
 
     try {
       final eventService = ref.read(eventDetailServiceProvider);
-      final response = await eventService.saveEvent(payload);
+      final response = await eventService.saveEvent(request);
 
       if (response.success) {
         state = state.copyWith(
           isSaving: false,
           saveSuccessMessage:
-              (response.message != null && response.message!.isNotEmpty)
-                  ? response.message
-                  : 'Event saved successfully',
+              response.message.isNotEmpty ? response.message : 'Event saved successfully',
         );
         return true;
       } else {
         state = state.copyWith(
           isSaving: false,
           saveError:
-              (response.message != null && response.message!.isNotEmpty)
-                  ? response.message
-                  : 'Failed to save event',
+              response.message.isNotEmpty ? response.message : 'Failed to save event',
+        );
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isSaving: false,
+        saveError: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  /// Deletes the event permanently.
+  Future<bool> deleteEvent(dynamic id) async {
+    final activeTeam = ref.read(selectedTeamProvider);
+    if (activeTeam == null) {
+      state = state.copyWith(saveError: 'No active team selected');
+      return false;
+    }
+
+    state = state.copyWith(
+      isSaving: true,
+      saveError: null,
+      saveSuccessMessage: null,
+    );
+
+    final request = EventDeleteRequest(
+      teamUuid: activeTeam.uuid,
+      id: id,
+    );
+
+    try {
+      final eventService = ref.read(eventDetailServiceProvider);
+      final response = await eventService.deleteEvent(request);
+
+      if (response.success) {
+        state = state.copyWith(
+          isSaving: false,
+          saveSuccessMessage:
+              response.message.isNotEmpty ? response.message : 'Event deleted successfully',
+        );
+        return true;
+      } else {
+        state = state.copyWith(
+          isSaving: false,
+          saveError:
+              response.message.isNotEmpty ? response.message : 'Failed to delete event',
         );
         return false;
       }
