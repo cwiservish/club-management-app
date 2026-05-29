@@ -52,7 +52,7 @@ class FileItem {
       uploadedByType: _parseString(json['uploaded_by_type']),
       createdAt: createdAtString,
       updatedAt: _parseString(json['updated_at']),
-      fileUrl: _parseString(json['file_url']),
+      fileUrl: _parseString(json['file_url'] ?? json['image_url']),
     );
   }
 

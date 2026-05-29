@@ -74,17 +74,13 @@ class FilesService {
     debugPrint('════════════════════════════════════════════════════════════════');
     debugPrint('[API Request] Multipart POST ${ApiEndpoints.baseUrl}$endpoint');
     debugPrint('[Form Fields]:');
-    debugPrint('  uuid: $uuid');
-    debugPrint('  team_id: $teamId');
-    debugPrint('  uploaded_by_type: customer');
+    debugPrint('  team_uuid: $uuid');
     debugPrint('  file: $fileName ($filePath)');
     debugPrint('════════════════════════════════════════════════════════════════');
 
     try {
       final formData = FormData.fromMap({
-        'uuid': uuid,
-        'team_id': teamId,
-        'uploaded_by_type': 'customer',
+        'team_uuid': uuid,
         'file': await MultipartFile.fromFile(filePath, filename: fileName),
       });
 

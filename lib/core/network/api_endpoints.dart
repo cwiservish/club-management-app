@@ -27,10 +27,10 @@ abstract final class ApiEndpoints {
   static const String customerNotificationsSave = '/customer/notification/save';
 
   // ─── Photos / Files ────────────────────────────────────────────────────────
-  static const String photosList = '/teams/files/list';
+  static const String photosList = '/teams/gallery/list';
   static const String photoSave = '/teams/gallery/save';
   static const String photoRemove = '/teams/gallery/remove';
-  static const String filesList = '/teams/files/list';
-  static const String filesSave = '/teams/files/save';
-  static const String filesRemove = '/teams/files/remove';
+  static const String filesList = '/teams/file/list';
+  static const String filesSave = '/teams/file/save';
+  static const String filesRemove = '/teams/file/remove';
 }

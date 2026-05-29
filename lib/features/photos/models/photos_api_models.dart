@@ -35,7 +35,7 @@ class PhotosListRequest {
 
   Map<String, dynamic> toJson() {
     return {
-      'uuid': uuid,
+      'team_uuid': uuid,
     };
   }
 }

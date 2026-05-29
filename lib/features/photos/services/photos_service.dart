@@ -63,16 +63,12 @@ class PhotosService {
     debugPrint('════════════════════════════════════════════════════════════════');
     debugPrint('[API Request] Multipart POST ${ApiEndpoints.baseUrl}$endpoint');
     debugPrint('[Form Fields]:');
-    debugPrint('  uuid: $uuid');
-    debugPrint('  team_id: $teamId');
-    debugPrint('  uploaded_by_type: customer');
+    debugPrint('  team_uuid: $uuid');
     debugPrint('  image: $fileName ($imagePath)');
     debugPrint('════════════════════════════════════════════════════════════════');
 
     final formData = FormData.fromMap({
-      'uuid': uuid,
-      'team_id': teamId,
-      'uploaded_by_type': 'customer',
+      'team_uuid': uuid,
       'image': await MultipartFile.fromFile(imagePath, filename: fileName),
     });
 
