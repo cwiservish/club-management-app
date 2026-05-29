@@ -17,49 +17,10 @@ import '../widgets/event_edit_list_row.dart';
 import '../widgets/event_edit_notify_card.dart';
 import '../widgets/event_edit_toggle_row.dart';
 import '../../home/providers/home_provider.dart';
+import '../../schedule/providers/schedule_provider.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
 import '../../../core/models/club_event.dart';
 
-// ─── Predefined Soccer Complexes for Oklahoma (Fallback) ──────────────────
-
-final List<Map<String, dynamic>> _localLocations = [
-  {
-    'name': 'Bixby Soccer Complex',
-    'latitude': '35.9420',
-    'longitude': '-95.8833',
-    'description': 'Bixby, OK',
-  },
-  {
-    'name': 'Gillis-Rother Soccer Complex',
-    'latitude': '35.2056',
-    'longitude': '-97.4181',
-    'description': 'Norman, OK',
-  },
-  {
-    'name': 'Indian Springs Sports Complex',
-    'latitude': '36.0028',
-    'longitude': '-95.7725',
-    'description': 'Broken Arrow, OK',
-  },
-  {
-    'name': 'Mohawk Sports Complex',
-    'latitude': '36.2167',
-    'longitude': '-95.9008',
-    'description': 'Tulsa, OK',
-  },
-  {
-    'name': 'MTsc United Soccer Complex',
-    'latitude': '36.0581',
-    'longitude': '-95.8942',
-    'description': 'Tulsa, OK',
-  },
-  {
-    'name': 'West Side Alliance Soccer Complex',
-    'latitude': '36.1481',
-    'longitude': '-96.0694',
-    'description': 'Sand Springs, OK',
-  },
-];
 
 // ─── Add Event Page ──────────────────────────────────────────────────────────
 
@@ -77,7 +38,6 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
   bool _notifyTeam = true;
   bool _timeTbd    = false;
   bool _trackAvail = true;
-  bool _canceled   = false;
   bool _hasPrepopulatedTimezone = false;
 
   // Controllers
@@ -158,6 +118,8 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
           _opponentController.text = foundEvent.opponent ?? '';
           _extraLabelController.text = foundEvent.subtitle;
           _notesController.text = foundEvent.notes ?? '';
+          _notifyTeam = foundEvent.notificationEnabled;
+          _arrivalEarlyMinutes = foundEvent.arrivalEarly;
           _uniformColorController.text = foundEvent.uniformColor ?? '';
 
           // Map flag color robustly
@@ -1135,6 +1097,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
   // ─── Google Places Autocomplete dropdown search modal ───────────────────────
 
   void _showLocationPicker() {
+    final pageContext = context;
     final service = ref.read(eventDetailServiceProvider);
     final searchController = TextEditingController();
     final scrollController = ScrollController();
@@ -1152,18 +1115,11 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
         final colors = AppColors.current;
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final query = searchController.text.toLowerCase();
             List<dynamic> displayList = [];
             if (isLoading) {
               displayList = [];
-            } else if (suggestions.isNotEmpty) {
-              displayList = suggestions;
             } else {
-              displayList = _localLocations.where((loc) {
-                final name = loc['name']!.toLowerCase();
-                final desc = loc['description']!.toLowerCase();
-                return name.contains(query) || desc.contains(query);
-              }).toList();
+              displayList = suggestions;
             }
 
             return Container(
@@ -1171,16 +1127,18 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
+                  SizedBox(height: 20,),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+
                       Text(
                         'Search Location',
                         style: AppTextStyles.heading18.copyWith(color: colors.textPrimary),
                       ),
                       IconButton(
                         icon: Icon(Icons.close, color: colors.textSecondary),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.pop(pageContext),
                       ),
                     ],
                   ),
@@ -1265,27 +1223,34 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
                           String name = '';
                           String subtitle = '';
 
-                          if (item is Map<String, dynamic> && item.containsKey('name')) {
+                          if (item is Map && item.containsKey('name')) {
                             name = item['name'] ?? '';
                             subtitle = item['description'] ?? '';
-                          } else {
+                          } else if (item is Map) {
                             name = item['structured_formatting']?['main_text'] ?? item['description'] ?? '';
                             subtitle = item['structured_formatting']?['secondary_text'] ?? '';
                           }
 
                           return InkWell(
                             onTap: () async {
-                              if (item is Map<String, dynamic> && item.containsKey('latitude')) {
+                              if (item is Map && item.containsKey('latitude')) {
                                 setState(() {
-                                  _locationName = item['name'];
-                                  _latitude = item['latitude'];
-                                  _longitude = item['longitude'];
+                                  _locationName = item['name']?.toString() ?? '';
+                                  _latitude = item['latitude']?.toString() ?? '';
+                                  _longitude = item['longitude']?.toString() ?? '';
                                 });
-                                Navigator.pop(context);
-                              } else {
+                                setModalState(() {
+                                  searchController.text = item['name']?.toString() ?? '';
+                                });
+                                await Future.delayed(const Duration(milliseconds: 300));
+                                if (pageContext.mounted) Navigator.pop(pageContext);
+                              } else if (item is Map) {
                                 final placeId = item['place_id']?.toString() ?? '';
                                 if (placeId.isNotEmpty) {
-                                  setModalState(() => isLoading = true);
+                                  setModalState(() {
+                                    searchController.text = name;
+                                    isLoading = true;
+                                  });
                                   final details = await service.fetchPlaceDetails(placeId);
                                   final geometry = details?['geometry'];
                                   final lat = geometry?['location']?['lat']?.toString() ?? '35.9420';
@@ -1297,7 +1262,8 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
                                     _longitude = lng;
                                   });
                                   setModalState(() => isLoading = false);
-                                  if (context.mounted) Navigator.pop(context);
+                                  await Future.delayed(const Duration(milliseconds: 300));
+                                  if (pageContext.mounted) Navigator.pop(pageContext);
                                 }
                               }
                             },
@@ -1403,6 +1369,13 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
             backgroundColor: AppColors.current.primary,
           ),
         );
+
+        final activeTeam = ref.read(selectedTeamProvider);
+        if (activeTeam != null) {
+          ref.read(homeProvider.notifier).fetchEvents(activeTeam.uuid);
+          ref.read(scheduleProvider.notifier).fetchEvents(activeTeam.uuid);
+        }
+
         Navigator.maybePop(context);
       }
     } else {
@@ -1475,6 +1448,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
         final activeTeam = ref.read(selectedTeamProvider);
         if (activeTeam != null) {
           ref.read(homeProvider.notifier).fetchEvents(activeTeam.uuid);
+          ref.read(scheduleProvider.notifier).fetchEvents(activeTeam.uuid);
         }
 
         Navigator.maybePop(context);
@@ -2041,8 +2015,6 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
                       const SizedBox(height: 20),
                       // ── Danger Zone ──────────────────────────────────────────────
                       EventEditDangerCard(
-                        canceled:          _canceled,
-                        onCanceledChanged: (v) => setState(() => _canceled = v),
                         onDelete:          () => _onDelete(timezoneState, notifier),
                       ),
                     ],

@@ -17,30 +17,35 @@ class EventAvailabilityTabPage extends ConsumerWidget {
     final notifier = ref.read(eventDetailProvider(eventId).notifier);
     final colors   = AppColors.current;
 
-    void showNote(EventPlayerModel p) => showTextInputDialog(
-          context,
-          title:       p.hasNote ? 'Edit Note' : 'Add Note',
-          subtitle:    'Adding note for ${p.name}',
-          initialText: p.note,
-          placeholder: 'Type note here...',
-          primaryLabel: 'Save',
-          onConfirm: (text) async {
-            final result = await notifier.updatePlayerNote(p.id, text);
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    result.message,
-                    style: TextStyle(
-                      color: colors.isDark ? colors.gray900 : Colors.white,
-                    ),
+    void showNote(EventPlayerModel p) {
+      final canEditNote = state.canUpdateAllPlayers && p.canUpdate;
+      if (!canEditNote) return;
+
+      showTextInputDialog(
+        context,
+        title:       p.hasNote ? 'Edit Note' : 'Add Note',
+        subtitle:    'Adding note for ${p.name}',
+        initialText: p.note,
+        placeholder: 'Type note here...',
+        primaryLabel: 'Save',
+        onConfirm: (text) async {
+          final result = await notifier.updatePlayerNote(p.id, text);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  result.message,
+                  style: TextStyle(
+                    color: colors.isDark ? colors.gray900 : Colors.white,
                   ),
-                  backgroundColor: result.success ? colors.success : colors.error,
                 ),
-              );
-            }
-          },
-        );
+                backgroundColor: result.success ? colors.success : colors.error,
+              ),
+            );
+          }
+        },
+      );
+    }
 
     void showMessageAll() => showTextInputDialog(
           context,
@@ -141,24 +146,28 @@ class EventAvailabilityTabPage extends ConsumerWidget {
             PlayerGroup(
               title:       'GOING',
               players:     state.goingPlayers,
+              canUpdateAllPlayers: state.canUpdateAllPlayers,
               onNoteTap:   showNote,
               onStatusTap: showStatusPicker,
             ),
             PlayerGroup(
               title:       'MAYBE',
               players:     state.maybePlayers,
+              canUpdateAllPlayers: state.canUpdateAllPlayers,
               onNoteTap:   showNote,
               onStatusTap: showStatusPicker,
             ),
             PlayerGroup(
               title:       'NOT GOING',
               players:     state.noPlayers,
+              canUpdateAllPlayers: state.canUpdateAllPlayers,
               onNoteTap:   showNote,
               onStatusTap: showStatusPicker,
             ),
             PlayerGroup(
               title:          "HAVEN'T REPLIED",
               players:        state.unrepliedPlayers,
+              canUpdateAllPlayers: state.canUpdateAllPlayers,
               showMessageAll: true,
               onMessageAll:   showMessageAll,
               onNoteTap:      showNote,

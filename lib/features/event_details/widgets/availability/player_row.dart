@@ -65,17 +65,19 @@ class PlayerRow extends StatelessWidget {
                       fontStyle: FontStyle.italic,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  GestureDetector(
-                    onTap: onNoteTap,
-                    child: Text(
-                      'Edit Note',
-                      style: AppTextStyles.label11.copyWith(
-                        color: colors.actionAccent,
+                  if (onNoteTap != null) ...[
+                    const SizedBox(height: 2),
+                    GestureDetector(
+                      onTap: onNoteTap,
+                      child: Text(
+                        'Edit Note',
+                        style: AppTextStyles.label11.copyWith(
+                          color: colors.actionAccent,
+                        ),
                       ),
                     ),
-                  ),
-                ] else
+                  ],
+                ] else if (onNoteTap != null)
                   GestureDetector(
                     onTap: onNoteTap,
                     child: Text(

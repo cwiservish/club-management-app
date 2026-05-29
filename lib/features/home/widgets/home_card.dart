@@ -71,7 +71,10 @@ class HomeCard extends ConsumerWidget {
                   ],
                 ),
               ),
-              const MapSection(),
+              MapSection(
+                latitude:  viewModel.latitude,
+                longitude: viewModel.longitude,
+              ),
             ],
           ),
         ),

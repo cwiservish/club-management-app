@@ -26,6 +26,10 @@ class ClubEvent {
   final String? flagColor;
   final int? dbId;
   final String? timezone;
+  final bool notificationEnabled;
+  final int arrivalEarly;
+  final String? latitude;
+  final String? longitude;
 
   const ClubEvent({
     required this.id,
@@ -50,6 +54,10 @@ class ClubEvent {
     this.flagColor,
     this.dbId,
     this.timezone,
+    this.notificationEnabled = true,
+    this.arrivalEarly = 15,
+    this.latitude,
+    this.longitude,
   });
 
   ClubEvent copyWith({
@@ -75,6 +83,10 @@ class ClubEvent {
     String? flagColor,
     int? dbId,
     String? timezone,
+    bool? notificationEnabled,
+    int? arrivalEarly,
+    String? latitude,
+    String? longitude,
   }) {
     return ClubEvent(
       id: id ?? this.id,
@@ -99,6 +111,10 @@ class ClubEvent {
       flagColor: flagColor ?? this.flagColor,
       dbId: dbId ?? this.dbId,
       timezone: timezone ?? this.timezone,
+      notificationEnabled: notificationEnabled ?? this.notificationEnabled,
+      arrivalEarly: arrivalEarly ?? this.arrivalEarly,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 

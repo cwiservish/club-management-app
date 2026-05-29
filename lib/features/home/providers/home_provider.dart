@@ -85,6 +85,8 @@ class HomeState {
         maybeCount:   maybe,
         noCount:      no,
         selectedRsvp: userChoice,
+        latitude:     event.latitude,
+        longitude:    event.longitude,
       );
     }).toList();
   }
@@ -143,7 +145,7 @@ class HomeNotifier extends Notifier<HomeState> {
 
   /// Fetches events for the selected team from QA API.
   Future<void> fetchEvents(String teamUuid) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true, errorMessage: null, events: []);
     try {
       final fetched = await ref.read(homeServiceProvider).fetchEvents(teamUuid);
       

@@ -12,6 +12,7 @@ class EventPlayerModel {
   final String? imageUrl;
   final PlayerStatus status;
   final String note;
+  final bool canUpdate;
 
   const EventPlayerModel({
     required this.id,
@@ -21,11 +22,12 @@ class EventPlayerModel {
     this.imageUrl,
     required this.status,
     required this.note,
+    this.canUpdate = true,
   });
 
   bool get hasNote => note.isNotEmpty;
 
-  EventPlayerModel copyWith({PlayerStatus? status, String? note}) {
+  EventPlayerModel copyWith({PlayerStatus? status, String? note, bool? canUpdate}) {
     return EventPlayerModel(
       id:       id,
       playerId: playerId,
@@ -34,6 +36,7 @@ class EventPlayerModel {
       imageUrl: imageUrl,
       status:   status ?? this.status,
       note:     note ?? this.note,
+      canUpdate: canUpdate ?? this.canUpdate,
     );
   }
 }

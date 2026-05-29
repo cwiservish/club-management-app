@@ -1,12 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-// ─── Map placeholder (bottom of home card) ────────────────────────────────────
+// ─── Map Section with Live Google Map and Fallback ──────────────────────────────
 
 class MapSection extends StatelessWidget {
-  const MapSection({super.key});
+  final String? latitude;
+  final String? longitude;
+
+  const MapSection({
+    super.key,
+    this.latitude,
+    this.longitude,
+  });
 
   @override
   Widget build(BuildContext context) {
+    double? lat;
+    double? lng;
+
+    if (latitude != null && longitude != null) {
+      lat = double.tryParse(latitude!);
+      lng = double.tryParse(longitude!);
+    }
+
+    final hasValidCoordinates = lat != null && lng != null && (lat != 0.0 || lng != 0.0);
+
     return SizedBox(
       height: 134,
       width: double.infinity,
@@ -15,24 +33,48 @@ class MapSection extends StatelessWidget {
           Positioned.fill(
             child: Container(color: const Color(0xFF1E2533)),
           ),
-          CustomPaint(painter: MapGridPainter(), child: const SizedBox.expand()),
-          const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.location_pin, color: Colors.white54, size: 28),
-                SizedBox(height: 4),
-                Text('Map', style: TextStyle(color: Colors.white38, fontSize: 11)),
-              ],
+          if (hasValidCoordinates)
+            Positioned.fill(
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: LatLng(lat, lng),
+                  zoom: 14.0,
+                ),
+                markers: {
+                  Marker(
+                    markerId: MarkerId('${latitude}_$longitude'),
+                    position: LatLng(lat, lng),
+                  ),
+                },
+                zoomControlsEnabled: false,
+                mapToolbarEnabled: false,
+                myLocationButtonEnabled: false,
+                scrollGesturesEnabled: false,
+                zoomGesturesEnabled: false,
+                rotateGesturesEnabled: false,
+                tiltGesturesEnabled: false,
+              ),
+            )
+          else ...[
+            CustomPaint(painter: MapGridPainter(), child: const SizedBox.expand()),
+            const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.location_pin, color: Colors.white54, size: 28),
+                  SizedBox(height: 4),
+                  Text('Map', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 }
 
-// ─── Grid painter ─────────────────────────────────────────────────────────────
+// ─── Grid painter fallback ───────────────────────────────────────────────────
 
 class MapGridPainter extends CustomPainter {
   @override

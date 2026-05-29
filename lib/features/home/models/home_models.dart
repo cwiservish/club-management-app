@@ -15,6 +15,8 @@ class HomeCardViewModel {
   final int maybeCount;
   final int noCount;
   final HomeRsvp selectedRsvp;
+  final String? latitude;
+  final String? longitude;
 
   const HomeCardViewModel({
     required this.id,
@@ -26,5 +28,7 @@ class HomeCardViewModel {
     required this.maybeCount,
     required this.noCount,
     required this.selectedRsvp,
+    this.latitude,
+    this.longitude,
   });
 }

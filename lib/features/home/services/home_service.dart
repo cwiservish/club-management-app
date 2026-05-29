@@ -182,6 +182,10 @@ class HomeService {
       final flagColor = json['flag_color']?.toString();
       final dbId = _parseInt(json['team_event_id'] ?? json['id']);
       final timezone = json['timezone']?.toString();
+      final notificationEnabled = _parseBool(json['notification_enabled'] ?? true);
+      final arrivalEarly = json['arrival_early'] != null ? _parseInt(json['arrival_early']) : 15;
+      final latitude = json['latitude']?.toString() ?? '';
+      final longitude = json['longitude']?.toString() ?? '';
 
       return ClubEvent(
         id: uuid,
@@ -206,6 +210,10 @@ class HomeService {
         flagColor: flagColor,
         dbId: dbId,
         timezone: timezone,
+        notificationEnabled: notificationEnabled,
+        arrivalEarly: arrivalEarly,
+        latitude: latitude,
+        longitude: longitude,
       );
     } catch (e) {
       debugPrint('[HomeService] Error parsing event: $e');

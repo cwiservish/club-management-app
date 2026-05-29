@@ -83,7 +83,7 @@ class RosterNotifier extends Notifier<RosterState> {
 
   /// Fetches players and staff from the API for the selected team UUID.
   Future<void> fetchPlayers(String teamUuid) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true, errorMessage: null, allMembers: []);
     try {
       final service = ref.read(rosterServiceProvider);
       final results = await Future.wait([

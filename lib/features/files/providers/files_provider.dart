@@ -53,7 +53,7 @@ class FilesNotifier extends Notifier<FilesState> {
 
   /// Fetches files for the given team UUID.
   Future<void> fetchFiles(String uuid) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true, errorMessage: null, files: []);
     try {
       final response = await ref.read(filesServiceProvider).fetchFiles(uuid);
       if (response.success) {

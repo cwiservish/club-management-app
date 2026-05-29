@@ -213,55 +213,91 @@ class EventDetailService {
     return EventAttendeeSaveResponse.fromJson(rawResponseMap);
   }
 
-  /// Searches Google Places Autocomplete API.
+  /// Searches Google Places Autocomplete API with a robust Radar Autocomplete fallback.
   Future<List<Map<String, dynamic>>> fetchPlacesAutocomplete(String input) async {
-    final apiKey = EnvironmentConfig.googleMapsApiKey;
-    if (apiKey.isEmpty) {
-      debugPrint('[Google Places] API key is empty. Skipping autocomplete call.');
-      return [];
-    }
+    final googleApiKey = EnvironmentConfig.googleMapsApiKey;
+    if (googleApiKey.isNotEmpty) {
+      try {
+        const url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
+        final response = await _dio.get(url, queryParameters: {
+          'input': input,
+          'key': googleApiKey,
+          'types': 'establishment|geocode',
+        });
 
-    try {
-      const url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
-      final response = await _dio.get(url, queryParameters: {
-        'input': input,
-        'key': apiKey,
-        'types': 'establishment|geocode',
-      });
-
-      if (response.statusCode == 200 && response.data != null) {
-        final predictions = response.data['predictions'];
-        if (predictions is List) {
-          return predictions.map((e) => Map<String, dynamic>.from(e)).toList();
+        if (response.statusCode == 200 && response.data != null) {
+          final predictions = response.data['predictions'];
+          if (predictions is List && predictions.isNotEmpty) {
+            return predictions.map((e) => Map<String, dynamic>.from(e)).toList();
+          }
         }
+      } catch (e) {
+        debugPrint('[Google Places] Autocomplete error: $e. Falling back to Radar.');
       }
-    } catch (e) {
-      debugPrint('[Google Places] Autocomplete error: $e');
     }
+
+    // Fallback to Radar Autocomplete API
+    final radarApiKey = EnvironmentConfig.radarApiKey;
+    if (radarApiKey.isNotEmpty) {
+      try {
+        final url = 'https://api.radar.io/v1/search/autocomplete';
+        final response = await _dio.get(
+          url,
+          queryParameters: {
+            'query': input,
+          },
+          options: Options(
+            headers: {
+              'Authorization': radarApiKey,
+            },
+          ),
+        );
+
+        if (response.statusCode == 200 && response.data != null) {
+          final addresses = response.data['addresses'] as List?;
+          if (addresses != null) {
+            return addresses.map((addr) {
+              final map = Map<String, dynamic>.from(addr as Map);
+              final placeLabel = map['placeLabel']?.toString() ?? '';
+              final addressLabel = map['addressLabel']?.toString() ?? '';
+              return {
+                'name': placeLabel.isNotEmpty ? placeLabel : addressLabel,
+                'description': addressLabel,
+                'latitude': map['latitude']?.toString() ?? '',
+                'longitude': map['longitude']?.toString() ?? '',
+              };
+            }).toList();
+          }
+        }
+      } catch (e) {
+        debugPrint('[Radar] Autocomplete error: $e');
+      }
+    }
+
     return [];
   }
 
   /// Fetches place geometry details from Place ID.
   Future<Map<String, dynamic>?> fetchPlaceDetails(String placeId) async {
     final apiKey = EnvironmentConfig.googleMapsApiKey;
-    if (apiKey.isEmpty) return null;
+    if (apiKey.isNotEmpty) {
+      try {
+        const url = 'https://maps.googleapis.com/maps/api/place/details/json';
+        final response = await _dio.get(url, queryParameters: {
+          'place_id': placeId,
+          'key': apiKey,
+          'fields': 'geometry',
+        });
 
-    try {
-      const url = 'https://maps.googleapis.com/maps/api/place/details/json';
-      final response = await _dio.get(url, queryParameters: {
-        'place_id': placeId,
-        'key': apiKey,
-        'fields': 'geometry',
-      });
-
-      if (response.statusCode == 200 && response.data != null) {
-        final result = response.data['result'];
-        if (result is Map<String, dynamic>) {
-          return result;
+        if (response.statusCode == 200 && response.data != null) {
+          final result = response.data['result'];
+          if (result is Map<String, dynamic>) {
+            return result;
+          }
         }
+      } catch (e) {
+        debugPrint('[Google Places] Place details error: $e');
       }
-    } catch (e) {
-      debugPrint('[Google Places] Place details error: $e');
     }
     return null;
   }

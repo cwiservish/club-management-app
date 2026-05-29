@@ -22,6 +22,7 @@ abstract final class EnvironmentConfig {
   static String get fusionAuthTenantId => _values['FUSIONAUTH_TENANT_ID'] as String? ?? '';
   static String get fusionAuthApiKey => _values['FUSIONAUTH_API_KEY'] as String? ?? '';
   static String get googleMapsApiKey => _values['GOOGLE_MAPS_API_KEY'] as String? ?? '';
+  static String get radarApiKey => _values['RADAR_API_KEY'] as String? ?? '';
 
   static Map<String, dynamic> _values = {};
 

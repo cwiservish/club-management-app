@@ -53,7 +53,7 @@ class PhotosNotifier extends Notifier<PhotosState> {
 
   /// Fetches photos for the given team UUID.
   Future<void> fetchPhotos(String uuid) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true, errorMessage: null, photos: []);
     try {
       final response = await ref.read(photosServiceProvider).fetchPhotos(uuid);
       if (response.success) {

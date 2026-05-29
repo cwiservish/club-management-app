@@ -131,7 +131,7 @@ class ScheduleNotifier extends Notifier<ScheduleState> {
 
   /// Fetch events from QA API.
   Future<void> fetchEvents(String teamUuid) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true, errorMessage: null, events: []);
     try {
       final fetched = await ref.read(scheduleServiceProvider).fetchScheduleEvents(teamUuid);
       state = state.copyWith(

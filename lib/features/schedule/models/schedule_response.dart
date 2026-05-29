@@ -373,6 +373,8 @@ class ScheduleEvent {
       flagColor: flagColor.isNotEmpty ? flagColor : null,
       dbId: teamEventId > 0 ? teamEventId : id,
       timezone: timezone.isNotEmpty ? timezone : null,
+      notificationEnabled: notificationEnabled,
+      arrivalEarly: arrivalEarly,
     );
   }
 }

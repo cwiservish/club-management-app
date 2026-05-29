@@ -23,6 +23,17 @@ class EventDetailsTabPage extends ConsumerWidget {
     final notifier = ref.read(eventDetailProvider(eventId).notifier);
     final colors = AppColors.current;
 
+    if (state.isLoading) {
+      return ColoredBox(
+        color: colors.card,
+        child: Center(
+          child: CircularProgressIndicator(
+            color: colors.primary,
+          ),
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: () async {
         final activeTeam = ref.read(selectedTeamProvider);

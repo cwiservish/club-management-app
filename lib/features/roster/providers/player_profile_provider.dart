@@ -44,7 +44,7 @@ class PlayerProfileNotifier extends Notifier<PlayerProfileState> {
   }
 
   Future<void> fetchProfile(String teamUuid, String playerUuid) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true, errorMessage: null, profile: null);
     try {
       final response = await ref.read(rosterServiceProvider).fetchPlayerProfile(teamUuid, playerUuid);
       state = state.copyWith(

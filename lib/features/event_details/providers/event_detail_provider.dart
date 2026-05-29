@@ -18,12 +18,14 @@ class EventDetailState {
   final List<EventPlayerModel> players;
   final bool isLoading;
   final String? errorMessage;
+  final bool canUpdateAllPlayers;
 
   const EventDetailState({
     required this.event,
     required this.players,
     this.isLoading = false,
     this.errorMessage,
+    this.canUpdateAllPlayers = false,
   });
 
   EventDetailState copyWith({
@@ -31,12 +33,14 @@ class EventDetailState {
     List<EventPlayerModel>? players,
     bool? isLoading,
     String? errorMessage,
+    bool? canUpdateAllPlayers,
   }) {
     return EventDetailState(
       event:   event   ?? this.event,
       players: players ?? this.players,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage == null ? this.errorMessage : (errorMessage.isEmpty ? null : errorMessage),
+      canUpdateAllPlayers: canUpdateAllPlayers ?? this.canUpdateAllPlayers,
     );
   }
 
@@ -110,8 +114,9 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
 
     return EventDetailState(
       event:   eventDetail,
-      players: service.getEventPlayers(eventId),
+      players: activeTeam != null ? [] : service.getEventPlayers(eventId),
       isLoading: activeTeam != null,
+      canUpdateAllPlayers: true,
     );
   }
 
@@ -136,7 +141,7 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
 
   /// Asynchronously fetches availability from the API
   Future<void> fetchAvailability(String teamUuid) async {
-    state = state.copyWith(isLoading: true, errorMessage: '');
+    state = state.copyWith(isLoading: true, errorMessage: '', players: []);
     try {
       final service = ref.read(eventDetailServiceProvider);
       final response = await service.fetchEventAvailability(
@@ -164,12 +169,14 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
                 imageUrl: player.imageUrl.isNotEmpty ? player.imageUrl : (player.profileImageUrl.isNotEmpty ? player.profileImageUrl : null),
                 status: status,
                 note: player.notes,
+                canUpdate: player.canUpdate,
               ),
             );
           }
         }
         state = state.copyWith(
           players: mappedPlayers,
+          canUpdateAllPlayers: response.data!.canUpdateAllPlayers,
           isLoading: false,
         );
       } else {
@@ -244,13 +251,17 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
     final int targetPlayerId = player.playerId ?? player.id;
     final int eventDbId = _teamEventId ?? int.tryParse(eventId) ?? 0;
 
+    final String finalCustomerId = activeTeam.isCoach ? targetPlayerId.toString() : '';
+    final int finalPlayerId = activeTeam.isCoach ? 0 : targetPlayerId;
+
     try {
       final service = ref.read(eventDetailServiceProvider);
       final response = await service.saveEventAttendee(
         EventAttendeeSaveRequest(
           teamUuid: activeTeam.uuid,
           teamEventId: eventDbId,
-          playerId: targetPlayerId,
+          customerId: finalCustomerId,
+          playerId: finalPlayerId,
           notes: note,
         ),
       );
