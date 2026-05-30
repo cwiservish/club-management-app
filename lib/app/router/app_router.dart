@@ -3,12 +3,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/common_providers/current_user_provider.dart';
-import '../../core/models/chat_models.dart';
+
 import '../../features/splash/pages/splash_page.dart';
 import '../../features/home/pages/home_page.dart';
 import '../../features/settings/pages/settings_page.dart';
 import '../../features/messages/pages/messages_page.dart';
-import '../../features/messages/pages/chat_detail_page.dart';
+import '../../features/messages/pages/talkjs_chat_page.dart';
+import '../../features/messages/pages/create_channel_page.dart';
+import '../../features/messages/pages/edit_channel_page.dart';
+import '../../features/messages/models/chat_channel.dart';
 import '../../features/roster/pages/roster_page.dart';
 import '../../features/roster/pages/roster_detail_page.dart';
 import '../../features/roster/pages/attendance_history_page.dart';
@@ -154,7 +157,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: AppRoutes.messagesChatDetail,
                     builder: (context, state) =>
-                        ChatDetailScreen(thread: state.extra as ChatThread),
+                        TalkJSChatPage(args: state.extra as TalkJSChatArgs),
+                  ),
+                  GoRoute(
+                    path: AppRoutes.createChannel,
+                    builder: (context, state) => const CreateChannelPage(),
+                  ),
+                  GoRoute(
+                    path: AppRoutes.editChannel,
+                    builder: (context, state) => EditChannelPage(
+                      channel: state.extra as ChatChannel,
+                    ),
                   ),
                 ],
               ),

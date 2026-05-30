@@ -24,6 +24,8 @@ abstract class AppRoutes {
 
   static const messages = '/messages';
   static const messagesChatDetail = 'chat';
+  static const createChannel = 'create-channel';
+  static const editChannel = 'edit-channel';
 
   // Event detail (independent feature)
   static const eventDetailBase = '/event/:eventId';
