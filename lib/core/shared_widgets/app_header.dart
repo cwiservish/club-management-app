@@ -73,6 +73,9 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                               Navigator.of(ctx).pop();
                               ref.read(selectedTeamProvider.notifier).selectTeam(team);
                               widget.onTeamChanged?.call(team.name);
+                              if (context.mounted) {
+                                context.go(AppRoutes.home);
+                              }
                             },
                           );
                         }).toList(),

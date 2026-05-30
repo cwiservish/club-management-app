@@ -23,6 +23,9 @@ class RosterMember {
   final int redCards;
   final bool isActive;
   final Color avatarColor;
+  final String primaryPosition;
+  final String gender;
+  final String jerseyNo;
 
   const RosterMember({
     required this.id,
@@ -44,6 +47,9 @@ class RosterMember {
     this.redCards = 0,
     this.isActive = true,
     required this.avatarColor,
+    this.primaryPosition = '',
+    this.gender = '',
+    this.jerseyNo = '',
   });
 
   String get fullName => '$firstName $lastName'.trim();

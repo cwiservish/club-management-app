@@ -12,6 +12,7 @@ abstract final class _Keys {
   static const authToken = 'auth_token';
   static const currentUser = 'current_user';
   static const userTeams = 'user_teams';
+  static const selectedTeamUuid = 'selected_team_uuid';
 }
 
 // ─── AppStorage ───────────────────────────────────────────────────────────────
@@ -59,6 +60,17 @@ class AppStorage {
   }
 
   Future<void> deleteTeams() => _storage.delete(_Keys.userTeams);
+
+  // ─── Selected Team ───────────────────────────────────────────────────────────
+
+  Future<void> saveSelectedTeamUuid(String uuid) =>
+      _storage.write(_Keys.selectedTeamUuid, uuid);
+
+  Future<String?> readSelectedTeamUuid() =>
+      _storage.read(_Keys.selectedTeamUuid);
+
+  Future<void> deleteSelectedTeamUuid() =>
+      _storage.delete(_Keys.selectedTeamUuid);
 
   // ─── Clear all (logout) ──────────────────────────────────────────────────────
 

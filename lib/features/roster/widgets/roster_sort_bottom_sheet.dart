@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../providers/roster_provider.dart';
 
-class RosterSortBottomSheet extends StatefulWidget {
+class RosterSortBottomSheet extends ConsumerWidget {
   const RosterSortBottomSheet({super.key});
-
-  @override
-  State<RosterSortBottomSheet> createState() => _RosterSortBottomSheetState();
-}
-
-class _RosterSortBottomSheetState extends State<RosterSortBottomSheet> {
-  String _selected = 'First Name';
 
   static const _options = [
     'First Name',
@@ -21,7 +16,10 @@ class _RosterSortBottomSheetState extends State<RosterSortBottomSheet> {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(rosterProvider);
+    final selected = state.sortBy;
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.current.surface,
@@ -81,9 +79,12 @@ class _RosterSortBottomSheetState extends State<RosterSortBottomSheet> {
             ),
             child: Column(
               children: _options.map((option) {
-                final isSelected = _selected == option;
+                final isSelected = selected == option;
                 return GestureDetector(
-                  onTap: () => setState(() => _selected = option),
+                  onTap: () {
+                    ref.read(rosterProvider.notifier).setSortBy(option);
+                    Navigator.pop(context);
+                  },
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

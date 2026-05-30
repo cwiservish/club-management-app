@@ -10,6 +10,8 @@ import '../../../core/common_providers/selected_team_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/home_models.dart';
 import '../services/home_service.dart';
+import '../../event_details/providers/event_detail_provider.dart';
+import '../../event_details/services/event_detail_service.dart';
 
 export '../models/home_models.dart';
 
@@ -87,6 +89,8 @@ class HomeState {
         selectedRsvp: userChoice,
         latitude:     event.latitude,
         longitude:    event.longitude,
+        requiresPlayerSelection: event.requiresPlayerSelection,
+        rsvpTargets:  event.rsvpTargets,
       );
     }).toList();
   }
@@ -184,6 +188,53 @@ class HomeNotifier extends Notifier<HomeState> {
     state = state.copyWith(
       userRsvps: {...state.userRsvps, eventId: next},
     );
+  }
+
+  /// Asynchronously saves RSVP status on the server and refreshes the home event list.
+  Future<({bool success, String message})> saveEventRsvp({
+    required ClubEvent event,
+    required ClubEventRsvpTarget target,
+    required HomeRsvp rsvp,
+  }) async {
+    final activeTeam = ref.read(selectedTeamProvider);
+    if (activeTeam == null) {
+      return (success: false, message: 'No selected team found');
+    }
+
+    int attendanceValue = 0;
+    if (rsvp == HomeRsvp.going) attendanceValue = 1;
+    if (rsvp == HomeRsvp.maybe) attendanceValue = 2;
+    if (rsvp == HomeRsvp.no) attendanceValue = 0;
+
+    try {
+      final service = ref.read(eventDetailServiceProvider);
+      final response = await service.saveEventAttendee(
+        EventAttendeeSaveRequest(
+          teamUuid: activeTeam.uuid,
+          teamEventId: event.dbId ?? 0,
+          attendeeType: target.attendeeType,
+          customerId: target.customerId.toString(),
+          playerId: target.playerId ?? 0,
+          notes: target.notes,
+          attendance: attendanceValue,
+        ),
+      );
+
+      if (response.success) {
+        // Optimistically update local RSVP choice
+        final Map<String, HomeRsvp> updatedRsvps = {...state.userRsvps, event.id: rsvp};
+        state = state.copyWith(userRsvps: updatedRsvps);
+        
+        // Refresh the event list silently to sync everything
+        await refresh();
+        
+        return (success: true, message: response.message.isNotEmpty ? response.message as String : 'RSVP updated successfully.');
+      } else {
+        return (success: false, message: response.message.isNotEmpty ? response.message as String : 'Failed to update RSVP.');
+      }
+    } catch (e) {
+      return (success: false, message: e.toString());
+    }
   }
 
   void setFilter(EventType? f) => state = state.copyWith(filter: f);

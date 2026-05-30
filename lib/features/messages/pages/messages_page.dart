@@ -11,7 +11,6 @@ import '../../../core/shared_widgets/app_header.dart';
 import '../models/chat_channel.dart';
 import '../models/chat_member.dart';
 import '../providers/chat_state_provider.dart';
-import 'new_chat_sheet.dart';
 import 'talkjs_chat_page.dart'; // for TalkJSChatArgs
 
 class MessagesScreen extends ConsumerStatefulWidget {
@@ -39,6 +38,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     ref.watch(themeModeProvider);
     final selectedTeam = ref.watch(selectedTeamProvider);
     final searchQuery = ref.watch(chatSearchQueryProvider);
+    ref.watch(talkJsSessionProvider);
 
     return Scaffold(
       backgroundColor: AppColors.current.background,
@@ -77,13 +77,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           ],
         ),
       ),
-      floatingActionButton: selectedTeam != null
-          ? FloatingActionButton(
-              onPressed: () => _showNewChatSheet(context),
-              backgroundColor: AppColors.current.primary,
-              child: const Icon(Icons.message, color: Colors.white),
-            )
-          : null,
     );
   }
 
@@ -246,8 +239,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: InkWell(
-        onTap: () {
-          context.push(
+        onTap: () async {
+          await context.push(
             '${AppRoutes.messages}/${AppRoutes.messagesChatDetail}',
             extra: TalkJSChatArgs(
               conversationId: channel.uuid,
@@ -259,6 +252,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               memberCount: channel.memberCount,
             ),
           );
+          final activeTeam = ref.read(selectedTeamProvider);
+          if (activeTeam != null) {
+            ref.invalidate(chatChannelsProvider(activeTeam.uuid));
+            ref.invalidate(chatMembersProvider(activeTeam.uuid));
+          }
         },
         borderRadius: BorderRadius.circular(8),
         child: Padding(
@@ -269,12 +267,28 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '# ${channel.name}',
-                      style: AppTextStyles.body15.copyWith(
-                        color: AppColors.current.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        if (channel.unreadCount > 0)
+                          Container(
+                            margin: const EdgeInsets.only(right: 6),
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: AppColors.current.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        Expanded(
+                          child: Text(
+                            '# ${channel.name}',
+                            style: AppTextStyles.body15.copyWith(
+                              color: AppColors.current.textPrimary,
+                              fontWeight: channel.unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -282,13 +296,32 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.label12.copyWith(
-                        color: AppColors.current.textSecondary.withOpacity(0.7),
+                        color: channel.unreadCount > 0
+                            ? AppColors.current.textPrimary
+                            : AppColors.current.textSecondary.withOpacity(0.7),
+                        fontWeight: channel.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                   ],
                 ),
               ),
-              if (isActive)
+              if (channel.unreadCount > 0)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.current.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${channel.unreadCount}',
+                    style: AppTextStyles.label12.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              else if (isActive)
                 Icon(
                   Icons.people_alt,
                   color: AppColors.current.textSecondary,
@@ -304,13 +337,21 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   // ─── DIRECT MESSAGES SECTION ───────────────────────────────────────────────
 
   Widget _buildDmsSection(String teamUuid, String searchQuery) {
+    final dmQuery = _dmSearchController.text.trim();
+    final isSearchingRemote = dmQuery.length >= 3;
+
     final membersAsync = ref.watch(chatMembersProvider(teamUuid));
-    final dmSearch = _dmSearchController.text.trim().toLowerCase();
-    final count = membersAsync.asData?.value.where((m) {
-      final matchesGlobal = searchQuery.isEmpty || m.name.toLowerCase().contains(searchQuery.toLowerCase());
-      final matchesInline = dmSearch.isEmpty || m.name.toLowerCase().contains(dmSearch);
-      return matchesGlobal && matchesInline;
-    }).length;
+    final searchAsync = isSearchingRemote
+        ? ref.watch(chatSearchDmsProvider((teamUuid: teamUuid, query: dmQuery)))
+        : null;
+
+    final count = isSearchingRemote
+        ? searchAsync?.asData?.value.length
+        : membersAsync.asData?.value.where((m) {
+            final matchesGlobal = searchQuery.isEmpty || m.name.toLowerCase().contains(searchQuery.toLowerCase());
+            final matchesInline = dmQuery.isEmpty || m.name.toLowerCase().contains(dmQuery.toLowerCase());
+            return matchesGlobal && matchesInline;
+          }).length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,40 +409,66 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
         if (_isDmsExpanded) ...[
           _buildDmSearchBar(),
           const SizedBox(height: 8),
-          membersAsync.when(
-            data: (members) {
-              final dmSearch = _dmSearchController.text.trim().toLowerCase();
-              final filtered = members.where((m) {
-                // Filters by global query or DM-specific inline search query
-                final matchesGlobal = searchQuery.isEmpty || m.name.toLowerCase().contains(searchQuery.toLowerCase());
-                final matchesInline = dmSearch.isEmpty || m.name.toLowerCase().contains(dmSearch);
-                return matchesGlobal && matchesInline;
-              }).toList();
+          if (isSearchingRemote && searchAsync != null)
+            searchAsync.when(
+              data: (searchResults) {
+                if (searchResults.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    child: Text(
+                      'No members found matching "$dmQuery".',
+                      style: AppTextStyles.body13.copyWith(color: AppColors.current.textSecondary),
+                    ),
+                  );
+                }
 
-              if (filtered.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                  child: Text(
-                    dmSearch.isEmpty ? 'No members found.' : 'No members match search.',
-                    style: AppTextStyles.body13.copyWith(color: AppColors.current.textSecondary),
-                  ),
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemCount: searchResults.length,
+                  itemBuilder: (context, index) {
+                    final member = searchResults[index];
+                    return _buildMemberItem(context, member);
+                  },
                 );
-              }
+              },
+              loading: () => _buildSectionLoader(),
+              error: (err, _) => _buildSectionError(() => ref.refresh(chatSearchDmsProvider((teamUuid: teamUuid, query: dmQuery)))),
+            )
+          else
+            membersAsync.when(
+              data: (members) {
+                final filtered = members.where((m) {
+                  final matchesGlobal = searchQuery.isEmpty || m.name.toLowerCase().contains(searchQuery.toLowerCase());
+                  final matchesInline = dmQuery.isEmpty || m.name.toLowerCase().contains(dmQuery.toLowerCase());
+                  return matchesGlobal && matchesInline;
+                }).toList();
 
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                itemCount: filtered.length,
-                itemBuilder: (context, index) {
-                  final member = filtered[index];
-                  return _buildMemberItem(context, member);
-                },
-              );
-            },
-            loading: () => _buildSectionLoader(),
-            error: (err, _) => _buildSectionError(() => ref.refresh(chatMembersProvider(teamUuid))),
-          ),
+                if (filtered.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    child: Text(
+                      dmQuery.isEmpty ? 'No members found.' : 'No members match search.',
+                      style: AppTextStyles.body13.copyWith(color: AppColors.current.textSecondary),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final member = filtered[index];
+                    return _buildMemberItem(context, member);
+                  },
+                );
+              },
+              loading: () => _buildSectionLoader(),
+              error: (err, _) => _buildSectionError(() => ref.refresh(chatMembersProvider(teamUuid))),
+            ),
         ],
       ],
     );
@@ -425,7 +492,24 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           hintStyle: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary.withOpacity(0.5)),
           border: InputBorder.none,
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          contentPadding: const EdgeInsets.only(left: 12, right: 8, top: 10, bottom: 10),
+          suffixIcon: _dmSearchController.text.isNotEmpty
+              ? InkWell(
+                  onTap: () {
+                    _dmSearchController.clear();
+                    setState(() {});
+                  },
+                  child: Icon(
+                    Icons.clear,
+                    color: AppColors.current.textSecondary,
+                    size: 18,
+                  ),
+                )
+              : null,
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 32,
+            minHeight: 32,
+          ),
         ),
       ),
     );
@@ -435,8 +519,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: InkWell(
-        onTap: () {
-          context.push(
+        onTap: () async {
+          await context.push(
             '${AppRoutes.messages}/${AppRoutes.messagesChatDetail}',
             extra: TalkJSChatArgs(
               conversationId: member.uuid,
@@ -447,29 +531,75 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               otherUserEmail: member.email,
             ),
           );
+          final activeTeam = ref.read(selectedTeamProvider);
+          if (activeTeam != null) {
+            ref.invalidate(chatChannelsProvider(activeTeam.uuid));
+            ref.invalidate(chatMembersProvider(activeTeam.uuid));
+          }
         },
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Text(
-                member.name,
-                style: AppTextStyles.body16.copyWith(
-                  color: AppColors.current.textPrimary,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (member.unreadCount > 0)
+                          Container(
+                            margin: const EdgeInsets.only(right: 6),
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: AppColors.current.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        Expanded(
+                          child: Text(
+                            member.name,
+                            style: AppTextStyles.body16.copyWith(
+                              color: AppColors.current.textPrimary,
+                              fontWeight: member.unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      member.lastMessageText ?? 'No messages yet...',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.label12.copyWith(
+                        color: member.unreadCount > 0
+                            ? AppColors.current.textPrimary
+                            : AppColors.current.textSecondary.withOpacity(0.7),
+                        fontWeight: member.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                member.lastMessageText ?? 'No messages yet...',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.label12.copyWith(
-                  color: AppColors.current.textSecondary.withOpacity(0.7),
+              if (member.unreadCount > 0)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.current.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${member.unreadCount}',
+                    style: AppTextStyles.label12.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -520,23 +650,5 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     );
   }
 
-  void _showNewChatSheet(BuildContext context) async {
-    final result = await showModalBottomSheet<dynamic>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withOpacity(0.5),
-      isScrollControlled: true,
-      builder: (context) => const NewChatSheet(),
-    );
-
-    if (result == 'focus_dms') {
-      setState(() {
-        _isDmsExpanded = true;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _dmSearchFocusNode.requestFocus();
-      });
-    }
-  }
 }
 

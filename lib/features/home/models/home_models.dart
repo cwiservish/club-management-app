@@ -1,3 +1,5 @@
+import '../../../core/models/club_event.dart';
+
 // ─── RSVP status ──────────────────────────────────────────────────────────────
 
 enum HomeRsvp { going, maybe, no, none }
@@ -17,6 +19,8 @@ class HomeCardViewModel {
   final HomeRsvp selectedRsvp;
   final String? latitude;
   final String? longitude;
+  final bool requiresPlayerSelection;
+  final List<ClubEventRsvpTarget> rsvpTargets;
 
   const HomeCardViewModel({
     required this.id,
@@ -30,5 +34,7 @@ class HomeCardViewModel {
     required this.selectedRsvp,
     this.latitude,
     this.longitude,
+    this.requiresPlayerSelection = false,
+    this.rsvpTargets = const [],
   });
 }

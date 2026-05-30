@@ -309,6 +309,7 @@ class EventAttendeeSaveRequest {
   final String customerId;
   final int playerId;
   final String notes;
+  final int? attendance;
 
   EventAttendeeSaveRequest({
     required this.teamUuid,
@@ -317,6 +318,7 @@ class EventAttendeeSaveRequest {
     this.customerId = '',
     required this.playerId,
     required this.notes,
+    this.attendance,
   });
 
   Map<String, dynamic> toJson() => {
@@ -326,6 +328,7 @@ class EventAttendeeSaveRequest {
     'customer_id': customerId,
     'player_id': playerId,
     'notes': notes,
+    if (attendance != null) 'attendance': attendance,
   };
 }
 

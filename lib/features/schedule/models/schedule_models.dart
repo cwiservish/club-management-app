@@ -2,7 +2,7 @@ import '../../../core/models/club_event.dart';
 
 // ─── RSVP Status ──────────────────────────────────────────────────────────────
 
-enum RsvpStatus { accepted, declined, unknown }
+enum RsvpStatus { accepted, declined, maybe, unknown }
 
 // ─── Month Section ────────────────────────────────────────────────────────────
 // Pre-computed grouping returned by ScheduleState.monthSections.

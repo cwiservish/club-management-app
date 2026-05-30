@@ -1030,7 +1030,7 @@ packages:
     source: hosted
     version: "0.17.5"
   talkjs_flutter_inappwebview:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: talkjs_flutter_inappwebview
       sha256: "51c6c90c7393be05b290681b4f2a4bb46cc1f1f932bec0fecf5191ac05fe9524"

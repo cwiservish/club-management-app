@@ -30,6 +30,7 @@ import '../../features/event_details/pages/event_add_page.dart';
 import '../../features/auth/pages/login_page.dart';
 import '../../features/auth/pages/forgot_password_page.dart';
 import '../../shell/app_shell.dart';
+import '../../core/shared_widgets/profile_webview_page.dart';
 import 'app_routes.dart';
 
 // ─── Auth Listenable ──────────────────────────────────────────────────────────
@@ -92,6 +93,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.profileDetail,
+        builder: (context, state) => ProfileWebViewPage(
+          url: state.extra as String,
+        ),
       ),
 
       StatefulShellRoute.indexedStack(

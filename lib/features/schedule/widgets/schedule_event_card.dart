@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/club_event.dart';
 import '../models/schedule_models.dart';
+import '../providers/schedule_provider.dart';
+import '../../home/widgets/rsvp_player_selection_sheet.dart';
 import 'my_rsvp_dialog.dart';
 
-class ScheduleEventCard extends StatelessWidget {
+class ScheduleEventCard extends ConsumerWidget {
   final ClubEvent event;
   final RsvpStatus? rsvpStatus;
 
   const ScheduleEventCard({super.key, required this.event, this.rsvpStatus});
 
-  RsvpStatus _deriveStatus() {
-    if (event.rsvpYes.contains('me')) return RsvpStatus.accepted;
-    if (event.rsvpNo.contains('me'))  return RsvpStatus.declined;
+  RsvpStatus _deriveStatus(ClubEvent e) {
+    if (e.rsvpYes.contains('me')) return RsvpStatus.accepted;
+    if (e.rsvpNo.contains('me'))  return RsvpStatus.declined;
+    if (e.rsvpMaybe.contains('me')) return RsvpStatus.maybe;
     return RsvpStatus.unknown;
   }
 
@@ -37,9 +41,46 @@ class ScheduleEventCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final status = rsvpStatus ?? _deriveStatus();
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Always read the latest event from the provider so RSVP status stays fresh.
+    final latestEvent = ref.watch(scheduleProvider).events
+        .firstWhere((e) => e.id == event.id, orElse: () => event);
+    final status = rsvpStatus ?? _deriveStatus(latestEvent);
 
+    Future<void> handleRsvpTap() async {
+      final chosenStatus = await showDialog<String>(
+        context: context,
+        builder: (_) => MyRsvpDialog(event: latestEvent),
+      );
+
+      // Dialog returns a non-null status only when player selection is needed.
+      if (chosenStatus == null || !context.mounted) return;
+
+      // Show player selection sheet.
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => RsvpPlayerSelectionSheet(
+          targets: latestEvent.rsvpTargets,
+          onSelected: (target) async {
+            final result = await ref.read(scheduleProvider.notifier).saveEventRsvp(
+              event: latestEvent,
+              target: target,
+              status: chosenStatus,
+            );
+            if (!result.success && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(result.message),
+                  backgroundColor: AppColors.current.error,
+                ),
+              );
+            }
+          },
+        ),
+      );
+    }
     return GestureDetector(
       onTap: () => context.push(AppRoutes.eventDetails(event.id)),
       child: Container(
@@ -117,12 +158,7 @@ class ScheduleEventCard extends StatelessWidget {
 
                 // RSVP column
                 GestureDetector(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => MyRsvpDialog(event: event),
-                    );
-                  },
+                  onTap: handleRsvpTap,
                   child: _Col(
                     width: 60,
                     color: AppColors.current.card,
@@ -173,6 +209,14 @@ class _RsvpBox extends StatelessWidget {
       case RsvpStatus.declined:
         bg    = AppColors.current.rsvpNo;
         child = Icon(Icons.close, color: AppColors.current.white, size: 17);
+      case RsvpStatus.maybe:
+        bg    = AppColors.current.rsvpMaybe;
+        child = Text(
+          '?',
+          style: AppTextStyles.heading15.copyWith(
+            color: AppColors.current.white,
+          ),
+        );
       case RsvpStatus.unknown:
         bg    = AppColors.current.rsvpNoResponse;
         child = Text(

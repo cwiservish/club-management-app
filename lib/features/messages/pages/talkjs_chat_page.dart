@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,9 +6,13 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/common_providers/current_user_provider.dart';
+import '../../../core/common_providers/selected_team_provider.dart';
+import '../../../core/common_providers/theme_provider.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../models/chat_channel.dart';
+import '../models/chat_member.dart';
 import '../providers/chat_state_provider.dart';
+
 
 // ─── Args ─────────────────────────────────────────────────────────────────────
 
@@ -51,11 +54,24 @@ class TalkJSChatPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeModeProvider);
     final tokenAsync = ref.watch(chatTokenProvider);
     final userAsync = ref.watch(currentUserProvider);
+    final session = ref.watch(talkJsSessionProvider);
+    final selectedTeam = ref.watch(selectedTeamProvider);
+
+    final isThread = args.conversationId.startsWith('replyto_');
+    final isChannelThread = isThread && args.chatChannelId != null;
+
+    final AsyncValue<List<ChatMember>>? membersAsync = isChannelThread && selectedTeam != null
+        ? ref.watch(chatChannelMembersProvider((
+            teamUuid: selectedTeam.uuid,
+            chatChannelId: args.chatChannelId!,
+          )))
+        : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F3F5),
+      backgroundColor: AppColors.current.background,
       body: SafeArea(
         top: false,
         child: Column(
@@ -63,27 +79,35 @@ class TalkJSChatPage extends ConsumerWidget {
             const AppHeader(),
             _buildAppBar(context),
             Expanded(
-              child: tokenAsync.when(
-                data: (tokenResponse) {
-                  return userAsync.when(
-                    data: (currentUser) {
-                      if (currentUser == null) {
-                        return _buildErrorState('User not logged in');
-                      }
-                      if (args.isGroup && args.permission == 'None') {
-                        return _buildLeftChannelState();
-                      }
-                      return _buildChatBox(tokenResponse, currentUser);
-                    },
-                    loading: () => _buildLoadingState(),
-                    error: (err, _) =>
-                        _buildErrorState('Failed to load user profile'),
-                  );
-                },
-                loading: () => _buildLoadingState(),
-                error: (err, _) =>
-                    _buildErrorState('Failed to connect to chat server'),
-              ),
+              child: session != null
+                  ? (args.isGroup && args.permission == 'None'
+                      ? _buildLeftChannelState()
+                      : (isChannelThread && membersAsync != null && membersAsync.isLoading
+                          ? _buildLoadingState()
+                          : isChannelThread && membersAsync != null && membersAsync.hasError
+                              ? _buildErrorState('Failed to load thread participants')
+                              : _buildChatBox(context, session, membersAsync)))
+                  : tokenAsync.when(
+                      data: (tokenResponse) {
+                        return userAsync.when(
+                          data: (currentUser) {
+                            if (currentUser == null) {
+                              return _buildErrorState('User not logged in');
+                            }
+                            if (args.isGroup && args.permission == 'None') {
+                              return _buildLeftChannelState();
+                            }
+                            return _buildLoadingState();
+                          },
+                          loading: () => _buildLoadingState(),
+                          error: (err, _) =>
+                              _buildErrorState('Failed to load user profile'),
+                        );
+                      },
+                      loading: () => _buildLoadingState(),
+                      error: (err, _) =>
+                          _buildErrorState('Failed to connect to chat server'),
+                    ),
             ),
           ],
         ),
@@ -94,15 +118,20 @@ class TalkJSChatPage extends ConsumerWidget {
   // ─── App Bar ─────────────────────────────────────────────────────────────
 
   Widget _buildAppBar(BuildContext context) {
-    final subtitle = args.isGroup
-        ? (args.memberCount != null
-            ? '${args.memberCount} Members'
-            : 'Group Channel')
-        : 'Direct Message';
+    final String subtitle;
+    if (args.conversationId.startsWith('replyto_')) {
+      subtitle = 'Thread';
+    } else {
+      subtitle = args.isGroup
+          ? (args.memberCount != null
+              ? '${args.memberCount} Members'
+              : 'Group Channel')
+          : 'Direct Message';
+    }
 
     return Container(
       width: double.infinity,
-      color: Colors.white,
+      color: AppColors.current.headerBg,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -165,24 +194,7 @@ class TalkJSChatPage extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.notifications_none_outlined,
-                        color: AppColors.current.textPrimary,
-                        size: 22,
-                      ),
-                      padding: const EdgeInsets.all(4),
-                      constraints: const BoxConstraints(),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Notification settings coming soon.'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
-                      },
-                    ),
-                    if (args.isGroup && args.permission != 'None')
+                    if (args.isGroup && args.permission != 'None' && !args.conversationId.startsWith('replyto_'))
                       IconButton(
                         icon: Icon(
                           Icons.settings_outlined,
@@ -213,6 +225,23 @@ class TalkJSChatPage extends ConsumerWidget {
                       )
                     else
                       const SizedBox(width: 36),
+                    IconButton(
+                      icon: Icon(
+                        Icons.notifications_none_outlined,
+                        color: AppColors.current.textPrimary,
+                        size: 22,
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Notification settings coming soon.'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ],
@@ -226,42 +255,59 @@ class TalkJSChatPage extends ConsumerWidget {
 
   // ─── TalkJS ChatBox (handles messages + input natively) ───────────────────
 
-  String _getJwtSub(String jwtToken) {
-    try {
-      final parts = jwtToken.split('.');
-      if (parts.length >= 2) {
-        String payload = parts[1];
-        final padding = 4 - (payload.length % 4);
-        if (padding > 0 && padding < 4) payload += '=' * padding;
-        payload = payload.replaceAll('-', '+').replaceAll('_', '/');
-        final map = json.decode(utf8.decode(base64.decode(payload)));
-        return map['sub']?.toString() ?? '';
-      }
-    } catch (e) {
-      debugPrint('Error parsing JWT: $e');
-    }
-    return '';
+  void _handleThreadReply(BuildContext context, MessageActionEvent event, Conversation parentConversation) {
+    context.push(
+      '${AppRoutes.messages}/${AppRoutes.messagesChatDetail}',
+      extra: TalkJSChatArgs(
+        conversationId: 'replyto_${parentConversation.id}_${event.message.id}',
+        topic: parentConversation.subject ?? 'Thread',
+        isGroup: true,
+        permission: args.permission,
+        chatChannelId: args.chatChannelId,
+        otherUserId: args.otherUserId,
+        otherUserName: args.otherUserName,
+        otherUserEmail: args.otherUserEmail,
+      ),
+    );
   }
 
-  Widget _buildChatBox(dynamic tokenResponse, dynamic currentUser) {
-    final session = Session(
-      appId: tokenResponse.appId,
-      token: tokenResponse.token,
-    );
-
-    final jwtSub = _getJwtSub(tokenResponse.token);
-    final talkJsUserId =
-        jwtSub.isNotEmpty ? jwtSub : tokenResponse.userId as String;
-
-    final me = session.getUser(
-      id: talkJsUserId,
-      name: currentUser.displayName as String,
-      email: [talkJsUserId],
-    );
-    session.me = me;
+  Widget _buildChatBox(
+    BuildContext context,
+    Session session,
+    AsyncValue<List<ChatMember>>? membersAsync,
+  ) {
+    final me = session.me;
 
     final Conversation conversation;
-    if (args.isGroup) {
+    if (args.conversationId.startsWith('replyto_')) {
+      final Set<Participant> participants = {Participant(me)};
+      if (args.chatChannelId != null && membersAsync != null && membersAsync.hasValue) {
+        final members = membersAsync.value ?? [];
+        for (final m in members) {
+          if (m.email.isNotEmpty) {
+            final u = session.getUser(
+              id: m.email,
+              name: m.name,
+              email: [m.email],
+            );
+            participants.add(Participant(u));
+          }
+        }
+      } else if (args.otherUserEmail != null) {
+        final other = session.getUser(
+          id: args.otherUserEmail!,
+          name: args.otherUserName!,
+          email: [args.otherUserEmail!],
+        );
+        participants.add(Participant(other));
+      }
+
+      conversation = session.getConversation(
+        id: args.conversationId,
+        participants: participants,
+        subject: args.topic,
+      );
+    } else if (args.isGroup) {
       final access = args.permission == 'Read'
           ? ParticipantAccess.read
           : ParticipantAccess.readWrite;
@@ -290,7 +336,14 @@ class TalkJSChatPage extends ConsumerWidget {
       session: session,
       conversation: conversation,
       showChatHeader: false,
-      theme: 'default',
+      theme: AppColors.current.isDark ? 'default_dark' : 'default',
+      onCustomMessageAction: {
+        'reply': (event) => _handleThreadReply(context, event, conversation),
+        'reply_in_thread': (event) => _handleThreadReply(context, event, conversation),
+        'replyInThread': (event) => _handleThreadReply(context, event, conversation),
+        'view_thread': (event) => _handleThreadReply(context, event, conversation),
+        'viewThread': (event) => _handleThreadReply(context, event, conversation),
+      },
     );
   }
 

@@ -28,8 +28,11 @@ class ClubEvent {
   final String? timezone;
   final bool notificationEnabled;
   final int arrivalEarly;
+  final int? scheduleGameId;
   final String? latitude;
   final String? longitude;
+  final bool requiresPlayerSelection;
+  final List<ClubEventRsvpTarget> rsvpTargets;
 
   const ClubEvent({
     required this.id,
@@ -56,8 +59,11 @@ class ClubEvent {
     this.timezone,
     this.notificationEnabled = true,
     this.arrivalEarly = 15,
+    this.scheduleGameId,
     this.latitude,
     this.longitude,
+    this.requiresPlayerSelection = false,
+    this.rsvpTargets = const [],
   });
 
   ClubEvent copyWith({
@@ -85,8 +91,11 @@ class ClubEvent {
     String? timezone,
     bool? notificationEnabled,
     int? arrivalEarly,
+    int? scheduleGameId,
     String? latitude,
     String? longitude,
+    bool? requiresPlayerSelection,
+    List<ClubEventRsvpTarget>? rsvpTargets,
   }) {
     return ClubEvent(
       id: id ?? this.id,
@@ -113,8 +122,11 @@ class ClubEvent {
       timezone: timezone ?? this.timezone,
       notificationEnabled: notificationEnabled ?? this.notificationEnabled,
       arrivalEarly: arrivalEarly ?? this.arrivalEarly,
+      scheduleGameId: scheduleGameId ?? this.scheduleGameId,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      requiresPlayerSelection: requiresPlayerSelection ?? this.requiresPlayerSelection,
+      rsvpTargets: rsvpTargets ?? this.rsvpTargets,
     );
   }
 
@@ -151,4 +163,24 @@ class ClubEvent {
       case EventType.other: return 'Other';
     }
   }
+}
+
+class ClubEventRsvpTarget {
+  final String attendeeType;
+  final int customerId;
+  final int? playerId;
+  final String name;
+  final int? teamEventAttendeeId;
+  final dynamic attendance;
+  final String notes;
+
+  const ClubEventRsvpTarget({
+    required this.attendeeType,
+    required this.customerId,
+    this.playerId,
+    required this.name,
+    this.teamEventAttendeeId,
+    required this.attendance,
+    required this.notes,
+  });
 }

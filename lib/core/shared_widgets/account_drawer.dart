@@ -6,6 +6,7 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../common_providers/theme_provider.dart';
 import '../common_providers/current_user_provider.dart';
+import '../common_providers/selected_team_provider.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../constants/app_assets.dart';
 import 'custom_svg_icon.dart';
@@ -163,33 +164,35 @@ class _Header extends ConsumerWidget {
 
 // ─── Content ──────────────────────────────────────────────────────────────────
 
-class _Content extends StatelessWidget {
+class _Content extends ConsumerWidget {
   final AppColors colors;
   const _Content({required this.colors});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedTeam = ref.watch(selectedTeamProvider);
+
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
-        // Team Profile row
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _NavRow(
-            svgAsset: AppAssets.rosterIcon,
-            iconBg: colors.isDark
-                ? const Color(0xFF008CFF).withValues(alpha: 0.1)
-                : const Color(0xFFEFF6FF),
-            iconColor: const Color(0xFF008CFF),
-            title: 'Team Profile',
-            subtitle: 'View stats and details',
-            colors: colors,
-            onTap: () {
-              Navigator.pop(context);
-              context.push(AppRoutes.statistics);
-            },
+        if (selectedTeam != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _NavRow(
+              svgAsset: AppAssets.rosterIcon,
+              iconBg: colors.isDark
+                  ? const Color(0xFF008CFF).withValues(alpha: 0.1)
+                  : const Color(0xFFEFF6FF),
+              iconColor: const Color(0xFF008CFF),
+              title: 'Profile Detail',
+              subtitle: 'View stats and details',
+              colors: colors,
+              onTap: () {
+                Navigator.of(context).pop();
+                context.push(AppRoutes.profileDetail, extra: selectedTeam.url);
+              },
+            ),
           ),
-        ),
       ],
     );
   }

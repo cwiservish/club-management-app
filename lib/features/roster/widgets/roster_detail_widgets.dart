@@ -5,6 +5,7 @@ import '../../../app/theme/app_text_styles.dart';
 import '../../../core/enums/member_role.dart';
 import '../models/roster_member.dart';
 import '../models/roster_detail_contact.dart';
+import '../models/player_profile_models.dart';
 import '../providers/player_profile_provider.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -575,7 +576,14 @@ class RosterDialogOption extends StatelessWidget {
 
 class RosterEditPlayerSheet extends StatefulWidget {
   final RosterMember member;
-  const RosterEditPlayerSheet({super.key, required this.member});
+  final PlayerModel? playerProfile;
+  final bool isEditable;
+  const RosterEditPlayerSheet({
+    super.key,
+    required this.member,
+    this.playerProfile,
+    required this.isEditable,
+  });
 
   @override
   State<RosterEditPlayerSheet> createState() => _RosterEditPlayerSheetState();
@@ -592,12 +600,21 @@ class _RosterEditPlayerSheetState extends State<RosterEditPlayerSheet> {
   @override
   void initState() {
     super.initState();
-    _firstNameCtrl = TextEditingController(text: widget.member.firstName);
-    _lastNameCtrl  = TextEditingController(text: widget.member.lastName);
-    _jerseyCtrl    = TextEditingController(text: widget.member.jerseyNumber?.toString() ?? '');
-    _position = widget.member.positionFull.isNotEmpty
-        ? widget.member.positionFull
-        : _positions.first;
+    final profile = widget.playerProfile;
+    _firstNameCtrl = TextEditingController(
+      text: profile != null ? profile.firstName : widget.member.firstName,
+    );
+    _lastNameCtrl  = TextEditingController(
+      text: profile != null ? profile.lastName : widget.member.lastName,
+    );
+    _jerseyCtrl    = TextEditingController(
+      text: profile != null 
+          ? profile.jerseyNo 
+          : (widget.member.jerseyNumber?.toString() ?? ''),
+    );
+    _position = (profile != null && profile.primaryPosition.isNotEmpty)
+        ? profile.primaryPosition
+        : (widget.member.positionFull.isNotEmpty ? widget.member.positionFull : _positions.first);
   }
 
   @override
@@ -624,67 +641,81 @@ class _RosterEditPlayerSheetState extends State<RosterEditPlayerSheet> {
             title: 'Edit Player',
             onCancel: () => Navigator.pop(context),
             onSave: () => Navigator.pop(context),
+            isSaveEnabled: widget.isEditable,
           ),
-          SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 40),
-            child: Column(
-              children: [
-                // Avatar preview
-                Container(
-                  width: 100,
-                  height: 100,
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.current.primaryLight,
-                    border: Border.all(color: AppColors.current.surface, width: 4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 40),
+              child: Column(
+                children: [
+                  // Avatar preview
+                  Container(
+                    width: 100,
+                    height: 100,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.current.primaryLight,
+                      border: Border.all(color: AppColors.current.surface, width: 4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      widget.member.initials,
+                      style: TextStyle(
+                        fontFamily: AppTextStyles.fontFamily,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.current.primary,
                       ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    widget.member.initials,
-                    style: TextStyle(
-                      fontFamily: AppTextStyles.fontFamily,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.current.primary,
                     ),
                   ),
-                ),
-                RosterFormCard(
-                  children: [
-                    RosterFormField(label: 'First Name', controller: _firstNameCtrl),
-                    const RosterFieldDivider(),
-                    RosterFormField(label: 'Last Name', controller: _lastNameCtrl),
-                    const RosterFieldDivider(),
-                    if (widget.member.role == MemberRole.player) ...[
+                  RosterFormCard(
+                    children: [
                       RosterFormField(
-                        label: 'Jersey Number',
-                        controller: _jerseyCtrl,
-                        keyboardType: TextInputType.number,
+                        label: 'First Name',
+                        controller: _firstNameCtrl,
+                        enabled: widget.isEditable,
                       ),
                       const RosterFieldDivider(),
-                      RosterDropdownField(
-                        label: 'Position',
-                        value: _positions.contains(_position) ? _position : _positions.first,
-                        options: _positions,
-                        onChanged: (v) => setState(() => _position = v!),
-                      ),
-                    ] else if (widget.member.staffTitle != null) ...[
                       RosterFormField(
-                        label: 'Title',
-                        controller: TextEditingController(text: widget.member.staffTitle),
+                        label: 'Last Name',
+                        controller: _lastNameCtrl,
+                        enabled: widget.isEditable,
                       ),
+                      const RosterFieldDivider(),
+                      if (widget.member.role == MemberRole.player) ...[
+                        RosterFormField(
+                          label: 'Jersey Number',
+                          controller: _jerseyCtrl,
+                          keyboardType: TextInputType.number,
+                          enabled: widget.isEditable,
+                        ),
+                        const RosterFieldDivider(),
+                        RosterDropdownField(
+                          label: 'Position',
+                          value: _positions.contains(_position) ? _position : _positions.first,
+                          options: _positions,
+                          onChanged: (v) => setState(() => _position = v!),
+                          enabled: widget.isEditable,
+                        ),
+                      ] else if (widget.member.staffTitle != null) ...[
+                        RosterFormField(
+                          label: 'Title',
+                          controller: TextEditingController(text: widget.member.staffTitle),
+                          enabled: widget.isEditable,
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -795,54 +826,56 @@ class _RosterAddFamilySheetState extends ConsumerState<RosterAddFamilySheet> {
               backgroundColor: AppColors.current.primaryLight,
               minHeight: 3,
             ),
-          SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 40),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RosterFormCard(
-                  children: [
-                    RosterFormField(
-                      label: 'Email Address',
-                      controller: _emailCtrl,
-                      hint: 'e.g. parent@yopmail.com',
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.current.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RosterFormCard(
+                    children: [
+                      RosterFormField(
+                        label: 'Email Address',
+                        controller: _emailCtrl,
+                        hint: 'e.g. parent@yopmail.com',
+                        keyboardType: TextInputType.emailAddress,
                       ),
-                      elevation: 0,
-                    ),
-                    onPressed: _isLoading ? null : _onSave,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            'Send Invitation',
-                            style: AppTextStyles.heading14.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.current.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: _isLoading ? null : _onSave,
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              'Send Invitation',
+                              style: AppTextStyles.heading14.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -878,12 +911,14 @@ class RosterSheetHeader extends StatelessWidget {
   final String title;
   final VoidCallback onCancel;
   final VoidCallback onSave;
+  final bool isSaveEnabled;
 
   const RosterSheetHeader({
     super.key,
     required this.title,
     required this.onCancel,
     required this.onSave,
+    this.isSaveEnabled = true,
   });
 
   @override
@@ -918,10 +953,14 @@ class RosterSheetHeader extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
-              onTap: onSave,
+              onTap: isSaveEnabled ? onSave : null,
               child: Text(
                 'Save',
-                style: AppTextStyles.heading14.copyWith(color: AppColors.current.primary),
+                style: AppTextStyles.heading14.copyWith(
+                  color: isSaveEnabled
+                      ? AppColors.current.primary
+                      : AppColors.current.gray400,
+                ),
               ),
             ),
           ),
@@ -974,6 +1013,7 @@ class RosterFormField extends StatelessWidget {
   final TextEditingController controller;
   final String? hint;
   final TextInputType? keyboardType;
+  final bool enabled;
 
   const RosterFormField({
     super.key,
@@ -981,6 +1021,7 @@ class RosterFormField extends StatelessWidget {
     required this.controller,
     this.hint,
     this.keyboardType,
+    this.enabled = true,
   });
 
   @override
@@ -998,8 +1039,9 @@ class RosterFormField extends StatelessWidget {
           TextField(
             controller: controller,
             keyboardType: keyboardType,
+            enabled: enabled,
             style: AppTextStyles.body16.copyWith(
-              color: AppColors.current.textPrimary,
+              color: enabled ? AppColors.current.textPrimary : AppColors.current.textSecondary,
               fontWeight: FontWeight.w500,
             ),
             decoration: InputDecoration(
@@ -1021,6 +1063,7 @@ class RosterDropdownField extends StatelessWidget {
   final String value;
   final List<String> options;
   final ValueChanged<String?> onChanged;
+  final bool enabled;
 
   const RosterDropdownField({
     super.key,
@@ -1028,6 +1071,7 @@ class RosterDropdownField extends StatelessWidget {
     required this.value,
     required this.options,
     required this.onChanged,
+    this.enabled = true,
   });
 
   @override
@@ -1048,13 +1092,13 @@ class RosterDropdownField extends StatelessWidget {
               isDense: true,
               isExpanded: true,
               style: AppTextStyles.body16.copyWith(
-                color: AppColors.current.textPrimary,
+                color: enabled ? AppColors.current.textPrimary : AppColors.current.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
               dropdownColor: AppColors.current.surface,
               icon: Icon(Icons.keyboard_arrow_down, color: AppColors.current.gray400, size: 20),
               items: options.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
-              onChanged: onChanged,
+              onChanged: enabled ? onChanged : null,
             ),
           ),
         ],

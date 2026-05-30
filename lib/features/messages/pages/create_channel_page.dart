@@ -8,6 +8,7 @@ import '../../../core/common_providers/selected_team_provider.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../models/chat_member.dart';
 import '../providers/chat_state_provider.dart';
+import '../providers/create_channel_view_model.dart';
 
 class CreateChannelPage extends ConsumerStatefulWidget {
   const CreateChannelPage({super.key});
@@ -21,11 +22,9 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
   final _nameController = TextEditingController();
   final _searchController = TextEditingController();
   
-  final List<ChatMember> _selectedMembers = [];
   String _searchQuery = '';
   String _debouncedQuery = '';
   Timer? _debounceTimer;
-  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -56,69 +55,35 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
     }
   }
 
-  void _toggleMemberSelection(ChatMember member) {
-    setState(() {
-      final exists = _selectedMembers.any((m) => m.memberId == member.memberId && m.memberType == member.memberType);
-      if (exists) {
-        _selectedMembers.removeWhere((m) => m.memberId == member.memberId && m.memberType == member.memberType);
-      } else {
-        _selectedMembers.add(member);
-      }
-    });
+  Future<void> _handleRefresh(String teamUuid, String query) async {
+    ref.invalidate(chatSearchMembersProvider((teamUuid: teamUuid, query: query)));
+    try {
+      await ref.read(chatSearchMembersProvider((teamUuid: teamUuid, query: query)).future);
+    } catch (_) {
+      // Ignored: Riverpod handles the error state which is rendered in the UI
+    }
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    
-    final selectedTeam = ref.read(selectedTeamProvider);
-    if (selectedTeam == null) return;
+  Future<void> _submit(String teamUuid) async {
+    final notifier = ref.read(createChannelViewModelProvider.notifier);
+    final response = await notifier.saveChannel(teamUuid);
 
-    setState(() {
-      _isSaving = true;
-    });
-
-    try {
-      final service = ref.read(chatApiServiceProvider);
-      final usersPayload = _selectedMembers.map((member) => {
-        'member_id': member.memberId,
-        'member_type': member.memberType,
-      }).toList();
-
-      final success = await service.saveChannel(
-        teamUuid: selectedTeam.uuid,
-        name: _nameController.text.trim(),
-        users: usersPayload,
-      );
-
-      if (success) {
-        // Invalidate channel list to trigger pull-to-refresh style updates
-        ref.invalidate(chatChannelsProvider(selectedTeam.uuid));
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Channel created successfully!'),
-              backgroundColor: AppColors.current.success,
-            ),
-          );
-          Navigator.of(context).pop();
-        }
-      } else {
-        throw Exception('API returned failure response');
-      }
-    } catch (e) {
-      if (mounted) {
+    if (mounted) {
+      if (response.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create channel: ${e.toString()}'),
+            content: Text(response.message.isNotEmpty ? response.message : 'Channel created successfully!'),
+            backgroundColor: AppColors.current.success,
+          ),
+        );
+        Navigator.of(context).pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.message.isNotEmpty ? response.message : 'Failed to create channel.'),
             backgroundColor: AppColors.current.error,
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
       }
     }
   }
@@ -126,7 +91,14 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
   @override
   Widget build(BuildContext context) {
     final selectedTeam = ref.watch(selectedTeamProvider);
-    
+    final state = ref.watch(createChannelViewModelProvider);
+    final notifier = ref.read(createChannelViewModelProvider.notifier);
+
+    // Sync controller with name if edited externally, but typically name is only set in step 0
+    if (_nameController.text != state.channelName && state.currentStep == 0) {
+      _nameController.text = state.channelName;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.current.background,
       body: SafeArea(
@@ -134,7 +106,7 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
         child: Column(
           children: [
             const AppHeader(),
-            _buildAppBar(),
+            _buildAppBar(state, notifier, selectedTeam?.uuid),
             if (selectedTeam == null)
               const Expanded(
                 child: Center(child: Text('No team selected.')),
@@ -143,31 +115,11 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
               Expanded(
                 child: Stack(
                   children: [
-                    Form(
-                      key: _formKey,
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildSectionHeader('CHANNEL DETAILS'),
-                            const SizedBox(height: 12),
-                            _buildNameInputField(),
-                            const SizedBox(height: 24),
-                            _buildSectionHeader('SELECTED MEMBERS (${_selectedMembers.length})'),
-                            const SizedBox(height: 12),
-                            _buildSelectedMembersChips(),
-                            const SizedBox(height: 24),
-                            _buildSectionHeader('ADD TEAM MEMBERS'),
-                            const SizedBox(height: 12),
-                            _buildSearchField(),
-                            const SizedBox(height: 16),
-                            _buildSearchResults(selectedTeam.uuid),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (_isSaving) _buildLoadingOverlay(),
+                    if (state.currentStep == 0)
+                      _buildStepChannelName(state, notifier)
+                    else
+                      _buildStepAddMembers(state, notifier, selectedTeam.uuid),
+                    if (state.isSaving) _buildLoadingOverlay(),
                   ],
                 ),
               ),
@@ -177,8 +129,9 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
     );
   }
 
-  Widget _buildAppBar() {
-    final isValid = _nameController.text.trim().isNotEmpty;
+  Widget _buildAppBar(CreateChannelState state, CreateChannelNotifier notifier, String? teamUuid) {
+    final isStep0 = state.currentStep == 0;
+    final isNameValid = state.channelName.trim().length >= 2;
 
     return Container(
       width: double.infinity,
@@ -193,12 +146,18 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
         children: [
           IconButton(
             icon: Icon(Icons.arrow_back_ios_new, color: AppColors.current.textPrimary, size: 20),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              if (isStep0) {
+                Navigator.of(context).pop();
+              } else {
+                notifier.prevStep();
+              }
+            },
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'New Channel',
+              isStep0 ? 'New Channel' : 'Add Members',
               style: AppTextStyles.heading18.copyWith(
                 color: AppColors.current.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -206,12 +165,14 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
             ),
           ),
           TextButton(
-            onPressed: isValid && !_isSaving ? _submit : null,
+            onPressed: isStep0
+                ? (isNameValid ? () => notifier.nextStep() : null)
+                : (teamUuid != null && !state.isSaving ? () => _submit(teamUuid) : null),
             child: Text(
-              'Create',
+              isStep0 ? 'Next' : 'Create',
               style: AppTextStyles.body16.copyWith(
-                color: isValid && !_isSaving 
-                    ? AppColors.current.primary 
+                color: (isStep0 ? isNameValid : (teamUuid != null && !state.isSaving))
+                    ? AppColors.current.primary
                     : AppColors.current.textSecondary.withOpacity(0.4),
                 fontWeight: FontWeight.bold,
               ),
@@ -222,18 +183,49 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: AppTextStyles.heading13.copyWith(
-        color: AppColors.current.textSecondary,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 0.8,
+  // ─── STEP 1: CHANNEL DETAILS ───────────────────────────────────────────────
+
+  Widget _buildStepChannelName(CreateChannelState state, CreateChannelNotifier notifier) {
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        children: [
+          _buildSectionHeader('CHANNEL DETAILS'),
+          const SizedBox(height: 12),
+          _buildNameInputField(notifier),
+          const SizedBox(height: 8),
+          Text(
+            'Channels are a great way to communicate with everyone on your team.',
+            style: AppTextStyles.label12.copyWith(
+              color: AppColors.current.textSecondary.withOpacity(0.8),
+            ),
+          ),
+          const SizedBox(height: 40),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.current.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            onPressed: state.channelName.trim().length >= 2
+                ? () => notifier.nextStep()
+                : null,
+            child: Text(
+              'Next',
+              style: AppTextStyles.body16.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildNameInputField() {
+  Widget _buildNameInputField(CreateChannelNotifier notifier) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.current.card,
@@ -243,16 +235,14 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
       child: TextFormField(
         controller: _nameController,
         style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary),
-        onChanged: (_) => setState(() {}),
+        onChanged: (val) => notifier.setChannelName(val),
         inputFormatters: [
-          // Auto-clean: replace space/uppercase, filter to lower-case alphanumeric, dashes, and underscores
           TextInputFormatter.withFunction((oldValue, newValue) {
             String newText = newValue.text
                 .toLowerCase()
                 .replaceAll(' ', '-')
                 .replaceAll(RegExp(r'[^a-z0-9-_]'), '');
             
-            // Enforce max 80 chars
             if (newText.length > 80) {
               newText = newText.substring(0, 80);
             }
@@ -290,10 +280,40 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
     );
   }
 
-  Widget _buildSelectedMembersChips() {
-    if (_selectedMembers.isEmpty) {
+  // ─── STEP 2: SEARCH AND SELECT MEMBERS ─────────────────────────────────────
+
+  Widget _buildStepAddMembers(CreateChannelState state, CreateChannelNotifier notifier, String teamUuid) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 20, right: 20, top: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader('SELECTED MEMBERS (${state.selectedMembers.length})'),
+              const SizedBox(height: 12),
+              _buildSelectedMembersChips(state, notifier),
+              const SizedBox(height: 20),
+              _buildSectionHeader('ADD TEAM MEMBERS'),
+              const SizedBox(height: 12),
+              _buildSearchField(),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _buildSearchResults(state, notifier, teamUuid),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectedMembersChips(CreateChannelState state, CreateChannelNotifier notifier) {
+    if (state.selectedMembers.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.current.card.withOpacity(0.5),
           borderRadius: BorderRadius.circular(12),
@@ -301,11 +321,11 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
         ),
         child: Row(
           children: [
-            Icon(Icons.info_outline, color: AppColors.current.textSecondary.withOpacity(0.7), size: 20),
+            Icon(Icons.info_outline, color: AppColors.current.textSecondary.withOpacity(0.7), size: 18),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Only you will be in this channel initially. Add team members below.',
+                'Add members to invite them to this channel.',
                 style: AppTextStyles.body13.copyWith(
                   color: AppColors.current.textSecondary,
                 ),
@@ -316,34 +336,39 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
       );
     }
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _selectedMembers.map((member) {
-        return InputChip(
-          label: Text(
-            member.name,
-            style: AppTextStyles.label12.copyWith(
-              color: AppColors.current.textPrimary,
-              fontWeight: FontWeight.bold,
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: state.selectedMembers.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final member = state.selectedMembers[index];
+          return InputChip(
+            label: Text(
+              member.name,
+              style: AppTextStyles.label12.copyWith(
+                color: AppColors.current.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          avatar: CircleAvatar(
-            backgroundColor: AppColors.current.primary,
-            child: Text(
-              member.initials,
-              style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+            avatar: CircleAvatar(
+              backgroundColor: AppColors.current.primary,
+              child: Text(
+                member.initials,
+                style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
-          onDeleted: () => _toggleMemberSelection(member),
-          deleteIconColor: AppColors.current.textSecondary,
-          backgroundColor: AppColors.current.card,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: AppColors.current.border),
-          ),
-        );
-      }).toList(),
+            onDeleted: () => notifier.toggleMemberSelection(member),
+            deleteIconColor: AppColors.current.textSecondary,
+            backgroundColor: AppColors.current.card,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: AppColors.current.border),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -378,24 +403,27 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
     );
   }
 
-  Widget _buildSearchResults(String teamUuid) {
+  Widget _buildSearchResults(CreateChannelState state, CreateChannelNotifier notifier, String teamUuid) {
     if (_searchQuery.isEmpty) {
       return const SizedBox.shrink();
     }
 
     if (_searchQuery.length < 3) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-        child: Column(
-          children: [
-            Icon(Icons.keyboard_outlined, size: 40, color: AppColors.current.textSecondary.withOpacity(0.4)),
-            const SizedBox(height: 12),
-            Text(
-              'Type at least 3 characters to search',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary),
-            ),
-          ],
+      return SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.keyboard_outlined, size: 40, color: AppColors.current.textSecondary.withOpacity(0.4)),
+              const SizedBox(height: 12),
+              Text(
+                'Type at least 3 characters to search',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -405,33 +433,37 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
     return searchAsync.when(
       data: (members) {
         if (members.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: Text(
-                'No members match "$_searchQuery"',
-                style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary),
+          return RefreshIndicator(
+            onRefresh: () => _handleRefresh(teamUuid, _debouncedQuery),
+            color: AppColors.current.primary,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Container(
+                height: 200,
+                alignment: Alignment.center,
+                child: Text(
+                  'No members match "$_searchQuery"',
+                  style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary),
+                ),
               ),
             ),
           );
         }
 
-        return Container(
-          decoration: BoxDecoration(
-            color: AppColors.current.card,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.current.border),
-          ),
+        return RefreshIndicator(
+          onRefresh: () => _handleRefresh(teamUuid, _debouncedQuery),
+          color: AppColors.current.primary,
           child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            physics: const AlwaysScrollableScrollPhysics(),
             itemCount: members.length,
             separatorBuilder: (context, index) => Divider(color: AppColors.current.border, height: 1),
             itemBuilder: (context, index) {
               final member = members[index];
-              final isSelected = _selectedMembers.any((m) => m.memberId == member.memberId && m.memberType == member.memberType);
+              final isSelected = state.selectedMembers.any((m) => m.memberId == member.memberId && m.memberType == member.memberType);
 
               return ListTile(
+                contentPadding: EdgeInsets.zero,
                 leading: CircleAvatar(
                   backgroundColor: AppColors.current.indigo.withOpacity(0.1),
                   child: Text(
@@ -457,19 +489,35 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
                 trailing: isSelected
                     ? Icon(Icons.check_circle, color: AppColors.current.success)
                     : Icon(Icons.add_circle_outline, color: AppColors.current.primary),
-                onTap: () => _toggleMemberSelection(member),
+                onTap: () => notifier.toggleMemberSelection(member),
               );
             },
           ),
         );
       },
       loading: () => _buildSkeletonResults(),
-      error: (err, _) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Center(
-          child: Text(
-            'Failed to search members.',
-            style: AppTextStyles.body14.copyWith(color: AppColors.current.error),
+      error: (err, _) => RefreshIndicator(
+        onRefresh: () => _handleRefresh(teamUuid, _debouncedQuery),
+        color: AppColors.current.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            height: 200,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Failed to search members.',
+                  style: AppTextStyles.body14.copyWith(color: AppColors.current.error),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Pull down to retry',
+                  style: AppTextStyles.label12.copyWith(color: AppColors.current.textSecondary),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -477,56 +525,50 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
   }
 
   Widget _buildSkeletonResults() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.current.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.current.border),
-      ),
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: 3,
-        separatorBuilder: (context, index) => Divider(color: AppColors.current.border, height: 1),
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: AppColors.current.textSecondary.withOpacity(0.1),
-                  radius: 20,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 120,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: AppColors.current.textSecondary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 3,
+      separatorBuilder: (context, index) => Divider(color: AppColors.current.border, height: 1),
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: AppColors.current.textSecondary.withOpacity(0.1),
+                radius: 20,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: AppColors.current.textSecondary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: 180,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: AppColors.current.textSecondary.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 180,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: AppColors.current.textSecondary.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
-        },
-      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -558,6 +600,17 @@ class _CreateChannelPageState extends ConsumerState<CreateChannelPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: AppTextStyles.heading13.copyWith(
+        color: AppColors.current.textSecondary,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.8,
       ),
     );
   }

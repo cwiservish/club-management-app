@@ -5,6 +5,8 @@ import '../../../core/common_providers/selected_team_provider.dart';
 import '../../../core/network/api_client.dart';
 import '../models/schedule_models.dart';
 import '../services/schedule_service.dart';
+import '../../event_details/providers/event_detail_provider.dart';
+import '../../event_details/services/event_detail_service.dart';
 
 export '../models/schedule_models.dart';
 
@@ -184,6 +186,52 @@ class ScheduleNotifier extends Notifier<ScheduleState> {
     }).toList();
 
     state = state.copyWith(events: newEvents);
+  }
+
+  /// Asynchronously saves RSVP status on the server and refreshes the schedule event list.
+  Future<({bool success, String message})> saveEventRsvp({
+    required ClubEvent event,
+    required ClubEventRsvpTarget target,
+    required String status, // 'going', 'maybe', 'no'
+  }) async {
+    final activeTeam = ref.read(selectedTeamProvider);
+    if (activeTeam == null) {
+      return (success: false, message: 'No selected team found');
+    }
+
+    int attendanceValue = 0;
+    if (status == 'going') attendanceValue = 1;
+    if (status == 'maybe') attendanceValue = 2;
+    if (status == 'no') attendanceValue = 0;
+
+    try {
+      final service = ref.read(eventDetailServiceProvider);
+      final response = await service.saveEventAttendee(
+        EventAttendeeSaveRequest(
+          teamUuid: activeTeam.uuid,
+          teamEventId: event.dbId ?? 0,
+          attendeeType: target.attendeeType,
+          customerId: target.customerId.toString(),
+          playerId: target.playerId ?? 0,
+          notes: target.notes,
+          attendance: attendanceValue,
+        ),
+      );
+
+      if (response.success) {
+        // Optimistically update local RSVP choice
+        updateRsvp(event.id, status);
+        
+        // Refresh the schedule list silently to sync everything
+        await refresh();
+        
+        return (success: true, message: response.message.isNotEmpty ? response.message as String : 'RSVP updated successfully.');
+      } else {
+        return (success: false, message: response.message.isNotEmpty ? response.message as String : 'Failed to update RSVP.');
+      }
+    } catch (e) {
+      return (success: false, message: e.toString());
+    }
   }
 }
 

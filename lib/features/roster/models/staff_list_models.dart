@@ -100,6 +100,7 @@ class StaffModel {
   final String genderLabel;
   final String imageUrl;
   final bool isRegisteredStaff;
+  final String jerseyNo;
 
   const StaffModel({
     required this.id,
@@ -118,6 +119,7 @@ class StaffModel {
     required this.genderLabel,
     required this.imageUrl,
     required this.isRegisteredStaff,
+    required this.jerseyNo,
   });
 
   factory StaffModel.fromJson(Map<String, dynamic> json) {
@@ -138,6 +140,7 @@ class StaffModel {
       genderLabel: _parseString(json['gender_label']),
       imageUrl: _parseString(json['image_url']),
       isRegisteredStaff: _parseBool(json['is_registered_staff']),
+      jerseyNo: _parseString(json['jersey_no']),
     );
   }
 }

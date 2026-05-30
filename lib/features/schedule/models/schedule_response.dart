@@ -313,12 +313,19 @@ class ScheduleEvent {
 
     String? myRsvpStatus;
     if (myRsvp != null) {
-      myRsvpStatus = myRsvp!.attendance?.toString().toLowerCase();
-      if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
+      // Explicitly check for null so that integer 0 (= No) is never skipped
+      final dynamic rawAttendance = myRsvp!.attendance;
+      if (rawAttendance != null) {
+        myRsvpStatus = rawAttendance.toString().toLowerCase();
+        if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
+      }
       final targetsList = myRsvp!.targets;
       if (myRsvpStatus == null && targetsList.isNotEmpty) {
-        myRsvpStatus = targetsList.first.attendance?.toString().toLowerCase();
-        if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
+        final dynamic rawTargetAttendance = targetsList.first.attendance;
+        if (rawTargetAttendance != null) {
+          myRsvpStatus = rawTargetAttendance.toString().toLowerCase();
+          if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
+        }
       }
     }
 
@@ -345,9 +352,28 @@ class ScheduleEvent {
       final remaining = (noCount - 1).clamp(0, 999999);
       rsvpNo.addAll(List.generate(remaining, (i) => 'player_no_$i'));
     } else {
+      // No recognized RSVP status — add raw counts only
       rsvpYes.addAll(List.generate(goingCount, (i) => 'player_yes_$i'));
       rsvpMaybe.addAll(List.generate(maybeCount, (i) => 'player_maybe_$i'));
       rsvpNo.addAll(List.generate(noCount, (i) => 'player_no_$i'));
+    }
+
+    final bool requiresPlayerSelection = myRsvp?.requiresPlayerSelection ?? false;
+    final List<ClubEventRsvpTarget> domainTargets = [];
+    if (myRsvp != null) {
+      for (final t in myRsvp!.targets) {
+        domainTargets.add(
+          ClubEventRsvpTarget(
+            attendeeType: t.attendeeType,
+            customerId: t.customerId,
+            playerId: t.playerId,
+            name: t.name,
+            teamEventAttendeeId: t.teamEventAttendeeId,
+            attendance: t.attendance,
+            notes: t.notes,
+          ),
+        );
+      }
     }
 
     return ClubEvent(
@@ -375,6 +401,8 @@ class ScheduleEvent {
       timezone: timezone.isNotEmpty ? timezone : null,
       notificationEnabled: notificationEnabled,
       arrivalEarly: arrivalEarly,
+      requiresPlayerSelection: requiresPlayerSelection,
+      rsvpTargets: domainTargets,
     );
   }
 }

@@ -20,6 +20,7 @@ class RosterState {
   final String searchQuery;
   final MemberRole? roleFilter;
   final bool gridView;
+  final String sortBy;
 
   const RosterState({
     required this.allMembers,
@@ -28,10 +29,11 @@ class RosterState {
     required this.searchQuery,
     this.roleFilter,
     required this.gridView,
+    this.sortBy = 'First Name',
   }) : _isLoading = isLoading;
 
   List<RosterMember> get filtered {
-    return allMembers.where((m) {
+    final filteredList = allMembers.where((m) {
       final matchRole = roleFilter == null || m.role == roleFilter;
       final q = searchQuery.toLowerCase();
       final matchSearch = q.isEmpty ||
@@ -41,6 +43,27 @@ class RosterState {
           (m.jerseyNumber?.toString().contains(q) ?? false);
       return matchRole && matchSearch;
     }).toList();
+
+    switch (sortBy) {
+      case 'Last Name':
+        filteredList.sort((a, b) => a.lastName.toLowerCase().compareTo(b.lastName.toLowerCase()));
+        break;
+      case 'Position':
+        filteredList.sort((a, b) => a.primaryPosition.toLowerCase().compareTo(b.primaryPosition.toLowerCase()));
+        break;
+      case 'Gender':
+        filteredList.sort((a, b) => a.gender.toLowerCase().compareTo(b.gender.toLowerCase()));
+        break;
+      case 'Number':
+        filteredList.sort((a, b) => a.jerseyNo.toLowerCase().compareTo(b.jerseyNo.toLowerCase()));
+        break;
+      case 'First Name':
+      default:
+        filteredList.sort((a, b) => a.firstName.toLowerCase().compareTo(b.firstName.toLowerCase()));
+        break;
+    }
+
+    return filteredList;
   }
 
   RosterState copyWith({
@@ -50,6 +73,7 @@ class RosterState {
     String? searchQuery,
     Object? roleFilter = _sentinel,
     bool? gridView,
+    String? sortBy,
   }) {
     return RosterState(
       allMembers: allMembers ?? this.allMembers,
@@ -58,6 +82,7 @@ class RosterState {
       searchQuery: searchQuery ?? this.searchQuery,
       roleFilter: roleFilter == _sentinel ? this.roleFilter : roleFilter as MemberRole?,
       gridView: gridView ?? this.gridView,
+      sortBy: sortBy ?? this.sortBy,
     );
   }
 }
@@ -78,6 +103,7 @@ class RosterNotifier extends Notifier<RosterState> {
       errorMessage: null,
       searchQuery: '',
       gridView: true,
+      sortBy: 'First Name',
     );
   }
 
@@ -102,9 +128,12 @@ class RosterNotifier extends Notifier<RosterState> {
           lastName: p.lastName,
           role: MemberRole.player,
           jerseyNumber: int.tryParse(p.jerseyNo),
+          jerseyNo: p.jerseyNo,
           position: _mapPosition(p.primaryPosition),
+          primaryPosition: p.primaryPosition,
           phone: '',
           email: '',
+          gender: p.gender,
           attendancePercent: 85, // Mock default attendance percentage
           avatarColor: _getRandomColor(p.name),
         );
@@ -119,6 +148,9 @@ class RosterNotifier extends Notifier<RosterState> {
           staffTitle: 'ID: ${s.staffId}',
           phone: s.mobile,
           email: s.email,
+          gender: s.genderLabel,
+          jerseyNo: s.jerseyNo,
+          primaryPosition: '',
           attendancePercent: 95, // Mock default staff attendance percentage
           avatarColor: _getRandomColor(s.name),
         );
@@ -150,6 +182,7 @@ class RosterNotifier extends Notifier<RosterState> {
   void setSearch(String q) => state = state.copyWith(searchQuery: q);
   void setFilter(MemberRole? role) => state = state.copyWith(roleFilter: role);
   void toggleView() => state = state.copyWith(gridView: !state.gridView);
+  void setSortBy(String sortBy) => state = state.copyWith(sortBy: sortBy);
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 

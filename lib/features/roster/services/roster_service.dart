@@ -12,6 +12,7 @@ import '../models/assign_parent_models.dart';
 import '../models/roster_member.dart';
 import '../models/player_positions_models.dart';
 import '../../../core/models/sample_data.dart';
+import '../models/player_attendance_models.dart';
 
 class RosterService {
   final ApiClient _apiClient;
@@ -314,5 +315,38 @@ class RosterService {
     debugPrint('════════════════════════════════════════════════════════════════');
 
     return response;
+  }
+
+  /// Fetches player event attendance history from the API.
+  Future<PlayerAttendanceHistoryResponse> fetchPlayerAttendanceHistory(
+    String teamUuid,
+    String playerUuid,
+  ) async {
+    const endpoint = ApiEndpoints.playerAttendanceHistory;
+    final requestBody = {
+      'team_uuid': teamUuid,
+      'player_uuid': playerUuid,
+    };
+
+    // Print Request JSON in logs
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}$endpoint');
+    debugPrint('[API Request Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    final response = await _apiClient.post(
+      endpoint,
+      body: requestBody,
+    );
+
+    // Print Response JSON in logs
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Response] POST $endpoint');
+    debugPrint('[API Response Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    return PlayerAttendanceHistoryResponse.fromJson(response.rawJson);
   }
 }

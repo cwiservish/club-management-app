@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../local_storage/app_storage.dart';
 import '../models/user_model.dart';
 import '../network/token_storage.dart';
+import 'selected_team_provider.dart';
 
 // ─── CurrentUserNotifier ──────────────────────────────────────────────────────
 
@@ -26,6 +27,12 @@ class CurrentUserNotifier extends AsyncNotifier<AppUser?> {
       ref.read(authTokenProvider.notifier).setToken(token);
     }
 
+    // Eagerly re-hydrate selected team UUID on startup
+    final savedUuid = await ref.read(appStorageProvider).readSelectedTeamUuid();
+    if (savedUuid != null) {
+      SelectedTeamNotifier.setInitialUuid(savedUuid);
+    }
+
     return user;
   }
 
@@ -36,6 +43,7 @@ class CurrentUserNotifier extends AsyncNotifier<AppUser?> {
 
   Future<void> clearUser() async {
     await ref.read(appStorageProvider).clearAll();
+    ref.read(selectedTeamProvider.notifier).clearSelectedTeam();
     state = const AsyncData(null);
   }
 }

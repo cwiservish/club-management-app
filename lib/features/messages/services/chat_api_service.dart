@@ -4,6 +4,9 @@ import '../../../core/network/api_client.dart';
 import '../models/chat_channel.dart';
 import '../models/chat_member.dart';
 import '../models/chat_token.dart';
+import '../models/save_channel_models.dart';
+import '../models/member_list_models.dart';
+import '../models/remove_channel_models.dart';
 
 class ChatApiService {
   final ApiClient _apiClient;
@@ -107,13 +110,9 @@ class ChatApiService {
   }
 
   /// Searches for team members to add to a group channel (isDm = 0).
-  Future<List<ChatMember>> searchChannelMembers(String teamUuid, String query) async {
+  Future<MemberListResponse> searchChannelMembers(MemberListRequest request) async {
     const endpoint = '/chat/member/list';
-    final requestBody = {
-      'team_uuid': teamUuid,
-      'isDm': 0,
-      'q': query,
-    };
+    final requestBody = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
     debugPrint('[API Request] POST $endpoint (Search)');
@@ -132,27 +131,13 @@ class ChatApiService {
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
-    final dataMap = response.data is Map<String, dynamic>
-        ? response.data as Map<String, dynamic>
-        : <String, dynamic>{};
-
-    final gridList = dataMap['grid'];
-    if (gridList is List) {
-      return gridList
-          .map((m) => ChatMember.fromJson(m is Map<String, dynamic> ? m : {}))
-          .toList();
-    }
-
-    return [];
+    return MemberListResponse.fromJson(response.rawJson);
   }
 
   /// Fetches existing members of a custom channel.
-  Future<List<ChatMember>> fetchChannelExistingMembers(String teamUuid, int chatChannelId) async {
+  Future<MemberListResponse> fetchChannelExistingMembers(MemberListRequest request) async {
     const endpoint = '/chat/member/list';
-    final requestBody = {
-      'team_uuid': teamUuid,
-      'chat_channel_id': chatChannelId,
-    };
+    final requestBody = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
     debugPrint('[API Request] POST $endpoint (Existing Members)');
@@ -171,34 +156,13 @@ class ChatApiService {
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
-    final dataMap = response.data is Map<String, dynamic>
-        ? response.data as Map<String, dynamic>
-        : <String, dynamic>{};
-
-    final gridList = dataMap['grid'];
-    if (gridList is List) {
-      return gridList
-          .map((m) => ChatMember.fromJson(m is Map<String, dynamic> ? m : {}))
-          .toList();
-    }
-
-    return [];
+    return MemberListResponse.fromJson(response.rawJson);
   }
 
   /// Creates a new channel or edits an existing one.
-  Future<bool> saveChannel({
-    required String teamUuid,
-    int? chatChannelId,
-    required String name,
-    required List<Map<String, dynamic>> users,
-  }) async {
+  Future<SaveChannelResponse> saveChannel(SaveChannelRequest request) async {
     const endpoint = '/chat/channel/save';
-    final requestBody = {
-      'team_uuid': teamUuid,
-      if (chatChannelId != null) 'chat_channel_id': chatChannelId,
-      'name': name,
-      'users': users,
-    };
+    final requestBody = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
     debugPrint('[API Request] POST $endpoint');
@@ -217,16 +181,13 @@ class ChatApiService {
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
-    return response.success;
+    return SaveChannelResponse.fromJson(response.rawJson);
   }
 
   /// Removes a custom channel.
-  Future<bool> removeChannel(String teamUuid, int chatChannelId) async {
+  Future<RemoveChannelResponse> removeChannel(RemoveChannelRequest request) async {
     const endpoint = '/chat/channel/remove';
-    final requestBody = {
-      'team_uuid': teamUuid,
-      'chat_channel_id': chatChannelId,
-    };
+    final requestBody = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
     debugPrint('[API Request] POST $endpoint');
@@ -245,7 +206,7 @@ class ChatApiService {
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
-    return response.success;
+    return RemoveChannelResponse.fromJson(response.rawJson);
   }
 
   /// Removes a participant from a custom channel.

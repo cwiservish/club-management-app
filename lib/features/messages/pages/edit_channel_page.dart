@@ -9,6 +9,9 @@ import '../../../core/shared_widgets/app_header.dart';
 import '../models/chat_channel.dart';
 import '../models/chat_member.dart';
 import '../providers/chat_state_provider.dart';
+import '../models/save_channel_models.dart';
+import '../models/remove_channel_models.dart';
+import '../models/member_list_models.dart';
 
 class EditChannelPage extends ConsumerStatefulWidget {
   final ChatChannel channel;
@@ -93,19 +96,23 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
 
     try {
       final service = ref.read(chatApiServiceProvider);
-      final usersPayload = _selectedMembers.map((member) => {
-        'member_id': member.memberId,
-        'member_type': member.memberType,
-      }).toList();
+      final usersPayload = _selectedMembers
+          .map((member) => SaveChannelUser(
+                memberId: member.memberId,
+                memberType: member.memberType,
+              ))
+          .toList();
 
-      final success = await service.saveChannel(
+      final request = SaveChannelRequest(
         teamUuid: selectedTeam.uuid,
         chatChannelId: widget.channel.chatChannelId,
         name: _nameController.text.trim(),
         users: usersPayload,
       );
 
-      if (success) {
+      final response = await service.saveChannel(request);
+
+      if (response.success) {
         // Refresh channel state
         ref.invalidate(chatChannelsProvider(selectedTeam.uuid));
         ref.invalidate(chatChannelMembersProvider((teamUuid: selectedTeam.uuid, chatChannelId: widget.channel.chatChannelId)));
@@ -113,7 +120,7 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Channel updated successfully!'),
+              content: Text(response.message.isNotEmpty ? response.message : 'Channel updated successfully!'),
               backgroundColor: AppColors.current.success,
             ),
           );
@@ -122,7 +129,7 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
           Navigator.of(context).pop();
         }
       } else {
-        throw Exception('API returned failure response');
+        throw Exception(response.message.isNotEmpty ? response.message : 'API returned failure response');
       }
     } catch (e) {
       if (mounted) {
@@ -140,6 +147,19 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
         });
       }
     }
+  }
+
+  Future<void> _handleRefresh(String teamUuid, int chatChannelId) async {
+    ref.invalidate(chatChannelMembersProvider((
+      teamUuid: teamUuid,
+      chatChannelId: chatChannelId,
+    )));
+    try {
+      await ref.read(chatChannelMembersProvider((
+        teamUuid: teamUuid,
+        chatChannelId: chatChannelId,
+      )).future);
+    } catch (_) {}
   }
 
   Future<void> _deleteChannel() async {
@@ -174,7 +194,10 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Delete',
-              style: AppTextStyles.body14.copyWith(fontWeight: FontWeight.bold),
+              style: AppTextStyles.body14.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -189,14 +212,17 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
 
     try {
       final service = ref.read(chatApiServiceProvider);
-      final success = await service.removeChannel(selectedTeam.uuid, widget.channel.chatChannelId);
+      final response = await service.removeChannel(RemoveChannelRequest(
+        teamUuid: selectedTeam.uuid,
+        id: widget.channel.chatChannelId,
+      ));
 
-      if (success) {
+      if (response.success) {
         ref.invalidate(chatChannelsProvider(selectedTeam.uuid));
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Channel deleted successfully.'),
+              content: Text(response.message.isNotEmpty ? response.message : 'Channel deleted successfully.'),
               backgroundColor: AppColors.current.success,
             ),
           );
@@ -205,7 +231,7 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
           Navigator.of(context).pop();
         }
       } else {
-        throw Exception('API returned failure response');
+        throw Exception(response.message.isNotEmpty ? response.message : 'API returned failure response');
       }
     } catch (e) {
       if (mounted) {
@@ -258,13 +284,17 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
                         _isInitialized = true;
                       }
 
-                      return Form(
-                        key: _formKey,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
+                      return RefreshIndicator(
+                        onRefresh: () => _handleRefresh(selectedTeam.uuid, widget.channel.chatChannelId),
+                        color: AppColors.current.primary,
+                        child: Form(
+                          key: _formKey,
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
                               _buildSectionHeader('CHANNEL DETAILS'),
                               const SizedBox(height: 12),
                               _buildNameInputField(),
@@ -283,7 +313,8 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
                             ],
                           ),
                         ),
-                      );
+                      ),
+                    );
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
                     error: (err, _) => Center(
@@ -713,10 +744,13 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
               ),
             ),
             onPressed: _deleteChannel,
-            icon: const Icon(Icons.delete_forever, size: 20),
+            icon: const Icon(Icons.delete_forever, size: 20, color: Colors.white),
             label: Text(
               'Delete Channel',
-              style: AppTextStyles.body14.copyWith(fontWeight: FontWeight.bold),
+              style: AppTextStyles.body14.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],

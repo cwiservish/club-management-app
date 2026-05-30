@@ -7,6 +7,7 @@ import '../../../app/theme/app_text_styles.dart';
 import '../../../core/common_providers/theme_provider.dart';
 import '../models/roster_detail_contact.dart';
 import '../models/roster_member.dart';
+import '../models/player_profile_models.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
 import '../providers/roster_detail_provider.dart';
@@ -27,6 +28,13 @@ class RosterDetailPage extends ConsumerWidget {
 
     // Fetch the local fallback roster member immediately to populate name/initials
     final member = ref.watch(rosterDetailProvider(memberId));
+    if (member == null) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     // Watch the dynamic player profile API state
     final profileState = ref.watch(playerProfileProvider(memberId));
@@ -67,8 +75,21 @@ class RosterDetailPage extends ConsumerWidget {
             SubHeader(
               title: '',
               leftLabel: 'Roster',
-              rightText: isEditable ? 'Edit' : null,
-              onRightTap: isEditable ? () => _showEditSheet(context, member) : null,
+              rightWidget: InkWell(
+                onTap: isEditable ? () => _showEditSheet(context, member, profile, isEditable) : null,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: Text(
+                    'Edit',
+                    style: AppTextStyles.heading14.copyWith(
+                      color: isEditable
+                          ? AppColors.current.actionAccent
+                          : AppColors.current.gray400,
+                    ),
+                  ),
+                ),
+              ),
             ),
             // Indent active loading indicator below the subheader
             if (profileState.isLoading)
@@ -93,7 +114,7 @@ class RosterDetailPage extends ConsumerWidget {
                               imageUrl: profile?.imageUrl ?? '',
                               jerseyNo: profile?.jerseyNo,
                               position: profile?.primaryPosition,
-                              onAvatarTap: isEditable ? () => _showEditSheet(context, member) : () {},
+                              onAvatarTap: isEditable ? () => _showEditSheet(context, member, profile, isEditable) : () {},
                             ),
                             RosterActionButtons(
                               onAttendanceTap: () => context.push(
@@ -169,12 +190,16 @@ class RosterDetailPage extends ConsumerWidget {
 
   // ─── Sheet helpers ─────────────────────────────────────────────────────────
 
-  void _showEditSheet(BuildContext context, RosterMember member) {
+  void _showEditSheet(BuildContext context, RosterMember member, PlayerModel? playerProfile, bool isEditable) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => RosterEditPlayerSheet(member: member),
+      builder: (_) => RosterEditPlayerSheet(
+        member: member,
+        playerProfile: playerProfile,
+        isEditable: isEditable,
+      ),
     );
   }
 

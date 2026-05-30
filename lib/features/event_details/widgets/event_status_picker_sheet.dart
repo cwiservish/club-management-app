@@ -46,9 +46,16 @@ class EventStatusPickerSheet extends StatelessWidget {
                     value:       PlayerStatus.going,
                     current:     player.status,
                     activeColor: colors.rsvpGoing,
-                    onTap: (s) {
-                      notifier.updatePlayerStatus(player.id, s);
+                    onTap: (s) async {
+                      final messenger = ScaffoldMessenger.of(context);
                       Navigator.pop(context);
+                      final result = await notifier.updatePlayerStatus(player.id, s);
+                      if (!result.success) {
+                        messenger.showSnackBar(SnackBar(
+                          content: Text(result.message),
+                          backgroundColor: colors.error,
+                        ));
+                      }
                     },
                   ),
                   VerticalDivider(
@@ -60,9 +67,16 @@ class EventStatusPickerSheet extends StatelessWidget {
                     value:       PlayerStatus.maybe,
                     current:     player.status,
                     activeColor: colors.rsvpMaybe,
-                    onTap: (s) {
-                      notifier.updatePlayerStatus(player.id, s);
+                    onTap: (s) async {
+                      final messenger = ScaffoldMessenger.of(context);
                       Navigator.pop(context);
+                      final result = await notifier.updatePlayerStatus(player.id, s);
+                      if (!result.success) {
+                        messenger.showSnackBar(SnackBar(
+                          content: Text(result.message),
+                          backgroundColor: colors.error,
+                        ));
+                      }
                     },
                   ),
                   VerticalDivider(
@@ -74,9 +88,16 @@ class EventStatusPickerSheet extends StatelessWidget {
                     value:       PlayerStatus.no,
                     current:     player.status,
                     activeColor: colors.rsvpNo,
-                    onTap: (s) {
-                      notifier.updatePlayerStatus(player.id, s);
+                    onTap: (s) async {
+                      final messenger = ScaffoldMessenger.of(context);
                       Navigator.pop(context);
+                      final result = await notifier.updatePlayerStatus(player.id, s);
+                      if (!result.success) {
+                        messenger.showSnackBar(SnackBar(
+                          content: Text(result.message),
+                          backgroundColor: colors.error,
+                        ));
+                      }
                     },
                   ),
                 ],
@@ -96,7 +117,7 @@ class _StatusOption extends StatelessWidget {
   final PlayerStatus value;
   final PlayerStatus current;
   final Color activeColor;
-  final ValueChanged<PlayerStatus> onTap;
+  final Function(PlayerStatus) onTap;
 
   const _StatusOption({
     required this.label,

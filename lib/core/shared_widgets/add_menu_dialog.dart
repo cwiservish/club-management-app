@@ -928,7 +928,10 @@ class _NewChatModalState extends State<_NewChatModal> {
                       ListTile(
                         title: Text('New Channel', style: AppTextStyles.body16.copyWith(fontWeight: FontWeight.w600, color: colors.textPrimary)),
                         trailing: Icon(Icons.chevron_right, color: colors.textSecondary),
-                        onTap: () => setState(() => type = 'channel'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          context.push('${AppRoutes.messages}/${AppRoutes.createChannel}');
+                        },
                       ),
                       Divider(height: 1, color: colors.border),
                       ListTile(

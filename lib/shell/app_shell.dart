@@ -36,8 +36,8 @@ class AppShell extends ConsumerWidget {
           }
           navigationShell.goBranch(
             index,
-            // Tapping the active tab again pops to the branch's initial route.
-            initialLocation: index == navigationShell.currentIndex,
+            // Always go directly to the root of the selected tab's branch.
+            initialLocation: true,
           );
         },
       ),

@@ -136,13 +136,41 @@ class HomeService {
       // Check if user has an RSVP already to avoid double counting or set correct initial state
       final myRsvpMap = json['my_rsvp'] as Map<String, dynamic>?;
       String? myRsvpStatus;
+      final bool requiresPlayerSelection = myRsvpMap != null ? _parseBool(myRsvpMap['requires_player_selection']) : false;
+      final List<ClubEventRsvpTarget> rsvpTargets = [];
+      
       if (myRsvpMap != null) {
-        myRsvpStatus = myRsvpMap['attendance']?.toString()?.toLowerCase();
-        if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
-        final targets = myRsvpMap['targets'] as List?;
-        if (myRsvpStatus == null && targets != null && targets.isNotEmpty) {
-          myRsvpStatus = (targets.first as Map<String, dynamic>?)?['attendance']?.toString()?.toLowerCase();
+        // Explicitly check for null so that integer 0 (= No) is never skipped
+        final dynamic rawAttendance = myRsvpMap['attendance'];
+        if (rawAttendance != null) {
+          myRsvpStatus = rawAttendance.toString().toLowerCase();
           if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
+        }
+        final targetsList = myRsvpMap['targets'] as List?;
+        if (targetsList != null) {
+          if (myRsvpStatus == null && targetsList.isNotEmpty) {
+            final dynamic rawTargetAttendance =
+                (targetsList.first as Map<String, dynamic>?)?['attendance'];
+            if (rawTargetAttendance != null) {
+              myRsvpStatus = rawTargetAttendance.toString().toLowerCase();
+              if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
+            }
+          }
+          for (final t in targetsList) {
+            if (t is Map<String, dynamic>) {
+              rsvpTargets.add(
+                ClubEventRsvpTarget(
+                  attendeeType: t['attendee_type']?.toString() ?? '',
+                  customerId: _parseInt(t['customer_id']),
+                  playerId: t['player_id'] != null ? _parseInt(t['player_id']) : null,
+                  name: t['name']?.toString() ?? '',
+                  teamEventAttendeeId: t['team_event_attendee_id'] != null ? _parseInt(t['team_event_attendee_id']) : null,
+                  attendance: t['attendance'],
+                  notes: t['notes']?.toString() ?? '',
+                ),
+              );
+            }
+          }
         }
       }
 
@@ -162,7 +190,7 @@ class HomeService {
         final remaining = (maybeCount - 1).clamp(0, 999999);
         rsvpMaybe.addAll(List.generate(remaining, (i) => 'player_maybe_$i'));
         rsvpNo.addAll(List.generate(noCount, (i) => 'player_no_$i'));
-      } else if (myRsvpStatus == 'no' || myRsvpStatus == '3') {
+      } else if (myRsvpStatus == 'no' || myRsvpStatus == '0' || myRsvpStatus == '3') {
         rsvpNo.add('me');
         rsvpYes.addAll(List.generate(goingCount, (i) => 'player_yes_$i'));
         rsvpMaybe.addAll(List.generate(maybeCount, (i) => 'player_maybe_$i'));
@@ -186,6 +214,7 @@ class HomeService {
       final arrivalEarly = json['arrival_early'] != null ? _parseInt(json['arrival_early']) : 15;
       final latitude = json['latitude']?.toString() ?? '';
       final longitude = json['longitude']?.toString() ?? '';
+      final scheduleGameId = json['schedule_game_id'] != null ? _parseInt(json['schedule_game_id']) : null;
 
       return ClubEvent(
         id: uuid,
@@ -212,8 +241,11 @@ class HomeService {
         timezone: timezone,
         notificationEnabled: notificationEnabled,
         arrivalEarly: arrivalEarly,
+        scheduleGameId: scheduleGameId,
         latitude: latitude,
         longitude: longitude,
+        requiresPlayerSelection: requiresPlayerSelection,
+        rsvpTargets: rsvpTargets,
       );
     } catch (e) {
       debugPrint('[HomeService] Error parsing event: $e');

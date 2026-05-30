@@ -221,12 +221,80 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
     state = state.copyWith(event: state.event.copyWith(myRsvp: rsvp));
   }
 
-  void updatePlayerStatus(int playerId, PlayerStatus status) {
+  /// Asynchronously saves a player's RSVP status via the event-attendee save API
+  /// and then refreshes the availability list.
+  Future<({bool success, String message})> updatePlayerStatus(int teamPlayerId, PlayerStatus status) async {
+    final activeTeam = ref.read(selectedTeamProvider);
+    if (activeTeam == null) {
+      return (success: false, message: 'No selected team found');
+    }
+
+    EventPlayerModel? player;
+    for (final p in state.players) {
+      if (p.id == teamPlayerId) {
+        player = p;
+        break;
+      }
+    }
+
+    if (player == null) {
+      return (success: false, message: 'Player not found');
+    }
+
+    final int targetPlayerId = player.playerId ?? player.id;
+    final int eventDbId = _teamEventId ?? int.tryParse(eventId) ?? 0;
+
+    final String finalCustomerId = '';
+    final int finalPlayerId = targetPlayerId;
+
+    // Map status to attendance integer: going=1, maybe=2, no=0
+    int attendanceValue = 0;
+    if (status == PlayerStatus.going) attendanceValue = 1;
+    if (status == PlayerStatus.maybe) attendanceValue = 2;
+    if (status == PlayerStatus.no) attendanceValue = 0;
+
+    // Optimistically update local state
     state = state.copyWith(
       players: state.players
-          .map((p) => p.id == playerId ? p.copyWith(status: status) : p)
+          .map((p) => p.id == teamPlayerId ? p.copyWith(status: status) : p)
           .toList(),
     );
+
+    try {
+      final service = ref.read(eventDetailServiceProvider);
+      final response = await service.saveEventAttendee(
+        EventAttendeeSaveRequest(
+          teamUuid: activeTeam.uuid,
+          teamEventId: eventDbId,
+          customerId: finalCustomerId,
+          playerId: finalPlayerId,
+          notes: player.note,
+          attendance: attendanceValue,
+        ),
+      );
+
+      if (response.success) {
+        // Refresh availability to get latest server state
+        await refresh();
+        return (success: true, message: response.message.isNotEmpty ? response.message : 'Status updated successfully.');
+      } else {
+        // Revert optimistic update on failure
+        state = state.copyWith(
+          players: state.players
+              .map((p) => p.id == teamPlayerId ? p.copyWith(status: player!.status) : p)
+              .toList(),
+        );
+        return (success: false, message: response.message.isNotEmpty ? response.message : 'Failed to update status.');
+      }
+    } catch (e) {
+      // Revert optimistic update on error
+      state = state.copyWith(
+        players: state.players
+            .map((p) => p.id == teamPlayerId ? p.copyWith(status: player!.status) : p)
+            .toList(),
+      );
+      return (success: false, message: e.toString());
+    }
   }
 
   /// Asynchronously saves the player note using the event-attendee save API
@@ -251,8 +319,8 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
     final int targetPlayerId = player.playerId ?? player.id;
     final int eventDbId = _teamEventId ?? int.tryParse(eventId) ?? 0;
 
-    final String finalCustomerId = activeTeam.isCoach ? targetPlayerId.toString() : '';
-    final int finalPlayerId = activeTeam.isCoach ? 0 : targetPlayerId;
+    final String finalCustomerId = '';
+    final int finalPlayerId = targetPlayerId;
 
     try {
       final service = ref.read(eventDetailServiceProvider);

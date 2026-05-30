@@ -5,6 +5,12 @@ import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/club_event.dart';
 import '../providers/schedule_provider.dart';
 
+/// Dialog that lets the user pick Going / Maybe / No for an event.
+///
+/// When player-selection is required *and* there are multiple targets the dialog
+/// pops itself with the chosen status string so the call-site can present the
+/// player-selection bottom-sheet.  In all other cases it saves the RSVP to the
+/// server directly and then pops itself.
 class MyRsvpDialog extends ConsumerWidget {
   final ClubEvent event;
 
@@ -15,7 +21,7 @@ class MyRsvpDialog extends ConsumerWidget {
     // Find latest state of event from provider
     final scheduleState = ref.watch(scheduleProvider);
     final latestEvent = scheduleState.events.firstWhere((e) => e.id == event.id, orElse: () => event);
-    
+
     // Derive current user status
     String currentStatus = 'unknown';
     if (latestEvent.rsvpYes.contains('me')) currentStatus = 'going';
@@ -89,6 +95,7 @@ class MyRsvpDialog extends ConsumerWidget {
                       label: '${latestEvent.rsvpYes.length} Going',
                       value: 'going',
                       currentStatus: currentStatus,
+                      latestEvent: latestEvent,
                     ),
                     Container(width: 1, color: colors.border.withValues(alpha: 0.5)),
                     _buildSegment(
@@ -97,6 +104,7 @@ class MyRsvpDialog extends ConsumerWidget {
                       label: '${latestEvent.rsvpMaybe.length} Maybe',
                       value: 'maybe',
                       currentStatus: currentStatus,
+                      latestEvent: latestEvent,
                     ),
                     Container(width: 1, color: colors.border.withValues(alpha: 0.5)),
                     _buildSegment(
@@ -105,6 +113,7 @@ class MyRsvpDialog extends ConsumerWidget {
                       label: '${latestEvent.rsvpNo.length} No',
                       value: 'no',
                       currentStatus: currentStatus,
+                      latestEvent: latestEvent,
                     ),
                   ],
                 ),
@@ -122,10 +131,11 @@ class MyRsvpDialog extends ConsumerWidget {
     required String label,
     required String value,
     required String currentStatus,
+    required ClubEvent latestEvent,
   }) {
     final colors = AppColors.current;
     final isActive = currentStatus == value;
-    
+
     Color getBgColor() {
       if (!isActive) return colors.card;
       if (value == 'going') return colors.rsvpGoing;
@@ -133,7 +143,7 @@ class MyRsvpDialog extends ConsumerWidget {
       if (value == 'no') return colors.rsvpNo;
       return colors.card;
     }
-    
+
     Color getTextColor() {
       if (isActive) return Colors.white;
       return colors.textSecondary;
@@ -141,11 +151,44 @@ class MyRsvpDialog extends ConsumerWidget {
 
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          ref.read(scheduleProvider.notifier).updateRsvp(event.id, value);
-          Future.delayed(const Duration(milliseconds: 150), () {
-            if (context.mounted) Navigator.of(context).pop();
-          });
+        onTap: () async {
+          final needsPlayerSelection =
+              latestEvent.requiresPlayerSelection && latestEvent.rsvpTargets.length > 1;
+
+          if (needsPlayerSelection) {
+            // Return the chosen status to the call-site; it will handle player selection.
+            Navigator.of(context).pop(value);
+            return;
+          }
+
+          // Single target or no player selection required — save directly.
+          final notifier = ref.read(scheduleProvider.notifier);
+
+          if (latestEvent.rsvpTargets.isNotEmpty) {
+            final result = await notifier.saveEventRsvp(
+              event: latestEvent,
+              target: latestEvent.rsvpTargets.first,
+              status: value,
+            );
+
+            if (!result.success && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(result.message),
+                  backgroundColor: AppColors.current.error,
+                ),
+              );
+            }
+          } else {
+            // Fallback: local-only update when no targets are present.
+            notifier.updateRsvp(latestEvent.id, value);
+          }
+
+          if (context.mounted) {
+            Future.delayed(const Duration(milliseconds: 150), () {
+              if (context.mounted) Navigator.of(context).pop();
+            });
+          }
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),

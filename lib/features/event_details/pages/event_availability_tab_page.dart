@@ -47,22 +47,6 @@ class EventAvailabilityTabPage extends ConsumerWidget {
       );
     }
 
-    void showMessageAll() => showTextInputDialog(
-          context,
-          title:       'Message All',
-          subtitle:    "Send a message to players who haven't replied.",
-          initialText: "Please update your availability for ${state.event.date} ${state.event.name}",
-          placeholder: 'Type message here...',
-          primaryLabel: 'Send',
-          primaryIcon: Icon(
-            Icons.message_outlined,
-            size:  16,
-            color: AppColors.current.isDark
-                ? AppColors.current.gray900
-                : Colors.white,
-          ),
-          onConfirm: (_) {}, // TODO: wire to messages feature
-        );
 
     void showStatusPicker(EventPlayerModel player) {
       showModalBottomSheet(
@@ -168,8 +152,7 @@ class EventAvailabilityTabPage extends ConsumerWidget {
               title:          "HAVEN'T REPLIED",
               players:        state.unrepliedPlayers,
               canUpdateAllPlayers: state.canUpdateAllPlayers,
-              showMessageAll: true,
-              onMessageAll:   showMessageAll,
+              showMessageAll: false,
               onNoteTap:      showNote,
               onStatusTap:    showStatusPicker,
             ),

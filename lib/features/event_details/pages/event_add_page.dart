@@ -39,6 +39,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
   bool _timeTbd    = false;
   bool _trackAvail = true;
   bool _hasPrepopulatedTimezone = false;
+  bool _isScheduledGame = false;
 
   // Controllers
   final _eventNameController       = TextEditingController(text: '');
@@ -108,6 +109,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
 
         setState(() {
           _dbId = foundEvent!.dbId;
+          _isScheduledGame = foundEvent.scheduleGameId != null;
           _eventNameController.text = foundEvent.title;
           _timeTbd = foundEvent.timeTbd;
           _selectedDateTime = foundEvent.dateTime;
@@ -1672,69 +1674,74 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
   Widget _buildTimezoneDropdownField(EventEditState timezoneState, EventEditNotifier notifier) {
     final colors = AppColors.current;
 
-    return InkWell(
-      onTap: timezoneState.isSaving
-          ? null
-          : () => _showTimezoneSheet(timezoneState, notifier),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: colors.border.withValues(alpha: 0.5)),
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Time Zone',
-                style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
-              ),
+    return Opacity(
+      opacity: _isScheduledGame ? 0.45 : 1.0,
+      child: InkWell(
+        onTap: _isScheduledGame
+            ? null
+            : (timezoneState.isSaving
+                ? null
+                : () => _showTimezoneSheet(timezoneState, notifier)),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: colors.border.withValues(alpha: 0.5)),
             ),
-            if (timezoneState.isLoadingTimezones)
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: colors.primary,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Time Zone',
+                  style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
                 ),
-              )
-            else if (timezoneState.timezonesError != null)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline, color: colors.error, size: 16),
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: () => notifier.fetchTimezones(),
-                    child: Text(
-                      'Retry',
-                      style: TextStyle(
-                        color: colors.primary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
+              ),
+              if (timezoneState.isLoadingTimezones)
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colors.primary,
+                  ),
+                )
+              else if (timezoneState.timezonesError != null)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, color: colors.error, size: 16),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () => notifier.fetchTimezones(),
+                      child: Text(
+                        'Retry',
+                        style: TextStyle(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
+                  ],
+                )
+              else
+                Flexible(
+                  child: Text(
+                    timezoneState.selectedTimezone?.label ?? 'Select timezone',
+                    style: AppTextStyles.body16.copyWith(
+                      color: timezoneState.selectedTimezone != null
+                          ? colors.textSecondary
+                          : colors.textSecondary.withValues(alpha: 0.5),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
                   ),
-                ],
-              )
-            else
-              Flexible(
-                child: Text(
-                  timezoneState.selectedTimezone?.label ?? 'Select timezone',
-                  style: AppTextStyles.body16.copyWith(
-                    color: timezoneState.selectedTimezone != null
-                        ? colors.textSecondary
-                        : colors.textSecondary.withValues(alpha: 0.5),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
                 ),
-              ),
-            const SizedBox(width: 4),
-            Icon(Icons.chevron_right, size: 20, color: colors.textSecondary),
-          ],
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right, size: 20, color: colors.textSecondary),
+            ],
+          ),
         ),
       ),
     );
@@ -1831,11 +1838,13 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
                           controller:   _eventNameController,
                           placeholder:  'e.g. Game, Practice, Tournament',
                           borderBottom: true,
+                          enabled:      !_isScheduledGame,
                         ),
                         EventEditListRow(
                           label: 'Date/Time',
                           value: _formatDateTime(_selectedDateTime),
                           onTap: () => _pickDateTime(context),
+                          enabled: !_isScheduledGame,
                         ),
                         _buildTimezoneDropdownField(timezoneState, notifier),
                         EventEditToggleRow(
@@ -1847,6 +1856,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
                           label: 'Duration',
                           value: _formatDuration(_durationMinutes),
                           borderBottom: false,
+                          enabled: !_isScheduledGame,
                           onTap: () => _showDurationPicker(
                             title: 'Select Duration',
                             initialMinutes: _durationMinutes,
@@ -1866,6 +1876,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
                           label: 'Location',
                           value: _locationName.isNotEmpty ? _locationName : 'Select Location',
                           onTap: () => _showLocationPicker(),
+                          enabled: !_isScheduledGame,
                         ),
                         EventEditInlineField(
                           label:        'Location Details',
@@ -1984,6 +1995,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
                           controller:   _opponentController,
                           placeholder:  'e.g. Rival FC',
                           borderBottom: true,
+                          enabled:      !_isScheduledGame,
                         ),
                         EventEditInlineField(
                           label:        'Extra Label',

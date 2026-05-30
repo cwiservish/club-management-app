@@ -20,6 +20,7 @@ dependencies:
   image_picker: ^1.1.2
   google_maps_flutter: ^2.12.0
   talkjs_flutter: ^0.17.5
+  talkjs_flutter_inappwebview: any
 
   # UI helpers
   # cached_network_image: ^3.3.0
