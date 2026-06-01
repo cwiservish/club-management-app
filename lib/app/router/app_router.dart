@@ -262,6 +262,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: AppRoutes.eventDetailEdit,
                     builder: (context, state) => EventEditPage(
                       eventId: state.pathParameters['eventId']!,
+                      duplicate: state.uri.queryParameters['duplicate'] == 'true',
                     ),
                   ),
                 ],

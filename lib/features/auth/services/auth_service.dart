@@ -94,11 +94,14 @@ class AuthService {
           throw 'Login failed: Missing authentication token';
         }
 
+        print('[Login API] Token received: $token');
+
         // Fetch teams and validate the response
         final teams = await fetchTeams(token);
 
         // Save token and teams locally
         await _appStorage.saveToken(token);
+        print('[Login API] Token saved locally.');
         await _appStorage.saveTeams(teams);
 
         // Map FusionAuth user to AppUser

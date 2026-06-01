@@ -159,6 +159,7 @@ class EventEditNotifier extends Notifier<EventEditState> {
     required String opponent,
     required String extraLabel,
     required String notes,
+    required int status,
     required bool notificationEnabled,
   }) async {
     final activeTeam = ref.read(selectedTeamProvider);
@@ -192,7 +193,7 @@ class EventEditNotifier extends Notifier<EventEditState> {
       opponent: opponent,
       extraLabel: extraLabel,
       notes: notes,
-      status: 1,
+      status: status,
       notificationEnabled: notificationEnabled,
     );
 

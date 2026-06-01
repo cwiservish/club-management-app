@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../home/widgets/rsvp_player_selection_sheet.dart';
 import '../providers/event_detail_provider.dart';
 import '../widgets/details/event_header_card.dart';
 import '../widgets/details/rsvp_section.dart';
@@ -34,6 +35,57 @@ class EventDetailsTabPage extends ConsumerWidget {
       );
     }
 
+    Future<void> handleRsvpTap(String rsvpValue) async {
+      final rawEvent = state.rawEvent;
+      if (rawEvent == null) {
+        notifier.setRsvp(rsvpValue);
+        return;
+      }
+
+      if (rawEvent.requiresPlayerSelection && rawEvent.rsvpTargets.length > 1) {
+        await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => RsvpPlayerSelectionSheet(
+            targets: rawEvent.rsvpTargets,
+            onSelected: (target) async {
+              final result = await notifier.saveEventRsvp(
+                target: target,
+                rsvp: rsvpValue,
+              );
+              if (!result.success && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(result.message),
+                    backgroundColor: AppColors.current.error,
+                  ),
+                );
+              }
+            },
+          ),
+        );
+        return;
+      }
+
+      if (rawEvent.rsvpTargets.isNotEmpty) {
+        final result = await notifier.saveEventRsvp(
+          target: rawEvent.rsvpTargets.first,
+          rsvp: rsvpValue,
+        );
+        if (!result.success && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: AppColors.current.error,
+            ),
+          );
+        }
+      } else {
+        notifier.setRsvp(rsvpValue);
+      }
+    }
+
     return RefreshIndicator(
       onRefresh: () async {
         final activeTeam = ref.read(selectedTeamProvider);
@@ -50,7 +102,7 @@ class EventDetailsTabPage extends ConsumerWidget {
             const SizedBox(height: 16),
             RsvpSection(
               selected: state.event.myRsvp,
-              onSelect: notifier.setRsvp,
+              onSelect: handleRsvpTap,
             ),
             const SizedBox(height: 16),
             LogisticsSection(
@@ -62,7 +114,7 @@ class EventDetailsTabPage extends ConsumerWidget {
             width: double.infinity,
             height: 48,
             child: OutlinedButton.icon(
-              onPressed: () => context.push(AppRoutes.eventEdit(eventId)),
+              onPressed: () => context.push('${AppRoutes.eventEdit(eventId)}?duplicate=true'),
               icon: Icon(Icons.copy_outlined, size: 18, color: colors.textSecondary),
               label: Text(
                 'Duplicate Event',

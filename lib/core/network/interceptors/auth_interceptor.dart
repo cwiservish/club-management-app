@@ -25,12 +25,17 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    final token = await getToken();
+    print('----------------------------------------');
+    print('[API Call] Request: ${options.method} ${options.path}');
+    print('[API Call] Token: $token');
+    print('----------------------------------------');
+
     // Skip auth header for public endpoints (login, register, etc.)
     if (options.extra['skipAuth'] == true) {
       return handler.next(options);
     }
 
-    final token = await getToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }

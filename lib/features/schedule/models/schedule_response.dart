@@ -403,6 +403,7 @@ class ScheduleEvent {
       arrivalEarly: arrivalEarly,
       requiresPlayerSelection: requiresPlayerSelection,
       rsvpTargets: domainTargets,
+      status: status,
     );
   }
 }

@@ -215,6 +215,7 @@ class HomeService {
       final latitude = json['latitude']?.toString() ?? '';
       final longitude = json['longitude']?.toString() ?? '';
       final scheduleGameId = json['schedule_game_id'] != null ? _parseInt(json['schedule_game_id']) : null;
+      final status = _parseInt(json['status'] ?? 1);
 
       return ClubEvent(
         id: uuid,
@@ -246,6 +247,7 @@ class HomeService {
         longitude: longitude,
         requiresPlayerSelection: requiresPlayerSelection,
         rsvpTargets: rsvpTargets,
+        status: status,
       );
     } catch (e) {
       debugPrint('[HomeService] Error parsing event: $e');

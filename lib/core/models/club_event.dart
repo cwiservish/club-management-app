@@ -33,6 +33,7 @@ class ClubEvent {
   final String? longitude;
   final bool requiresPlayerSelection;
   final List<ClubEventRsvpTarget> rsvpTargets;
+  final int status;
 
   const ClubEvent({
     required this.id,
@@ -64,6 +65,7 @@ class ClubEvent {
     this.longitude,
     this.requiresPlayerSelection = false,
     this.rsvpTargets = const [],
+    this.status = 1,
   });
 
   ClubEvent copyWith({
@@ -96,6 +98,7 @@ class ClubEvent {
     String? longitude,
     bool? requiresPlayerSelection,
     List<ClubEventRsvpTarget>? rsvpTargets,
+    int? status,
   }) {
     return ClubEvent(
       id: id ?? this.id,
@@ -127,6 +130,7 @@ class ClubEvent {
       longitude: longitude ?? this.longitude,
       requiresPlayerSelection: requiresPlayerSelection ?? this.requiresPlayerSelection,
       rsvpTargets: rsvpTargets ?? this.rsvpTargets,
+      status: status ?? this.status,
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/club_event.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
 import '../../home/providers/home_provider.dart';
+import '../../schedule/providers/schedule_provider.dart';
 import '../models/event_detail_model.dart';
 import '../models/event_player_model.dart';
 import '../models/event_availability_models.dart';
@@ -15,6 +16,7 @@ export '../models/event_availability_models.dart';
 
 class EventDetailState {
   final EventDetailModel event;
+  final ClubEvent? rawEvent;
   final List<EventPlayerModel> players;
   final bool isLoading;
   final String? errorMessage;
@@ -22,6 +24,7 @@ class EventDetailState {
 
   const EventDetailState({
     required this.event,
+    this.rawEvent,
     required this.players,
     this.isLoading = false,
     this.errorMessage,
@@ -30,6 +33,7 @@ class EventDetailState {
 
   EventDetailState copyWith({
     EventDetailModel? event,
+    ClubEvent? rawEvent,
     List<EventPlayerModel>? players,
     bool? isLoading,
     String? errorMessage,
@@ -37,6 +41,7 @@ class EventDetailState {
   }) {
     return EventDetailState(
       event:   event   ?? this.event,
+      rawEvent: rawEvent ?? this.rawEvent,
       players: players ?? this.players,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage == null ? this.errorMessage : (errorMessage.isEmpty ? null : errorMessage),
@@ -63,12 +68,21 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
     final service = ref.read(eventDetailServiceProvider);
     final activeTeam = ref.watch(selectedTeamProvider);
     final homeState = ref.watch(homeProvider);
+    final scheduleState = ref.watch(scheduleProvider);
 
     ClubEvent? foundEvent;
     for (final e in homeState.events) {
       if (e.id == eventId) {
         foundEvent = e;
         break;
+      }
+    }
+    if (foundEvent == null) {
+      for (final e in scheduleState.events) {
+        if (e.id == eventId) {
+          foundEvent = e;
+          break;
+        }
       }
     }
 
@@ -114,6 +128,7 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
 
     return EventDetailState(
       event:   eventDetail,
+      rawEvent: foundEvent,
       players: activeTeam != null ? [] : service.getEventPlayers(eventId),
       isLoading: activeTeam != null,
       canUpdateAllPlayers: true,
@@ -219,6 +234,57 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
 
   void setRsvp(String rsvp) {
     state = state.copyWith(event: state.event.copyWith(myRsvp: rsvp));
+  }
+
+  /// Asynchronously saves RSVP status on the server and refreshes availability + home/schedule lists.
+  Future<({bool success, String message})> saveEventRsvp({
+    required ClubEventRsvpTarget target,
+    required String rsvp, // 'going', 'maybe', 'no'
+  }) async {
+    final activeTeam = ref.read(selectedTeamProvider);
+    if (activeTeam == null) {
+      return (success: false, message: 'No selected team found');
+    }
+
+    final eventDbId = _teamEventId ?? int.tryParse(eventId) ?? 0;
+
+    int attendanceValue = 0;
+    if (rsvp == 'going') attendanceValue = 1;
+    if (rsvp == 'maybe') attendanceValue = 2;
+    if (rsvp == 'no') attendanceValue = 0;
+
+    try {
+      final service = ref.read(eventDetailServiceProvider);
+      final response = await service.saveEventAttendee(
+        EventAttendeeSaveRequest(
+          teamUuid: activeTeam.uuid,
+          teamEventId: eventDbId,
+          attendeeType: target.attendeeType,
+          customerId: target.customerId.toString(),
+          playerId: target.playerId ?? 0,
+          notes: target.notes,
+          attendance: attendanceValue,
+        ),
+      );
+
+      if (response.success) {
+        // Update local state
+        setRsvp(rsvp);
+
+        // Refresh the availability list
+        await refresh();
+
+        // Also refresh home and schedule lists silently
+        ref.read(homeProvider.notifier).refresh();
+        ref.read(scheduleProvider.notifier).refresh();
+
+        return (success: true, message: response.message.isNotEmpty ? response.message : 'RSVP updated successfully.');
+      } else {
+        return (success: false, message: response.message.isNotEmpty ? response.message : 'Failed to update RSVP.');
+      }
+    } catch (e) {
+      return (success: false, message: e.toString());
+    }
   }
 
   /// Asynchronously saves a player's RSVP status via the event-attendee save API

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/config/environment_config.dart';
@@ -26,8 +28,13 @@ import '../../../core/models/club_event.dart';
 
 class EventEditPage extends ConsumerStatefulWidget {
   final String eventId;
+  final bool duplicate;
 
-  const EventEditPage({super.key, required this.eventId});
+  const EventEditPage({
+    super.key,
+    required this.eventId,
+    this.duplicate = false,
+  });
 
   @override
   ConsumerState<EventEditPage> createState() => _EventEditPageState();
@@ -40,6 +47,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
   bool _trackAvail = true;
   bool _hasPrepopulatedTimezone = false;
   bool _isScheduledGame = false;
+  bool _isCancelled = false;
 
   // Controllers
   final _eventNameController       = TextEditingController(text: '');
@@ -51,7 +59,6 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
   
   final _timezoneSearchController  = TextEditingController();
   final _timezoneScrollController  = ScrollController();
-  String _timezoneSearchQuery      = '';
 
   // Advanced state pickers
   DateTime _selectedDateTime       = DateTime.now();
@@ -97,35 +104,39 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
       }
 
       if (foundEvent != null) {
+        final event = foundEvent;
         debugPrint('═══ [EventEdit] Auto-fill Event Details ═══');
-        debugPrint('title: ${foundEvent.title}');
-        debugPrint('location: ${foundEvent.location}');
-        debugPrint('locationDetails: ${foundEvent.locationDetails}');
-        debugPrint('opponent: ${foundEvent.opponent}');
-        debugPrint('extraLabel/subtitle: ${foundEvent.subtitle}');
-        debugPrint('notes: ${foundEvent.notes}');
-        debugPrint('flagColor: ${foundEvent.flagColor}');
+        debugPrint('title: ${event.title}');
+        debugPrint('location: ${event.location}');
+        debugPrint('locationDetails: ${event.locationDetails}');
+        debugPrint('opponent: ${event.opponent}');
+        debugPrint('extraLabel/subtitle: ${event.subtitle}');
+        debugPrint('notes: ${event.notes}');
+        debugPrint('flagColor: ${event.flagColor}');
         debugPrint('============================================');
 
         setState(() {
-          _dbId = foundEvent!.dbId;
-          _isScheduledGame = foundEvent.scheduleGameId != null;
-          _eventNameController.text = foundEvent.title;
-          _timeTbd = foundEvent.timeTbd;
-          _selectedDateTime = foundEvent.dateTime;
-          _durationMinutes = foundEvent.duration.inMinutes;
-          _locationName = foundEvent.location;
-          _locationDetailsController.text = foundEvent.locationDetails ?? '';
-          _trackAvail = foundEvent.rsvpRequired;
-          _opponentController.text = foundEvent.opponent ?? '';
-          _extraLabelController.text = foundEvent.subtitle;
-          _notesController.text = foundEvent.notes ?? '';
-          _notifyTeam = foundEvent.notificationEnabled;
-          _arrivalEarlyMinutes = foundEvent.arrivalEarly;
-          _uniformColorController.text = foundEvent.uniformColor ?? '';
+          _dbId = widget.duplicate ? null : event.dbId;
+          _isScheduledGame = widget.duplicate ? false : (event.scheduleGameId != null);
+          _eventNameController.text = event.title;
+          _timeTbd = event.timeTbd;
+          _selectedDateTime = event.dateTime;
+          _durationMinutes = event.duration.inMinutes;
+          _locationName = event.location;
+          _latitude = event.latitude ?? '';
+          _longitude = event.longitude ?? '';
+          _locationDetailsController.text = event.locationDetails ?? '';
+          _trackAvail = event.rsvpRequired;
+          _opponentController.text = event.opponent ?? '';
+          _extraLabelController.text = event.subtitle;
+          _notesController.text = event.notes ?? '';
+          _notifyTeam = event.notificationEnabled;
+          _arrivalEarlyMinutes = event.arrivalEarly;
+          _uniformColorController.text = event.uniformColor ?? '';
+          _isCancelled = widget.duplicate ? false : (event.status == 2);
 
           // Map flag color robustly
-          final parsedFlagColor = foundEvent.flagColor;
+          final parsedFlagColor = event.flagColor;
           if (parsedFlagColor != null && parsedFlagColor.isNotEmpty) {
             if (parsedFlagColor.startsWith('#')) {
               _flagColor = parsedFlagColor;
@@ -180,36 +191,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
     return hex.toUpperCase();
   }
 
-  Color _stringToColor(String colorName) {
-    switch (colorName.toLowerCase().trim()) {
-      case 'white':
-        return Colors.white;
-      case 'black':
-        return Colors.black;
-      case 'red':
-        return Colors.red;
-      case 'blue':
-        return Colors.blue;
-      case 'green':
-        return Colors.green;
-      case 'yellow':
-        return Colors.yellow;
-      case 'orange':
-        return Colors.orange;
-      case 'purple':
-        return Colors.purple;
-      case 'grey':
-      case 'gray':
-        return Colors.grey;
-      case 'navy':
-        return const Color(0xFF000080);
-      default:
-        if (colorName.startsWith('#')) {
-          return _hexToColor(colorName);
-        }
-        return Colors.transparent;
-    }
-  }
+
 
   String _formatDateTime(DateTime dt) {
     final month = dt.month.toString().padLeft(2, '0');
@@ -895,207 +877,6 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
     );
   }
 
-  final List<String> _uniformOptions = const [
-    'White',
-    'Black',
-    'Red',
-    'Blue',
-    'Green',
-    'Yellow',
-    'Orange',
-    'Purple',
-    'Grey',
-    'Navy',
-  ];
-
-  void _showUniformPicker() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.current.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        final colors = AppColors.current;
-        final controller = TextEditingController(text: _uniformColorController.text);
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Select Uniform Color',
-                          style: AppTextStyles.heading18.copyWith(color: colors.textPrimary),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.close, color: colors.textSecondary),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: colors.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: colors.border.withValues(alpha: 0.5)),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined, color: colors.textSecondary, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextField(
-                              controller: controller,
-                              style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
-                              decoration: InputDecoration(
-                                hintText: 'Enter custom uniform color...',
-                                hintStyle: AppTextStyles.body16.copyWith(color: colors.gray300),
-                                border: InputBorder.none,
-                                isDense: true,
-                              ),
-                              onChanged: (val) {
-                                setModalState(() {});
-                              },
-                            ),
-                          ),
-                          if (controller.text.isNotEmpty)
-                            IconButton(
-                              icon: Icon(Icons.clear, color: colors.textSecondary, size: 16),
-                              onPressed: () {
-                                controller.clear();
-                                setModalState(() {});
-                              },
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Quick Presets',
-                      style: AppTextStyles.heading14.copyWith(color: colors.textSecondary),
-                    ),
-                    const SizedBox(height: 12),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 5,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.75,
-                      ),
-                      itemCount: _uniformOptions.length,
-                      itemBuilder: (context, index) {
-                        final option = _uniformOptions[index];
-                        final isSelected = controller.text.toLowerCase() == option.toLowerCase();
-                        final optionColor = _stringToColor(option);
-
-                        return GestureDetector(
-                          onTap: () {
-                            controller.text = option;
-                            setState(() {
-                              _uniformColorController.text = option;
-                            });
-                            setModalState(() {});
-                          },
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: optionColor,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isSelected 
-                                        ? colors.primary 
-                                        : (option.toLowerCase() == 'white' 
-                                            ? Colors.grey.shade300 
-                                            : colors.border.withValues(alpha: 0.3)),
-                                    width: isSelected ? 2.5 : 1.0,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.05),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: isSelected
-                                    ? Icon(
-                                        Icons.check, 
-                                        color: option.toLowerCase() == 'white' ? Colors.black : Colors.white, 
-                                        size: 18,
-                                      )
-                                    : null,
-                              ),
-                              const SizedBox(height: 6),
-                              Expanded(
-                                child: Text(
-                                  option,
-                                  style: AppTextStyles.label12.copyWith(
-                                    color: isSelected ? colors.primary : colors.textSecondary,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colors.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _uniformColorController.text = controller.text.trim();
-                          });
-                          Navigator.pop(context);
-                        },
-                        child: Text(
-                          'Confirm Uniform Color',
-                          style: AppTextStyles.heading15.copyWith(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   // ─── Google Places Autocomplete dropdown search modal ───────────────────────
 
   void _showLocationPicker() {
@@ -1359,6 +1140,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
       opponent: _opponentController.text.trim(),
       extraLabel: _extraLabelController.text.trim(),
       notes: _notesController.text.trim(),
+      status: _isCancelled ? 2 : 1,
       notificationEnabled: _notifyTeam,
     );
 
@@ -1378,7 +1160,12 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
           ref.read(scheduleProvider.notifier).fetchEvents(activeTeam.uuid);
         }
 
-        Navigator.maybePop(context);
+        final isEdit = widget.eventId != 'new' && !widget.duplicate;
+        if (isEdit) {
+          context.go(AppRoutes.home);
+        } else {
+          Navigator.maybePop(context);
+        }
       }
     } else {
       if (mounted) {
@@ -1766,10 +1553,11 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
     final timezoneState = ref.watch(eventEditProvider);
     final notifier = ref.read(eventEditProvider.notifier);
     final colors = AppColors.current;
-    final isEdit = widget.eventId != 'new';
+    final isEdit = widget.eventId != 'new' && !widget.duplicate;
 
     // Pre-select matching timezone for existing event
-    if (isEdit && !_hasPrepopulatedTimezone && timezoneState.timezones.isNotEmpty) {
+    final hasExistingEvent = widget.eventId != 'new';
+    if (hasExistingEvent && !_hasPrepopulatedTimezone && timezoneState.timezones.isNotEmpty) {
       final homeState = ref.read(homeProvider);
       ClubEvent? foundEvent;
       for (final e in homeState.events) {
@@ -1945,50 +1733,11 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
                             ),
                           ),
                         ),
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border(bottom: BorderSide(color: colors.border.withValues(alpha: 0.5))),
-                          ),
-                          child: InkWell(
-                            onTap: () => _showUniformPicker(),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'Uniform Color',
-                                      style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
-                                    ),
-                                  ),
-                                  if (_uniformColorController.text.isNotEmpty &&
-                                      _stringToColor(_uniformColorController.text) != Colors.transparent) ...[
-                                    Container(
-                                      width: 18,
-                                      height: 18,
-                                      decoration: BoxDecoration(
-                                        color: _stringToColor(_uniformColorController.text),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: _stringToColor(_uniformColorController.text) == Colors.white 
-                                              ? Colors.grey.shade300 
-                                              : colors.border.withValues(alpha: 0.5),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                  ],
-                                  Text(
-                                    _uniformColorController.text.isNotEmpty ? _uniformColorController.text : 'None',
-                                    style: AppTextStyles.body16.copyWith(color: colors.textSecondary),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(Icons.chevron_right, size: 20, color: colors.textSecondary),
-                                ],
-                              ),
-                            ),
-                          ),
+                        EventEditInlineField(
+                          label:        'Uniform Color',
+                          controller:   _uniformColorController,
+                          placeholder:  'e.g. Blue, White / Green',
+                          borderBottom: true,
                         ),
                         EventEditInlineField(
                           label:        'Opponent',
@@ -2023,13 +1772,14 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
                         ),
                       ],
                     ),
-                    if (isEdit) ...[
-                      const SizedBox(height: 20),
-                      // ── Danger Zone ──────────────────────────────────────────────
-                      EventEditDangerCard(
-                        onDelete:          () => _onDelete(timezoneState, notifier),
-                      ),
-                    ],
+                    const SizedBox(height: 20),
+                    // ── Danger Zone / Cancel Event ──────────────────────────────
+                    EventEditDangerCard(
+                      isEdit: isEdit,
+                      isCancelled: _isCancelled,
+                      onCancelledChanged: (v) => setState(() => _isCancelled = v),
+                      onDelete: () => _onDelete(timezoneState, notifier),
+                    ),
                   ],
                 ),
               ),
