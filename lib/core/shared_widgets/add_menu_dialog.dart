@@ -11,6 +11,10 @@ import '../../app/theme/app_text_styles.dart';
 import '../models/team_model.dart';
 import '../../features/roster/providers/roster_provider.dart';
 import '../../features/roster/models/player_positions_models.dart';
+import '../../features/messages/models/chat_member.dart';
+import '../../features/messages/providers/chat_state_provider.dart';
+import '../../features/messages/pages/talkjs_chat_page.dart';
+import '../common_providers/selected_team_provider.dart';
 
 // ─── AddMenuViewModel (MVVM) ──────────────────────────────────────────────────
 class AddMenuViewModel {
@@ -18,10 +22,10 @@ class AddMenuViewModel {
 
   const AddMenuViewModel(this.activeTeam);
 
-  /// If is_coach is true then show player, chat option only (hide event).
-  /// Else show event, player, and chat.
-  bool get showEvent => activeTeam == null ? true : !activeTeam!.isCoach;
-  bool get showPlayer => true;
+  /// If is_coach is true then show event, player, and chat.
+  /// Else show player, chat option only (hide event).
+  bool get showEvent => activeTeam == null ? true : activeTeam!.isCoach;
+  bool get showPlayer => activeTeam == null ? true : activeTeam!.isCoach;
   bool get showChat => true;
 }
 
@@ -385,6 +389,17 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
 
   Future<void> _savePlayer() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_pickedImageBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Profile image is required'),
+          backgroundColor: AppColors.current.error,
+        ),
+      );
+      return;
+    }
+
     if (_selectedPosition == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -847,17 +862,28 @@ void _showNewChatModal(BuildContext context) {
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => _NewChatModal(),
+    builder: (context) => const _NewChatModal(),
   );
 }
 
-class _NewChatModal extends StatefulWidget {
+class _NewChatModal extends ConsumerStatefulWidget {
+  const _NewChatModal({super.key});
+
   @override
-  _NewChatModalState createState() => _NewChatModalState();
+  ConsumerState<_NewChatModal> createState() => _NewChatModalState();
 }
 
-class _NewChatModalState extends State<_NewChatModal> {
+class _NewChatModalState extends ConsumerState<_NewChatModal> {
   String type = 'select';
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -885,7 +911,10 @@ class _NewChatModalState extends State<_NewChatModal> {
                   child: GestureDetector(
                     onTap: () {
                       if (type != 'select') {
-                        setState(() => type = 'select');
+                        setState(() {
+                          type = 'select';
+                          _searchController.clear();
+                        });
                       } else {
                         Navigator.pop(context);
                       }
@@ -900,7 +929,7 @@ class _NewChatModalState extends State<_NewChatModal> {
                     style: AppTextStyles.heading16.copyWith(color: colors.textPrimary),
                   ),
                 ),
-                if (type != 'select') Align(
+                if (type == 'channel') Align(
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
                     onTap: () {
@@ -973,33 +1002,212 @@ class _NewChatModalState extends State<_NewChatModal> {
                     ],
                   ),
                 ),
-                if (type == 'dm') Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: colors.border),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('SELECT USER', style: AppTextStyles.label11.copyWith(color: colors.textSecondary, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: colors.card,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        alignment: Alignment.centerLeft,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('Select a team member...', style: AppTextStyles.body15.copyWith(color: colors.textSecondary)),
+                if (type == 'dm') ...[
+                  Container(
+                    decoration: BoxDecoration(
+                      color: colors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: colors.border),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      focusNode: _searchFocusNode,
+                      onChanged: (val) {
+                        setState(() {});
+                      },
+                      style: AppTextStyles.body15.copyWith(color: colors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Search users...',
+                        hintStyle: AppTextStyles.body15.copyWith(color: colors.textSecondary.withValues(alpha: 0.5)),
+                        prefixIcon: Icon(Icons.search, color: colors.textSecondary, size: 18),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? InkWell(
+                                onTap: () {
+                                  _searchController.clear();
+                                  setState(() {});
+                                },
+                                child: Icon(
+                                  Icons.clear,
+                                  color: colors.textSecondary,
+                                  size: 18,
+                                ),
+                              )
+                            : null,
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  _buildMemberList(colors),
+                ],
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMemberList(AppColors colors) {
+    final selectedTeam = ref.watch(selectedTeamProvider);
+    if (selectedTeam == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'No active team selected',
+            style: AppTextStyles.body14.copyWith(color: colors.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    final query = _searchController.text.trim();
+    final isSearchingRemote = query.length >= 3;
+
+    final membersAsync = ref.watch(chatMembersProvider(selectedTeam.uuid));
+    final searchAsync = isSearchingRemote
+        ? ref.watch(chatSearchDmsProvider((teamUuid: selectedTeam.uuid, query: query)))
+        : null;
+
+    if (isSearchingRemote && searchAsync != null) {
+      return searchAsync.when(
+        data: (searchResults) => _buildMembersListView(searchResults, colors),
+        loading: () => _buildLoader(colors),
+        error: (err, _) => _buildError(colors, () => ref.refresh(chatSearchDmsProvider((teamUuid: selectedTeam.uuid, query: query)))),
+      );
+    } else {
+      return membersAsync.when(
+        data: (members) {
+          final filtered = members.where((m) {
+            return query.isEmpty || m.name.toLowerCase().contains(query.toLowerCase());
+          }).toList();
+          return _buildMembersListView(filtered, colors);
+        },
+        loading: () => _buildLoader(colors),
+        error: (err, _) => _buildError(colors, () => ref.refresh(chatMembersProvider(selectedTeam.uuid))),
+      );
+    }
+  }
+
+  Widget _buildMembersListView(List<ChatMember> members, AppColors colors) {
+    if (members.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'No team members found.',
+            style: AppTextStyles.body14.copyWith(color: colors.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border),
+      ),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const ClampingScrollPhysics(),
+        padding: EdgeInsets.zero,
+        itemCount: members.length,
+        separatorBuilder: (context, index) => Divider(height: 1, color: colors.border),
+        itemBuilder: (context, index) {
+          final member = members[index];
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundColor: colors.primary.withValues(alpha: 0.1),
+              radius: 18,
+              child: Text(
+                _getInitials(member.name),
+                style: AppTextStyles.body14.copyWith(
+                  color: colors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            title: Text(
+              member.name,
+              style: AppTextStyles.body16.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            onTap: () async {
+              Navigator.pop(context); // Close bottom sheet
+              
+              await context.push(
+                '${AppRoutes.messages}/${AppRoutes.messagesChatDetail}',
+                extra: TalkJSChatArgs(
+                  conversationId: member.uuid,
+                  topic: member.name,
+                  isGroup: false,
+                  otherUserId: member.uuid,
+                  otherUserName: member.name,
+                  otherUserEmail: member.email,
+                ),
+              );
+
+              final activeTeam = ref.read(selectedTeamProvider);
+              if (activeTeam != null) {
+                ref.invalidate(chatChannelsProvider(activeTeam.uuid));
+                ref.invalidate(chatMembersProvider(activeTeam.uuid));
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  String _getInitials(String name) {
+    if (name.isEmpty) return '';
+    final parts = name.split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name[0].toUpperCase();
+  }
+
+  Widget _buildLoader(AppColors colors) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            color: colors.primary,
+            strokeWidth: 2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildError(AppColors colors, VoidCallback onRetry) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, color: colors.error, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            'Failed to load members.',
+            style: AppTextStyles.body14.copyWith(color: colors.error),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.refresh, size: 16),
+            onPressed: onRetry,
+            color: colors.primary,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
         ],
       ),

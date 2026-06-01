@@ -250,6 +250,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               permission: channel.permission,
               leftAt: channel.leftAt,
               memberCount: channel.memberCount,
+              canEdit: channel.canEdit,
             ),
           );
           final activeTeam = ref.read(selectedTeamProvider);

@@ -15,6 +15,56 @@ class PlayerRow extends StatelessWidget {
     this.onStatusTap,
   });
 
+  bool _doesTextOverflow(String text, TextStyle style, double maxWidth) {
+    final textPainter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 2,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: maxWidth);
+    return textPainter.didExceedMaxLines;
+  }
+
+  void _showFullNotePopup(BuildContext context, String playerName, String note) {
+    final colors = AppColors.current;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: colors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colors.border),
+          ),
+          title: Text(
+            "$playerName's Note",
+            style: AppTextStyles.heading16.copyWith(color: colors.textPrimary),
+          ),
+          content: SingleChildScrollView(
+            child: Text(
+              note,
+              style: AppTextStyles.body14.copyWith(
+                color: colors.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Close',
+                style: TextStyle(
+                  color: colors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.current;
@@ -58,14 +108,41 @@ class PlayerRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 if (player.hasNote) ...[
-                  Text(
-                    player.note,
-                    style: AppTextStyles.body13.copyWith(
-                      color: colors.textSecondary,
-                      fontStyle: FontStyle.italic,
-                    ),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final style = AppTextStyles.body13.copyWith(
+                        color: colors.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      );
+                      final exceeds = _doesTextOverflow(player.note, style, constraints.maxWidth);
+
+                      final noteTextWidget = Text(
+                        player.note,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: style,
+                      );
+
+                      final content = Opacity(
+                        opacity: player.canUpdate ? 1.0 : 0.5,
+                        child: exceeds
+                            ? GestureDetector(
+                                onTap: () => _showFullNotePopup(context, player.name, player.note),
+                                child: MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: noteTextWidget,
+                                ),
+                              )
+                            : noteTextWidget,
+                      );
+
+                      return Tooltip(
+                        message: player.note,
+                        child: content,
+                      );
+                    },
                   ),
-                  if (onNoteTap != null) ...[
+                  if (player.canUpdate && onNoteTap != null) ...[
                     const SizedBox(height: 2),
                     GestureDetector(
                       onTap: onNoteTap,
@@ -77,7 +154,7 @@ class PlayerRow extends StatelessWidget {
                       ),
                     ),
                   ],
-                ] else if (onNoteTap != null)
+                ] else if (player.canUpdate && onNoteTap != null)
                   GestureDetector(
                     onTap: onNoteTap,
                     child: Text(
@@ -95,10 +172,13 @@ class PlayerRow extends StatelessWidget {
           const SizedBox(width: 16),
 
           // ── Status badge ──────────────────────────────────────────────────
-          GestureDetector(
-            onTap: onStatusTap,
-            child: _StatusBadge(status: player.status),
-          ),
+          if (player.canUpdate && onStatusTap != null)
+            GestureDetector(
+              onTap: onStatusTap,
+              child: _StatusBadge(status: player.status, isDisabled: false),
+            )
+          else
+            _StatusBadge(status: player.status, isDisabled: true),
         ],
       ),
     );
@@ -152,8 +232,9 @@ class _Avatar extends StatelessWidget {
 
 class _StatusBadge extends StatelessWidget {
   final PlayerStatus status;
+  final bool isDisabled;
 
-  const _StatusBadge({required this.status});
+  const _StatusBadge({required this.status, this.isDisabled = false});
 
   @override
   Widget build(BuildContext context) {
@@ -179,21 +260,24 @@ class _StatusBadge extends StatelessWidget {
         icon = Icons.help_outline;
     }
 
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-        border: status == PlayerStatus.none
-            ? Border.all(
-                color: colors.border,
-                width: 1,
-                style: BorderStyle.solid,
-              )
-            : null,
+    return Opacity(
+      opacity: isDisabled ? 0.4 : 1.0,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(8),
+          border: status == PlayerStatus.none
+              ? Border.all(
+                  color: colors.border,
+                  width: 1,
+                  style: BorderStyle.solid,
+                )
+              : null,
+        ),
+        child: Icon(icon, size: 18, color: iconColor),
       ),
-      child: Icon(icon, size: 18, color: iconColor),
     );
   }
 }

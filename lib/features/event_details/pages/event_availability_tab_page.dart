@@ -18,7 +18,7 @@ class EventAvailabilityTabPage extends ConsumerWidget {
     final colors   = AppColors.current;
 
     void showNote(EventPlayerModel p) {
-      final canEditNote = state.canUpdateAllPlayers && p.canUpdate;
+      final canEditNote = p.canUpdate;
       if (!canEditNote) return;
 
       showTextInputDialog(
@@ -127,31 +127,27 @@ class EventAvailabilityTabPage extends ConsumerWidget {
           padding: EdgeInsets.zero,
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            PlayerGroup(
+             PlayerGroup(
               title:       'GOING',
               players:     state.goingPlayers,
-              canUpdateAllPlayers: state.canUpdateAllPlayers,
               onNoteTap:   showNote,
               onStatusTap: showStatusPicker,
             ),
             PlayerGroup(
               title:       'MAYBE',
               players:     state.maybePlayers,
-              canUpdateAllPlayers: state.canUpdateAllPlayers,
               onNoteTap:   showNote,
               onStatusTap: showStatusPicker,
             ),
             PlayerGroup(
               title:       'NOT GOING',
               players:     state.noPlayers,
-              canUpdateAllPlayers: state.canUpdateAllPlayers,
               onNoteTap:   showNote,
               onStatusTap: showStatusPicker,
             ),
             PlayerGroup(
               title:          "HAVEN'T REPLIED",
               players:        state.unrepliedPlayers,
-              canUpdateAllPlayers: state.canUpdateAllPlayers,
               showMessageAll: false,
               onNoteTap:      showNote,
               onStatusTap:    showStatusPicker,

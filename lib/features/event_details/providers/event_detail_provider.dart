@@ -20,7 +20,6 @@ class EventDetailState {
   final List<EventPlayerModel> players;
   final bool isLoading;
   final String? errorMessage;
-  final bool canUpdateAllPlayers;
 
   const EventDetailState({
     required this.event,
@@ -28,7 +27,6 @@ class EventDetailState {
     required this.players,
     this.isLoading = false,
     this.errorMessage,
-    this.canUpdateAllPlayers = false,
   });
 
   EventDetailState copyWith({
@@ -37,7 +35,6 @@ class EventDetailState {
     List<EventPlayerModel>? players,
     bool? isLoading,
     String? errorMessage,
-    bool? canUpdateAllPlayers,
   }) {
     return EventDetailState(
       event:   event   ?? this.event,
@@ -45,7 +42,6 @@ class EventDetailState {
       players: players ?? this.players,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage == null ? this.errorMessage : (errorMessage.isEmpty ? null : errorMessage),
-      canUpdateAllPlayers: canUpdateAllPlayers ?? this.canUpdateAllPlayers,
     );
   }
 
@@ -131,7 +127,6 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
       rawEvent: foundEvent,
       players: activeTeam != null ? [] : service.getEventPlayers(eventId),
       isLoading: activeTeam != null,
-      canUpdateAllPlayers: true,
     );
   }
 
@@ -191,7 +186,6 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
         }
         state = state.copyWith(
           players: mappedPlayers,
-          canUpdateAllPlayers: response.data!.canUpdateAllPlayers,
           isLoading: false,
         );
       } else {

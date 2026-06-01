@@ -106,7 +106,11 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
       final request = SaveChannelRequest(
         teamUuid: selectedTeam.uuid,
         chatChannelId: widget.channel.chatChannelId,
-        name: _nameController.text.trim(),
+        // Only send the edited name if the user has permission; otherwise
+        // fall back to the original channel name so it remains unchanged.
+        name: widget.channel.canEdit
+            ? _nameController.text.trim()
+            : widget.channel.name,
         users: usersPayload,
       );
 
@@ -298,6 +302,15 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
                               _buildSectionHeader('CHANNEL DETAILS'),
                               const SizedBox(height: 12),
                               _buildNameInputField(),
+                              if (!widget.channel.canEdit) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  'You do not have permission to edit this channel\'s name.',
+                                  style: AppTextStyles.body13.copyWith(
+                                    color: AppColors.current.textSecondary,
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 24),
                               _buildSectionHeader('CHANNEL PARTICIPANTS (${_selectedMembers.length})'),
                               const SizedBox(height: 12),
@@ -411,7 +424,12 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
       ),
       child: TextFormField(
         controller: _nameController,
-        style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary),
+        enabled: widget.channel.canEdit,
+        style: AppTextStyles.body16.copyWith(
+          color: widget.channel.canEdit
+              ? AppColors.current.textPrimary
+              : AppColors.current.textSecondary,
+        ),
         onChanged: (_) => setState(() {}),
         inputFormatters: [
           TextInputFormatter.withFunction((oldValue, newValue) {

@@ -11,7 +11,6 @@ class PlayerGroup extends StatelessWidget {
   final VoidCallback? onMessageAll;
   final void Function(EventPlayerModel)? onNoteTap;
   final void Function(EventPlayerModel)? onStatusTap;
-  final bool canUpdateAllPlayers;
 
   const PlayerGroup({
     super.key,
@@ -21,7 +20,6 @@ class PlayerGroup extends StatelessWidget {
     this.onMessageAll,
     this.onNoteTap,
     this.onStatusTap,
-    this.canUpdateAllPlayers = false,
   });
 
   @override
@@ -82,19 +80,15 @@ class PlayerGroup extends StatelessWidget {
           ),
         ),
 
-        // ── Player rows ─────────────────────────────────────────────────────
         Container(
           color: colors.background,
           child: Column(
             children: players
-                .map((p) {
-                  final canEditNote = canUpdateAllPlayers && p.canUpdate;
-                  return PlayerRow(
-                    player: p,
-                    onNoteTap: (onNoteTap != null && canEditNote) ? () => onNoteTap!(p) : null,
-                    onStatusTap: onStatusTap != null ? () => onStatusTap!(p) : null,
-                  );
-                })
+                .map((p) => PlayerRow(
+                      player: p,
+                      onNoteTap: onNoteTap != null ? () => onNoteTap!(p) : null,
+                      onStatusTap: onStatusTap != null ? () => onStatusTap!(p) : null,
+                    ))
                 .toList(),
           ),
         ),

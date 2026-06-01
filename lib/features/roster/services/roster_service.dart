@@ -320,12 +320,16 @@ class RosterService {
   /// Fetches player event attendance history from the API.
   Future<PlayerAttendanceHistoryResponse> fetchPlayerAttendanceHistory(
     String teamUuid,
-    String playerUuid,
-  ) async {
+    String playerUuid, {
+    int? page,
+    int? limit,
+  }) async {
     const endpoint = ApiEndpoints.playerAttendanceHistory;
     final requestBody = {
       'team_uuid': teamUuid,
       'player_uuid': playerUuid,
+      if (page != null) 'page': page,
+      if (limit != null) 'limit': limit,
     };
 
     // Print Request JSON in logs

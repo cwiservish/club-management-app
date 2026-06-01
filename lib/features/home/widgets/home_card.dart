@@ -137,6 +137,7 @@ class HomeCard extends ConsumerWidget {
               MapSection(
                 latitude:  viewModel.latitude,
                 longitude: viewModel.longitude,
+                location:  viewModel.location,
               ),
             ],
           ),

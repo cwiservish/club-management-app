@@ -69,19 +69,16 @@ class EventAvailabilityResponse {
 
 class EventAvailabilityData {
   final AvailabilityEventDetail? event;
-  final bool canUpdateAllPlayers;
   final List<AvailabilityGroup> groups;
 
   const EventAvailabilityData({
     this.event,
-    required this.canUpdateAllPlayers,
     required this.groups,
   });
 
   factory EventAvailabilityData.fromJson(Map<String, dynamic>? json) {
     if (json == null) {
       return const EventAvailabilityData(
-        canUpdateAllPlayers: false,
         groups: [],
       );
     }
@@ -96,7 +93,6 @@ class EventAvailabilityData {
 
     return EventAvailabilityData(
       event: json['event'] != null ? AvailabilityEventDetail.fromJson(json['event'] as Map<String, dynamic>?) : null,
-      canUpdateAllPlayers: _parseBool(json['can_update_all_players']),
       groups: parsedGroups,
     );
   }

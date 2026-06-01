@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/common_providers/selected_team_provider.dart';
 import '../../../core/common_providers/theme_provider.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
@@ -27,6 +28,8 @@ class EventDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeModeProvider);
+    final activeTeam = ref.watch(selectedTeamProvider);
+    final isCoach = activeTeam?.isCoach ?? false;
 
     return Scaffold(
       backgroundColor: AppColors.current.card,
@@ -36,8 +39,8 @@ class EventDetailPage extends ConsumerWidget {
             const AppHeader(),
             SubHeader(
               title:      'Event Details',
-              rightText:  'Edit',
-              onRightTap: () => context.push(AppRoutes.eventEdit(eventId)),
+              rightText:  isCoach ? 'Edit' : null,
+              onRightTap: isCoach ? () => context.push(AppRoutes.eventEdit(eventId)) : null,
             ),
             EventDetailTabBar(eventId: eventId, activeTab: activeTab),
             Expanded(

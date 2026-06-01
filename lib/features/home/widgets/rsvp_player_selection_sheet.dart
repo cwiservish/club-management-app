@@ -77,10 +77,17 @@ class RsvpPlayerSelectionSheet extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  trailing: Icon(
-                    Icons.chevron_right,
-                    color: colors.textSecondary,
-                    size: 20,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _RsvpBox(attendance: target.attendance),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.chevron_right,
+                        color: colors.textSecondary,
+                        size: 20,
+                      ),
+                    ],
                   ),
                   onTap: () {
                     Navigator.pop(context);
@@ -92,6 +99,59 @@ class RsvpPlayerSelectionSheet extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RsvpBox extends StatelessWidget {
+  final dynamic attendance;
+  const _RsvpBox({required this.attendance});
+
+  @override
+  Widget build(BuildContext context) {
+    late final Color bg;
+    late final Widget child;
+    final colors = AppColors.current;
+
+    // Convert attendance to int representation safely
+    final val = attendance is int
+        ? attendance
+        : (attendance != null ? int.tryParse(attendance.toString()) : null);
+
+    if (val == 1) {
+      bg    = colors.rsvpGoing;
+      child = const Icon(Icons.check, color: Colors.white, size: 17);
+    } else if (val == 0) {
+      bg    = colors.rsvpNo;
+      child = const Icon(Icons.close, color: Colors.white, size: 17);
+    } else if (val == 2) {
+      bg    = colors.rsvpMaybe;
+      child = Text(
+        '?',
+        style: AppTextStyles.heading15.copyWith(
+          color: Colors.white,
+        ),
+      );
+    } else {
+      bg    = colors.rsvpNoResponse;
+      child = Text(
+        '?',
+        style: AppTextStyles.heading15.copyWith(
+          color: colors.textPrimary,
+        ),
+      );
+    }
+
+    return Container(
+      width: 31,
+      height: 31,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFF4E5663), width: 1),
+      ),
+      alignment: Alignment.center,
+      child: child,
     );
   }
 }

@@ -27,6 +27,7 @@ class TalkJSChatArgs {
   final DateTime? leftAt;
   final int? chatChannelId;
   final int? memberCount;
+  final bool canEdit;
 
   TalkJSChatArgs({
     required this.conversationId,
@@ -39,6 +40,7 @@ class TalkJSChatArgs {
     this.leftAt,
     this.chatChannelId,
     this.memberCount,
+    this.canEdit = true,
   });
 }
 
@@ -59,6 +61,33 @@ class TalkJSChatPage extends ConsumerWidget {
     final userAsync = ref.watch(currentUserProvider);
     final session = ref.watch(talkJsSessionProvider);
     final selectedTeam = ref.watch(selectedTeamProvider);
+    final channelsAsync = selectedTeam != null ? ref.watch(chatChannelsProvider(selectedTeam.uuid)) : null;
+    ChatChannel? activeChannel;
+    if (channelsAsync != null && channelsAsync.hasValue && args.chatChannelId != null) {
+      for (final c in channelsAsync.value!) {
+        if (c.chatChannelId == args.chatChannelId) {
+          activeChannel = c;
+          break;
+        }
+      }
+    }
+
+    String displayName = args.topic;
+    if (activeChannel != null && activeChannel!.channelType == 6 && activeChannel!.teamId != 0) {
+      final parts = <String>[];
+      if (activeChannel!.teamName != null && activeChannel!.teamName!.isNotEmpty) {
+        parts.add(activeChannel!.teamName!);
+      }
+      if (activeChannel!.teamDivision != null && activeChannel!.teamDivision!.isNotEmpty) {
+        parts.add(activeChannel!.teamDivision!);
+      }
+      if (activeChannel!.teamLevel != null && activeChannel!.teamLevel!.isNotEmpty) {
+        parts.add(activeChannel!.teamLevel!);
+      }
+      if (parts.isNotEmpty) {
+        displayName = parts.join(' ');
+      }
+    }
 
     final isThread = args.conversationId.startsWith('replyto_');
     final isChannelThread = isThread && args.chatChannelId != null;
@@ -77,7 +106,7 @@ class TalkJSChatPage extends ConsumerWidget {
         child: Column(
           children: [
             const AppHeader(),
-            _buildAppBar(context),
+            _buildAppBar(context, displayName),
             Expanded(
               child: session != null
                   ? (args.isGroup && args.permission == 'None'
@@ -86,7 +115,7 @@ class TalkJSChatPage extends ConsumerWidget {
                           ? _buildLoadingState()
                           : isChannelThread && membersAsync != null && membersAsync.hasError
                               ? _buildErrorState('Failed to load thread participants')
-                              : _buildChatBox(context, session, membersAsync)))
+                              : _buildChatBox(context, session, membersAsync, displayName)))
                   : tokenAsync.when(
                       data: (tokenResponse) {
                         return userAsync.when(
@@ -117,7 +146,7 @@ class TalkJSChatPage extends ConsumerWidget {
 
   // ─── App Bar ─────────────────────────────────────────────────────────────
 
-  Widget _buildAppBar(BuildContext context) {
+  Widget _buildAppBar(BuildContext context, String displayName) {
     final String subtitle;
     if (args.conversationId.startsWith('replyto_')) {
       subtitle = 'Thread';
@@ -169,7 +198,7 @@ class TalkJSChatPage extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        args.topic,
+                        displayName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
@@ -219,6 +248,7 @@ class TalkJSChatPage extends ConsumerWidget {
                               createdByType: 0,
                               unreadCount: 0,
                               permission: args.permission ?? 'ReadWrite',
+                              canEdit: args.canEdit,
                             ),
                           );
                         },
@@ -275,6 +305,7 @@ class TalkJSChatPage extends ConsumerWidget {
     BuildContext context,
     Session session,
     AsyncValue<List<ChatMember>>? membersAsync,
+    String displayName,
   ) {
     final me = session.me;
 
@@ -305,7 +336,7 @@ class TalkJSChatPage extends ConsumerWidget {
       conversation = session.getConversation(
         id: args.conversationId,
         participants: participants,
-        subject: args.topic,
+        subject: displayName,
       );
     } else if (args.isGroup) {
       final access = args.permission == 'Read'
@@ -315,7 +346,7 @@ class TalkJSChatPage extends ConsumerWidget {
       conversation = session.getConversation(
         id: 'channel_${args.conversationId}',
         participants: {Participant(me, access: access)},
-        subject: args.topic,
+        subject: displayName,
       );
     } else {
       final other = session.getUser(
@@ -326,7 +357,7 @@ class TalkJSChatPage extends ConsumerWidget {
       conversation = session.getConversation(
         id: Talk.oneOnOneId(me.id, other.id),
         participants: {Participant(me), Participant(other)},
-        subject: args.topic,
+        subject: displayName,
       );
     }
 

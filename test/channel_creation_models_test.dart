@@ -142,4 +142,60 @@ void main() {
       expect(response.message, '');
     });
   });
+
+  group('ChatChannel Model Tests', () {
+    test('ChatChannel parses can_edit = true from JSON', () {
+      final json = {
+        'chat_channel_id': 1,
+        'uuid': 'channel-1',
+        'name': 'general',
+        'unread_count': 0,
+        'permission': 'ReadWrite',
+        'can_edit': true,
+      };
+
+      final channel = ChatChannel.fromJson(json);
+      expect(channel.canEdit, true);
+    });
+
+    test('ChatChannel parses can_edit = false from JSON', () {
+      final json = {
+        'chat_channel_id': 1,
+        'uuid': 'channel-1',
+        'name': 'general',
+        'unread_count': 0,
+        'permission': 'Read',
+        'can_edit': false,
+      };
+
+      final channel = ChatChannel.fromJson(json);
+      expect(channel.canEdit, false);
+    });
+
+    test('ChatChannel defaults can_edit to true when missing', () {
+      final json = {
+        'chat_channel_id': 1,
+        'uuid': 'channel-1',
+        'name': 'general',
+        'unread_count': 0,
+        'permission': 'Read',
+      };
+
+      final channel = ChatChannel.fromJson(json);
+      expect(channel.canEdit, true);
+    });
+
+    test('ChatChannel parses chatChannelId from id when chat_channel_id is missing', () {
+      final json = {
+        'id': 42,
+        'uuid': 'channel-1',
+        'name': 'general',
+        'unread_count': 0,
+        'permission': 'Read',
+      };
+
+      final channel = ChatChannel.fromJson(json);
+      expect(channel.chatChannelId, 42);
+    });
+  });
 }

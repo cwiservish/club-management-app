@@ -23,6 +23,8 @@ class EventDetailsTabPage extends ConsumerWidget {
     final state = ref.watch(eventDetailProvider(eventId));
     final notifier = ref.read(eventDetailProvider(eventId).notifier);
     final colors = AppColors.current;
+    final activeTeam = ref.watch(selectedTeamProvider);
+    final isCoach = activeTeam?.isCoach ?? false;
 
     if (state.isLoading) {
       return ColoredBox(
@@ -108,28 +110,30 @@ class EventDetailsTabPage extends ConsumerWidget {
             LogisticsSection(
               event: state.event,
             ),
-            const SizedBox(height: 20),
-          // ── Duplicate Event button ─────────────────────────────────────
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: OutlinedButton.icon(
-              onPressed: () => context.push('${AppRoutes.eventEdit(eventId)}?duplicate=true'),
-              icon: Icon(Icons.copy_outlined, size: 18, color: colors.textSecondary),
-              label: Text(
-                'Duplicate Event',
-                style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: colors.border),
-                backgroundColor: colors.background,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            if (isCoach) ...[
+              const SizedBox(height: 20),
+              // ── Duplicate Event button ─────────────────────────────────────
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push('${AppRoutes.eventEdit(eventId)}?duplicate=true'),
+                  icon: Icon(Icons.copy_outlined, size: 18, color: colors.textSecondary),
+                  label: Text(
+                    'Duplicate Event',
+                    style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: colors.border),
+                    backgroundColor: colors.background,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(height: 40),
+            ],
+            const SizedBox(height: 40),
         ],
       ),
     ),

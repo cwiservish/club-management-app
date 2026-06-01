@@ -61,7 +61,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
   final _timezoneScrollController  = ScrollController();
 
   // Advanced state pickers
-  DateTime _selectedDateTime       = DateTime.now();
+  DateTime? _selectedDateTime;
   int _durationMinutes             = 60;
   int _arrivalEarlyMinutes         = 15;
   String _locationName             = '';
@@ -193,7 +193,8 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
 
 
 
-  String _formatDateTime(DateTime dt) {
+  String _formatDateTime(DateTime? dt) {
+    if (dt == null) return 'Select Date & Time';
     final month = dt.month.toString().padLeft(2, '0');
     final day = dt.day.toString().padLeft(2, '0');
     final year = dt.year.toString().substring(2);
@@ -230,7 +231,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
   Future<void> _pickDateTime(BuildContext context) async {
     final pickedDate = await showDatePicker(
       context: context,
-      initialDate: _selectedDateTime,
+      initialDate: _selectedDateTime ?? DateTime.now(),
       firstDate: DateTime(2025),
       lastDate: DateTime(2030),
       builder: (context, child) {
@@ -256,13 +257,13 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
   void _showCupertinoTimePicker(DateTime baseDate) {
     final colors = AppColors.current;
 
-    int selectedHour12 = _selectedDateTime.hour;
+    int selectedHour12 = baseDate.hour;
     final isPm = selectedHour12 >= 12;
     if (selectedHour12 > 12) selectedHour12 -= 12;
     if (selectedHour12 == 0) selectedHour12 = 12;
 
     int hourIndex = selectedHour12 - 1;
-    int minuteIndex = _selectedDateTime.minute;
+    int minuteIndex = baseDate.minute;
     int periodIndex = isPm ? 1 : 0;
 
     const double itemHeight = 44.0;
@@ -1112,6 +1113,16 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
       return;
     }
 
+    if (_selectedDateTime == null && !_timeTbd) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Event date is required'),
+          backgroundColor: AppColors.current.error,
+        ),
+      );
+      return;
+    }
+
     if (state.selectedTimezone == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1125,7 +1136,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
     final success = await notifier.saveEvent(
       id: widget.eventId != 'new' ? _dbId : null,
       eventName: eventName,
-      startTime: _formatApiDateTime(_selectedDateTime),
+      startTime: _formatApiDateTime(_selectedDateTime ?? DateTime.now()),
       timezone: state.selectedTimezone!.key,
       timeTbd: _timeTbd,
       duration: _durationMinutes,

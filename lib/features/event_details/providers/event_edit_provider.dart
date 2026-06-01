@@ -96,10 +96,16 @@ class EventEditNotifier extends Notifier<EventEditState> {
         TimezoneModel? initialSelection;
         if (response.timezones.isNotEmpty) {
           initialSelection = response.timezones.firstWhere(
-            (t) =>
-                t.label.toLowerCase().contains('central') ||
-                t.key.toLowerCase().contains('central'),
-            orElse: () => response.timezones.first,
+            (t) => t.key.toLowerCase().trim() == 'america/chicago',
+            orElse: () => response.timezones.firstWhere(
+              (t) => t.label.toLowerCase().trim() == 'america/chicago',
+              orElse: () => response.timezones.firstWhere(
+                (t) =>
+                    t.label.toLowerCase().contains('central') ||
+                    t.key.toLowerCase().contains('central'),
+                orElse: () => response.timezones.first,
+              ),
+            ),
           );
         }
         state = state.copyWith(

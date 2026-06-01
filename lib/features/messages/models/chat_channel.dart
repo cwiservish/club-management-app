@@ -20,6 +20,7 @@ class ChatChannel {
   final String? lastMessageText;
   final String permission;
   final int? memberCount;
+  final bool canEdit;
 
   ChatChannel({
     required this.chatChannelId,
@@ -43,11 +44,12 @@ class ChatChannel {
     this.lastMessageText,
     required this.permission,
     this.memberCount,
+    required this.canEdit,
   });
 
   factory ChatChannel.fromJson(Map<String, dynamic> json) {
     return ChatChannel(
-      chatChannelId: _parseInt(json['chat_channel_id']),
+      chatChannelId: _parseInt(json['chat_channel_id'] ?? json['id']),
       uuid: _parseString(json['uuid']),
       clientId: _parseInt(json['client_id']),
       name: _parseString(json['name']),
@@ -68,6 +70,7 @@ class ChatChannel {
       lastMessageText: _parseNullableString(json['last_message_text']),
       permission: _parseString(json['permission'], defaultValue: 'Read'),
       memberCount: json['member_count'] != null ? _parseInt(json['member_count']) : null,
+      canEdit: _parseBool(json['can_edit'], defaultValue: true),
     );
   }
 
@@ -93,6 +96,7 @@ class ChatChannel {
         'last_message_text': lastMessageText,
         'permission': permission,
         'member_count': memberCount,
+        'can_edit': canEdit,
       };
 
   static int _parseInt(dynamic val) {
@@ -117,5 +121,16 @@ class ChatChannel {
   static DateTime? _parseDateTime(dynamic val) {
     if (val == null) return null;
     return DateTime.tryParse(val.toString());
+  }
+
+  static bool _parseBool(dynamic val, {bool defaultValue = true}) {
+    if (val == null) return defaultValue;
+    if (val is bool) return val;
+    if (val is int) return val == 1;
+    if (val is String) {
+      final s = val.toLowerCase().trim();
+      return s == 'true' || s == '1' || s == 'yes';
+    }
+    return defaultValue;
   }
 }
