@@ -100,7 +100,7 @@ class EventDetailsTabPage extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 20),
         child: Column(
           children: [
-            EventHeaderCard(event: state.event),
+            EventHeaderCard(event: state.event, scheduleGameId: state.rawEvent?.scheduleGameId),
             const SizedBox(height: 16),
             // Use the same counts shown on the home list page for this event.
             // homeProvider.viewModels already applies the same attendance_counts

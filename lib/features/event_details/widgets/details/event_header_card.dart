@@ -5,14 +5,17 @@ import '../../models/event_detail_model.dart';
 
 class EventHeaderCard extends StatelessWidget {
   final EventDetailModel event;
+  final int? scheduleGameId;
 
-  const EventHeaderCard({super.key, required this.event});
+  const EventHeaderCard({super.key, required this.event, this.scheduleGameId});
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.current;
 
-    return Container(
+    return Stack(
+      children: [
+        Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -55,6 +58,47 @@ class EventHeaderCard extends StatelessWidget {
           ),
         ],
       ),
+        ),
+        if (scheduleGameId != null)
+          Positioned(
+            top: 12,
+            right: 14,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: Colors.green.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Event Game',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
