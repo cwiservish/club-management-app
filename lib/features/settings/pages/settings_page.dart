@@ -71,6 +71,7 @@ class SettingsScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 16),
                         Divider(
                           color: AppColors.current.border,
                           height: 1,

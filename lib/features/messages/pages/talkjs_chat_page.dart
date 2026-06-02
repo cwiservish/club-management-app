@@ -106,7 +106,11 @@ class TalkJSChatPage extends ConsumerWidget {
         child: Column(
           children: [
             const AppHeader(),
-            _buildAppBar(context, displayName),
+            _buildAppBar(
+              context,
+              displayName,
+              canEdit: activeChannel != null ? activeChannel.canEdit : args.canEdit,
+            ),
             Expanded(
               child: session != null
                   ? (args.isGroup && args.permission == 'None'
@@ -146,7 +150,7 @@ class TalkJSChatPage extends ConsumerWidget {
 
   // ─── App Bar ─────────────────────────────────────────────────────────────
 
-  Widget _buildAppBar(BuildContext context, String displayName) {
+  Widget _buildAppBar(BuildContext context, String displayName, {required bool canEdit}) {
     final String subtitle;
     if (args.conversationId.startsWith('replyto_')) {
       subtitle = 'Thread';
@@ -223,7 +227,7 @@ class TalkJSChatPage extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (args.isGroup && args.permission != 'None' && !args.conversationId.startsWith('replyto_'))
+                    if (args.isGroup && args.permission != 'None' && !args.conversationId.startsWith('replyto_') && canEdit)
                       IconButton(
                         icon: Icon(
                           Icons.settings_outlined,
@@ -248,7 +252,7 @@ class TalkJSChatPage extends ConsumerWidget {
                               createdByType: 0,
                               unreadCount: 0,
                               permission: args.permission ?? 'ReadWrite',
-                              canEdit: args.canEdit,
+                              canEdit: canEdit,
                             ),
                           );
                         },

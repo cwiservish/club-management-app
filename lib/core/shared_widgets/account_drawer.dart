@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../app/router/app_routes.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../common_providers/theme_provider.dart';
 import '../common_providers/current_user_provider.dart';
 import '../common_providers/selected_team_provider.dart';
+import '../models/team_model.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../constants/app_assets.dart';
 import 'custom_svg_icon.dart';
@@ -188,28 +188,183 @@ class _Content extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedTeam = ref.watch(selectedTeamProvider);
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (selectedTeam != null)
+        if (selectedTeam != null) ...[
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: _NavRow(
               svgAsset: AppAssets.rosterIcon,
               iconBg: colors.isDark
                   ? const Color(0xFF008CFF).withValues(alpha: 0.1)
                   : const Color(0xFFEFF6FF),
               iconColor: const Color(0xFF008CFF),
-              title: 'Profile Detail',
+              title: 'Team Profile',
               subtitle: 'View stats and details',
               colors: colors,
-              onTap: () {
-                Navigator.of(context).pop();
-                context.push(AppRoutes.profileDetail, extra: selectedTeam.url);
+              onTap: () async {
+                Navigator.pop(context);
+                String cleanUrl = selectedTeam.url;
+                if (cleanUrl.contains('.com//')) {
+                  cleanUrl = cleanUrl.replaceAll('.com//', '.com/');
+                }
+                final uri = Uri.parse(cleanUrl);
+                try {
+                  final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  if (!success && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Could not open Team Profile.')),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error opening Team Profile: $e')),
+                    );
+                  }
+                }
               },
             ),
           ),
+          if (selectedTeam.isParent && selectedTeam.players.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(28, 16, 28, 8),
+              child: Text(
+                'PLAYERS',
+                style: AppTextStyles.overline.copyWith(color: colors.gray500),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: selectedTeam.players.length,
+                itemBuilder: (context, index) {
+                  final player = selectedTeam.players[index];
+                  return _PlayerRow(
+                    player: player,
+                    colors: colors,
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
       ],
+    );
+  }
+}
+
+class _PlayerRow extends StatelessWidget {
+  final TeamPlayer player;
+  final AppColors colors;
+
+  const _PlayerRow({
+    required this.player,
+    required this.colors,
+  });
+
+  String _getInitials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts[0].isEmpty) return '';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hoverBg = colors.isDark ? colors.card : const Color(0xFFF9FAFB);
+    final avatarBg = colors.isDark ? const Color(0xFF1E2533) : const Color(0xFFF3F4F6);
+    final hasImage = player.imageUrl.isNotEmpty || player.profileImageUrl.isNotEmpty;
+    final imageToUse = player.imageUrl.isNotEmpty ? player.imageUrl : player.profileImageUrl;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () async {
+          Navigator.pop(context);
+          if (player.profileUrl.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No profile URL available for this player.')),
+            );
+            return;
+          }
+          String cleanUrl = player.profileUrl;
+          if (cleanUrl.contains('.com//')) {
+            cleanUrl = cleanUrl.replaceAll('.com//', '.com/');
+          }
+          final uri = Uri.parse(cleanUrl);
+          try {
+            final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
+            if (!success && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Could not open player profile.')),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error opening player profile: $e')),
+              );
+            }
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        splashColor: hoverBg,
+        highlightColor: hoverBg,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: avatarBg,
+                  shape: BoxShape.circle,
+                ),
+                child: hasImage
+                    ? ClipOval(
+                        child: Image.network(
+                          imageToUse,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Center(
+                            child: Text(
+                              _getInitials(player.name),
+                              style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          _getInitials(player.name),
+                          style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      player.name,
+                      style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
+                    ),
+                    Text(
+                      'View player profile',
+                      style: AppTextStyles.label12.copyWith(color: colors.gray500),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: colors.gray400, size: 20),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
