@@ -94,15 +94,6 @@ class TeamInfoCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  team!.urlKey.isNotEmpty ? 'Record: ${team!.urlKey}' : 'Record: N/A',
-                  style: AppTextStyles.body14.copyWith(
-                    color: AppColors.current.textSecondary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ],
             ),
           ),

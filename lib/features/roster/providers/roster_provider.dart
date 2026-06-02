@@ -21,6 +21,7 @@ class RosterState {
   final MemberRole? roleFilter;
   final bool gridView;
   final String sortBy;
+  final String staffSortBy;
 
   const RosterState({
     required this.allMembers,
@@ -30,40 +31,57 @@ class RosterState {
     this.roleFilter,
     required this.gridView,
     this.sortBy = 'First Name',
+    this.staffSortBy = 'First Name',
   }) : _isLoading = isLoading;
 
   List<RosterMember> get filtered {
-    final filteredList = allMembers.where((m) {
+    final matchSearch = (RosterMember m) {
       final matchRole = roleFilter == null || m.role == roleFilter;
+      if (!matchRole) return false;
       final q = searchQuery.toLowerCase();
-      final matchSearch = q.isEmpty ||
+      return q.isEmpty ||
           m.fullName.toLowerCase().contains(q) ||
           (m.staffTitle?.toLowerCase().contains(q) ?? false) ||
           m.positionFull.toLowerCase().contains(q) ||
           (m.jerseyNumber?.toString().contains(q) ?? false);
-      return matchRole && matchSearch;
-    }).toList();
+    };
+
+    final playersList = allMembers.where((m) => m.role == MemberRole.player && matchSearch(m)).toList();
+    final staffList = allMembers.where((m) => m.role == MemberRole.staff && matchSearch(m)).toList();
 
     switch (sortBy) {
       case 'Last Name':
-        filteredList.sort((a, b) => a.lastName.toLowerCase().compareTo(b.lastName.toLowerCase()));
+        playersList.sort((a, b) => a.lastName.toLowerCase().compareTo(b.lastName.toLowerCase()));
         break;
       case 'Position':
-        filteredList.sort((a, b) => a.primaryPosition.toLowerCase().compareTo(b.primaryPosition.toLowerCase()));
+        playersList.sort((a, b) => a.primaryPosition.toLowerCase().compareTo(b.primaryPosition.toLowerCase()));
         break;
       case 'Gender':
-        filteredList.sort((a, b) => a.gender.toLowerCase().compareTo(b.gender.toLowerCase()));
+        playersList.sort((a, b) => a.gender.toLowerCase().compareTo(b.gender.toLowerCase()));
         break;
       case 'Number':
-        filteredList.sort((a, b) => a.jerseyNo.toLowerCase().compareTo(b.jerseyNo.toLowerCase()));
+        playersList.sort((a, b) => a.jerseyNo.toLowerCase().compareTo(b.jerseyNo.toLowerCase()));
         break;
       case 'First Name':
       default:
-        filteredList.sort((a, b) => a.firstName.toLowerCase().compareTo(b.firstName.toLowerCase()));
+        playersList.sort((a, b) => a.firstName.toLowerCase().compareTo(b.firstName.toLowerCase()));
         break;
     }
 
-    return filteredList;
+    switch (staffSortBy) {
+      case 'Last Name':
+        staffList.sort((a, b) => a.lastName.toLowerCase().compareTo(b.lastName.toLowerCase()));
+        break;
+      case 'Gender':
+        staffList.sort((a, b) => a.gender.toLowerCase().compareTo(b.gender.toLowerCase()));
+        break;
+      case 'First Name':
+      default:
+        staffList.sort((a, b) => a.firstName.toLowerCase().compareTo(b.firstName.toLowerCase()));
+        break;
+    }
+
+    return [...playersList, ...staffList];
   }
 
   RosterState copyWith({
@@ -74,6 +92,7 @@ class RosterState {
     Object? roleFilter = _sentinel,
     bool? gridView,
     String? sortBy,
+    String? staffSortBy,
   }) {
     return RosterState(
       allMembers: allMembers ?? this.allMembers,
@@ -83,6 +102,7 @@ class RosterState {
       roleFilter: roleFilter == _sentinel ? this.roleFilter : roleFilter as MemberRole?,
       gridView: gridView ?? this.gridView,
       sortBy: sortBy ?? this.sortBy,
+      staffSortBy: staffSortBy ?? this.staffSortBy,
     );
   }
 }
@@ -183,15 +203,16 @@ class RosterNotifier extends Notifier<RosterState> {
   void setFilter(MemberRole? role) => state = state.copyWith(roleFilter: role);
   void toggleView() => state = state.copyWith(gridView: !state.gridView);
   void setSortBy(String sortBy) => state = state.copyWith(sortBy: sortBy);
+  void setStaffSortBy(String staffSortBy) => state = state.copyWith(staffSortBy: staffSortBy);
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   PlayerPosition? _mapPosition(String pos) {
     final p = pos.toLowerCase().trim();
-    if (p.contains('gk') || p.contains('goalkeeper')) return PlayerPosition.goalkeeper;
-    if (p.contains('def') || p.contains('defender')) return PlayerPosition.defender;
-    if (p.contains('mid') || p.contains('midfielder')) return PlayerPosition.midfielder;
-    if (p.contains('fwd') || p.contains('forward')) return PlayerPosition.forward;
+    if (p == '1' || p.contains('gk') || p.contains('goalkeeper')) return PlayerPosition.goalkeeper;
+    if (p == '2' || p.contains('def') || p.contains('defender')) return PlayerPosition.defender;
+    if (p == '3' || p.contains('mid') || p.contains('midfielder')) return PlayerPosition.midfielder;
+    if (p == '4' || p.contains('fwd') || p.contains('forward')) return PlayerPosition.forward;
     return null;
   }
 

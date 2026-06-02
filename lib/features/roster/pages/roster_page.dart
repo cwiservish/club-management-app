@@ -133,7 +133,7 @@ class RosterScreen extends ConsumerWidget {
                                     RosterSectionHeader(
                                       title: 'Players',
                                       count: players.length,
-                                      onSortTap: () => _showSortSheet(context),
+                                      onSortTap: () => _showSortSheet(context, MemberRole.player),
                                     ),
                                     if (players.isNotEmpty)
                                       ...players.map((m) => RosterListRow(
@@ -143,7 +143,7 @@ class RosterScreen extends ConsumerWidget {
                                     RosterSectionHeader(
                                       title: 'Staff',
                                       count: staff.length,
-                                      onSortTap: () => _showSortSheet(context),
+                                      onSortTap: () => _showSortSheet(context, MemberRole.staff),
                                     ),
                                     if (staff.isNotEmpty)
                                       ...staff.map((m) => RosterListRow(
@@ -164,12 +164,12 @@ class RosterScreen extends ConsumerWidget {
     context.push('/roster/${AppRoutes.rosterDetail}', extra: member);
   }
 
-  void _showSortSheet(BuildContext context) {
+  void _showSortSheet(BuildContext context, MemberRole role) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => const RosterSortBottomSheet(),
+      builder: (_) => RosterSortBottomSheet(role: role),
     );
   }
 }

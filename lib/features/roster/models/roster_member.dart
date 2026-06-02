@@ -80,8 +80,18 @@ class RosterMember {
     }
   }
 
+  String get displayPosition {
+    final p = primaryPosition.toLowerCase().trim();
+    if (p.isEmpty) return positionFull;
+    if (p == '1' || p == 'goalkeeper' || p == 'gk') return 'Goalkeeper';
+    if (p == '2' || p == 'defender' || p == 'def') return 'Defender';
+    if (p == '3' || p == 'midfielder' || p == 'mid') return 'Midfielder';
+    if (p == '4' || p == 'forward' || p == 'fwd') return 'Forward';
+    return p[0].toUpperCase() + p.substring(1);
+  }
+
   String get displayRole =>
-      role == MemberRole.staff ? (staffTitle ?? 'Staff') : positionFull;
+      role == MemberRole.staff ? (staffTitle ?? 'Staff') : displayPosition;
 
   Color get attendanceColor {
     if (attendancePercent >= 90) return AppColors.current.success;

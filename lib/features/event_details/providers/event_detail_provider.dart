@@ -94,7 +94,9 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
       }
 
       final dateStr = _fmtDate(foundEvent.dateTime);
-      final timeRangeStr = '${_fmtTime(foundEvent.dateTime)} - ${_fmtTime(foundEvent.endTime)}';
+      final timeRangeStr = (foundEvent.timeLabel != null && foundEvent.timeLabel!.isNotEmpty)
+          ? foundEvent.timeLabel!
+          : '${_fmtTime(foundEvent.dateTime)} - ${_fmtTime(foundEvent.endTime)}';
 
       eventDetail = EventDetailModel(
         id: foundEvent.id,

@@ -404,6 +404,7 @@ class ScheduleEvent {
       requiresPlayerSelection: requiresPlayerSelection,
       rsvpTargets: domainTargets,
       status: status,
+      scheduleGameId: scheduleGameId,
     );
   }
 }

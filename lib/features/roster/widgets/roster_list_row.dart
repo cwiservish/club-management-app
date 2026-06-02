@@ -90,22 +90,19 @@ class RosterListRow extends StatelessWidget {
 
   List<Widget> _buildChips() {
     if (member.role == MemberRole.player) {
+      final pos = member.displayPosition;
       return [
-        if (member.playerId != null) ...[
-          _Chip(label: 'ID: ${member.playerId}'),
-          const SizedBox(width: 6),
-        ],
         if (member.jerseyNumber != null) ...[
           _Chip(label: '#${member.jerseyNumber}'),
           const SizedBox(width: 6),
         ],
-        if (member.positionFull.isNotEmpty)
-          _Chip(label: member.positionFull),
+        if (pos.isNotEmpty) ...[
+          _Chip(label: pos),
+          const SizedBox(width: 6),
+        ],
       ];
     } else {
-      return [
-        if (member.staffTitle != null) _Chip(label: member.staffTitle!),
-      ];
+      return [];
     }
   }
 }

@@ -90,55 +90,101 @@ class HomeCard extends ConsumerWidget {
       child: Center(
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Stack(
             children: [
-              Container(
-                width: double.infinity,
-                color: AppColors.current.card,
-                padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(viewModel.date,
-                        style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary)),
-                    Text(viewModel.timeRange,
-                        style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary)),
-                    Text(viewModel.type,
-                        style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary)),
-                    Text(viewModel.location,
-                        style: AppTextStyles.body16.copyWith(color: AppColors.current.textPrimary)),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    color: AppColors.current.card,
+                    padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(viewModel.date,
+                            style: AppTextStyles.heading18.copyWith(color: AppColors.current.textPrimary, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text(viewModel.timeRange,
+                            style: AppTextStyles.heading18.copyWith(color: AppColors.current.textPrimary, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 10), // Spacing between time and event name
+                        Text(viewModel.type,
+                            style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary)),
+                        const SizedBox(height: 2),
+                        Text(viewModel.location,
+                            style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary)),
 
-                    const SizedBox(height: 14),
+                        const SizedBox(height: 14),
 
-                    RsvpRow(
-                      goingCount: viewModel.goingCount,
-                      maybeCount: viewModel.maybeCount,
-                      noCount:    viewModel.noCount,
-                      selected:   viewModel.selectedRsvp,
-                      onSelect: (rsvp) => _handleRsvpTap(context, ref, rsvp),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    GestureDetector(
-                      onTap: onEventDetails,
-                      child: Text(
-                        'Event Details',
-                        style: AppTextStyles.body13.copyWith(
-                          color:      AppColors.current.primary,
-                          fontWeight: FontWeight.w600,
+                        RsvpRow(
+                          goingCount: viewModel.goingCount,
+                          maybeCount: viewModel.maybeCount,
+                          noCount:    viewModel.noCount,
+                          selected:   viewModel.selectedRsvp,
+                          onSelect: (rsvp) => _handleRsvpTap(context, ref, rsvp),
                         ),
+
+                        const SizedBox(height: 10),
+
+                        GestureDetector(
+                          onTap: onEventDetails,
+                          child: Text(
+                            'Event Details',
+                            style: AppTextStyles.body13.copyWith(
+                              color:      AppColors.current.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  MapSection(
+                    latitude:  viewModel.latitude,
+                    longitude: viewModel.longitude,
+                    location:  viewModel.location,
+                  ),
+                ],
+              ),
+              if (viewModel.scheduleGameId != null)
+                Positioned(
+                  top: 20,
+                  right: 18,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.current.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: AppColors.current.error.withValues(alpha: 0.3),
+                        width: 1,
                       ),
                     ),
-                  ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: AppColors.current.error,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Live Event',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.current.error,
+                            height: 1.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              MapSection(
-                latitude:  viewModel.latitude,
-                longitude: viewModel.longitude,
-                location:  viewModel.location,
-              ),
             ],
           ),
         ),

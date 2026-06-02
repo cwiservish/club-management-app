@@ -21,6 +21,7 @@ class HomeCardViewModel {
   final String? longitude;
   final bool requiresPlayerSelection;
   final List<ClubEventRsvpTarget> rsvpTargets;
+  final int? scheduleGameId;
 
   const HomeCardViewModel({
     required this.id,
@@ -36,5 +37,6 @@ class HomeCardViewModel {
     this.longitude,
     this.requiresPlayerSelection = false,
     this.rsvpTargets = const [],
+    this.scheduleGameId,
   });
 }

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/enums/member_role.dart';
 import '../providers/roster_provider.dart';
 
 class RosterSortBottomSheet extends ConsumerWidget {
-  const RosterSortBottomSheet({super.key});
+  final MemberRole role;
+  const RosterSortBottomSheet({super.key, required this.role});
 
-  static const _options = [
+  static const _playerOptions = [
     'First Name',
     'Last Name',
     'Position',
@@ -15,10 +17,18 @@ class RosterSortBottomSheet extends ConsumerWidget {
     'Number',
   ];
 
+  static const _staffOptions = [
+    'First Name',
+    'Last Name',
+    'Gender',
+  ];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(rosterProvider);
-    final selected = state.sortBy;
+    final isPlayer = role == MemberRole.player;
+    final selected = isPlayer ? state.sortBy : state.staffSortBy;
+    final options = isPlayer ? _playerOptions : _staffOptions;
 
     return Container(
       decoration: BoxDecoration(
@@ -78,11 +88,15 @@ class RosterSortBottomSheet extends ConsumerWidget {
               16, 8, 16, MediaQuery.of(context).padding.bottom + 16,
             ),
             child: Column(
-              children: _options.map((option) {
+              children: options.map((option) {
                 final isSelected = selected == option;
                 return GestureDetector(
                   onTap: () {
-                    ref.read(rosterProvider.notifier).setSortBy(option);
+                    if (isPlayer) {
+                      ref.read(rosterProvider.notifier).setSortBy(option);
+                    } else {
+                      ref.read(rosterProvider.notifier).setStaffSortBy(option);
+                    }
                     Navigator.pop(context);
                   },
                   child: Container(

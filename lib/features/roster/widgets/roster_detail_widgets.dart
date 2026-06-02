@@ -18,6 +18,19 @@ import '../../messages/providers/chat_state_provider.dart';
 // Profile Section
 // ══════════════════════════════════════════════════════════════════════════════
 
+String _formatPosition(String? pos) {
+  if (pos == null) return '';
+  final p = pos.toLowerCase().trim();
+  if (p.isEmpty) return '';
+
+  if (p == '1' || p == 'goalkeeper' || p == 'gk') return 'Goalkeeper';
+  if (p == '2' || p == 'defender' || p == 'def') return 'Defender';
+  if (p == '3' || p == 'midfielder' || p == 'mid') return 'Midfielder';
+  if (p == '4' || p == 'forward' || p == 'fwd') return 'Forward';
+
+  return p[0].toUpperCase() + p.substring(1);
+}
+
 class RosterProfileSection extends StatelessWidget {
   final RosterMember member;
   final VoidCallback onAvatarTap;
@@ -42,8 +55,9 @@ class RosterProfileSection extends StatelessWidget {
         : (member.jerseyNumber?.toString() ?? '');
 
     final String apiPosition = (position ?? '').trim();
-    final String displayPosition = apiPosition.isNotEmpty
-        ? position!
+    final String formattedPosition = _formatPosition(apiPosition);
+    final String displayPosition = formattedPosition.isNotEmpty
+        ? formattedPosition
         : member.positionFull;
 
     final isJerseyValid = displayJersey.trim().isNotEmpty && displayJersey.trim().toUpperCase() != 'N/A';
@@ -692,7 +706,7 @@ class _RosterEditPlayerSheetState extends State<RosterEditPlayerSheet> {
           : (widget.member.jerseyNumber?.toString() ?? ''),
     );
     _position = (profile != null && profile.primaryPosition.isNotEmpty)
-        ? profile.primaryPosition
+        ? _formatPosition(profile.primaryPosition)
         : (widget.member.positionFull.isNotEmpty ? widget.member.positionFull : _positions.first);
   }
 

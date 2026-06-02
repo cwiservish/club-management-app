@@ -99,18 +99,6 @@ class _RosterSubHeaderState extends ConsumerState<RosterSubHeader> {
                     ),
                   ),
                 ),
-                GestureDetector(
-                  onTap: () {},
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: CustomSvgIcon(
-                      assetPath: AppAssets.filterIcon,
-                      size: 20,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                ),
               ],
             ),
     );

@@ -79,7 +79,9 @@ class HomeState {
       final dt  = event.dateTime;
       final end = event.endTime;
       final date = '${_monthName(dt.month)} ${dt.day}, ${dt.year}';
-      final timeRange = '${_fmtTime(dt)} - ${_fmtTime(end)}';
+      final timeRange = (event.timeLabel != null && event.timeLabel!.isNotEmpty)
+          ? event.timeLabel!
+          : '${_fmtTime(dt)} - ${_fmtTime(end)}';
 
       return HomeCardViewModel(
         id:           event.id,
@@ -95,6 +97,7 @@ class HomeState {
         longitude:    event.longitude,
         requiresPlayerSelection: event.requiresPlayerSelection,
         rsvpTargets:  event.rsvpTargets,
+        scheduleGameId: event.scheduleGameId,
       );
     }).toList();
   }
