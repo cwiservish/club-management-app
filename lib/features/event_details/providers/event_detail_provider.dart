@@ -105,6 +105,8 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
         locationAddress: (foundEvent.locationDetails != null && foundEvent.locationDetails!.isNotEmpty)
             ? foundEvent.locationDetails!
             : foundEvent.subtitle,
+        latitude: foundEvent.latitude,
+        longitude: foundEvent.longitude,
         uniform: foundEvent.uniformColor ?? '',
         homeAway: 'Home',
         opponent: foundEvent.opponent ?? '',

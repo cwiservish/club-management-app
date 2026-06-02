@@ -102,10 +102,34 @@ class EventDetailsTabPage extends ConsumerWidget {
           children: [
             EventHeaderCard(event: state.event),
             const SizedBox(height: 16),
-            RsvpSection(
-              selected: state.event.myRsvp,
-              onSelect: handleRsvpTap,
-            ),
+            // Use the same counts shown on the home list page for this event.
+            // homeProvider.viewModels already applies the same attendance_counts
+            // arithmetic used on the list screen, so the numbers always match.
+            Builder(builder: (context) {
+              final homeVm = ref
+                  .watch(homeProvider)
+                  .viewModels
+                  .cast<HomeCardViewModel?>()
+                  .firstWhere((vm) => vm?.id == eventId, orElse: () => null);
+
+              final goingCount = homeVm?.goingCount
+                  ?? state.rawEvent?.rsvpYes.length
+                  ?? state.goingPlayers.length;
+              final maybeCount = homeVm?.maybeCount
+                  ?? state.rawEvent?.rsvpMaybe.length
+                  ?? state.maybePlayers.length;
+              final noCount = homeVm?.noCount
+                  ?? state.rawEvent?.rsvpNo.length
+                  ?? state.noPlayers.length;
+
+              return RsvpSection(
+                selected: state.event.myRsvp,
+                onSelect: handleRsvpTap,
+                goingCount: goingCount,
+                maybeCount: maybeCount,
+                noCount: noCount,
+              );
+            }),
             const SizedBox(height: 16),
             LogisticsSection(
               event: state.event,

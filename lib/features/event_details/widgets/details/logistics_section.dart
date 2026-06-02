@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../models/event_detail_model.dart';
@@ -10,6 +11,41 @@ class LogisticsSection extends StatelessWidget {
     super.key,
     required this.event,
   });
+
+  Future<void> _openGoogleMaps(BuildContext context) async {
+    final lat = double.tryParse(event.latitude ?? '');
+    final lng = double.tryParse(event.longitude ?? '');
+
+    Uri? uri;
+    if (lat != null && lng != null && (lat != 0.0 || lng != 0.0)) {
+      uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    } else if (event.locationName.trim().isNotEmpty) {
+      uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(event.locationName)}');
+    }
+
+    if (uri != null) {
+      try {
+        final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!success && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open map.')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error opening map: $e')),
+          );
+        }
+      }
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No location details available to show on map.')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,15 +60,19 @@ class LogisticsSection extends StatelessWidget {
       clipBehavior: Clip.hardEdge,
       child: Column(
         children: [
-          _LogisticsRow(
-            icon: Icons.location_on_outlined,
-            iconBgColor: colors.primaryLight,
-            iconColor: colors.actionAccent,
-            label: 'Location',
-            value: event.locationName,
-            subtitle: event.locationAddress,
-            showArrow: true,
-            borderBottom: true,
+          GestureDetector(
+            onTap: () => _openGoogleMaps(context),
+            behavior: HitTestBehavior.opaque,
+            child: _LogisticsRow(
+              icon: Icons.location_on_outlined,
+              iconBgColor: colors.primaryLight,
+              iconColor: colors.actionAccent,
+              label: 'Location',
+              value: event.locationName,
+              subtitle: event.locationAddress,
+              showArrow: true,
+              borderBottom: true,
+            ),
           ),
           _LogisticsRow(
             icon: Icons.person_outline,

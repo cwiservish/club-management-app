@@ -22,6 +22,9 @@ const _sentinel = Object();
 class HomeState {
   final List<ClubEvent> events;
 
+  /// URL of the sponsor banner image shown at the top of the Events list.
+  final String? bannerImageUrl;
+
   /// Stores the current user's RSVP choice per event ID.
   final Map<String, HomeRsvp> userRsvps;
 
@@ -31,6 +34,7 @@ class HomeState {
 
   const HomeState({
     required this.events,
+    this.bannerImageUrl,
     required this.userRsvps,
     this.filter,
     this.isLoading = false,
@@ -97,6 +101,7 @@ class HomeState {
 
   HomeState copyWith({
     List<ClubEvent>? events,
+    Object? bannerImageUrl = _sentinel,
     Map<String, HomeRsvp>? userRsvps,
     Object? filter = _sentinel,
     bool? isLoading,
@@ -104,6 +109,7 @@ class HomeState {
   }) {
     return HomeState(
       events:    events    ?? this.events,
+      bannerImageUrl: bannerImageUrl == _sentinel ? this.bannerImageUrl : bannerImageUrl as String?,
       userRsvps: userRsvps ?? this.userRsvps,
       filter:    filter == _sentinel ? this.filter : filter as EventType?,
       isLoading: isLoading ?? this.isLoading,
@@ -151,7 +157,8 @@ class HomeNotifier extends Notifier<HomeState> {
   Future<void> fetchEvents(String teamUuid) async {
     state = state.copyWith(isLoading: true, errorMessage: null, events: []);
     try {
-      final fetched = await ref.read(homeServiceProvider).fetchEvents(teamUuid);
+      final result = await ref.read(homeServiceProvider).fetchEvents(teamUuid);
+      final fetched = result.events;
       
       // Initialize RSVP choices mapping based on whether parsed lists contain 'me'
       final Map<String, HomeRsvp> initialRsvps = {};
@@ -169,6 +176,7 @@ class HomeNotifier extends Notifier<HomeState> {
 
       state = state.copyWith(
         events: fetched,
+        bannerImageUrl: result.bannerImageUrl,
         userRsvps: initialRsvps,
         isLoading: false,
       );
@@ -179,6 +187,7 @@ class HomeNotifier extends Notifier<HomeState> {
       );
     }
   }
+
 
   /// Toggle RSVP: tapping the same option again deselects it.
   void toggleRsvp(String eventId, HomeRsvp rsvp) {
@@ -228,9 +237,9 @@ class HomeNotifier extends Notifier<HomeState> {
         // Refresh the event list silently to sync everything
         await refresh();
         
-        return (success: true, message: response.message.isNotEmpty ? response.message as String : 'RSVP updated successfully.');
+        return (success: true, message: response.message.isNotEmpty ? response.message : 'RSVP updated successfully.');
       } else {
-        return (success: false, message: response.message.isNotEmpty ? response.message as String : 'Failed to update RSVP.');
+        return (success: false, message: response.message.isNotEmpty ? response.message : 'Failed to update RSVP.');
       }
     } catch (e) {
       return (success: false, message: e.toString());

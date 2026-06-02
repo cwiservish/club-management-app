@@ -5,11 +5,17 @@ import '../../../../app/theme/app_text_styles.dart';
 class RsvpSection extends StatelessWidget {
   final String selected; // 'going' | 'maybe' | 'no'
   final ValueChanged<String> onSelect;
+  final int goingCount;
+  final int maybeCount;
+  final int noCount;
 
   const RsvpSection({
     super.key,
     required this.selected,
     required this.onSelect,
+    this.goingCount = 0,
+    this.maybeCount = 0,
+    this.noCount = 0,
   });
 
   @override
@@ -43,6 +49,7 @@ class RsvpSection extends StatelessWidget {
                 children: [
                   _RsvpButton(
                     label: 'Going',
+                    count: goingCount,
                     value: 'going',
                     selected: selected,
                     activeColor: AppColors.current.rsvpGoing,
@@ -51,6 +58,7 @@ class RsvpSection extends StatelessWidget {
                   VerticalDivider(width: 1, color: colors.border.withValues(alpha: 0.5)),
                   _RsvpButton(
                     label: 'Maybe',
+                    count: maybeCount,
                     value: 'maybe',
                     selected: selected,
                     activeColor: AppColors.current.rsvpMaybe,
@@ -59,6 +67,7 @@ class RsvpSection extends StatelessWidget {
                   VerticalDivider(width: 1, color: colors.border.withValues(alpha: 0.5)),
                   _RsvpButton(
                     label: 'No',
+                    count: noCount,
                     value: 'no',
                     selected: selected,
                     activeColor: AppColors.current.rsvpNo,
@@ -76,6 +85,7 @@ class RsvpSection extends StatelessWidget {
 
 class _RsvpButton extends StatelessWidget {
   final String label;
+  final int count;
   final String value;
   final String selected;
   final Color activeColor;
@@ -83,6 +93,7 @@ class _RsvpButton extends StatelessWidget {
 
   const _RsvpButton({
     required this.label,
+    required this.count,
     required this.value,
     required this.selected,
     required this.activeColor,
@@ -102,10 +113,12 @@ class _RsvpButton extends StatelessWidget {
           alignment: Alignment.center,
           color: isActive ? activeColor : colors.card,
           child: Text(
-            label,
+            '$count $label',
             style: AppTextStyles.heading14.copyWith(
               color: isActive ? Colors.white : colors.textSecondary,
+              fontWeight: FontWeight.w600,
             ),
+            textAlign: TextAlign.center,
           ),
         ),
       ),

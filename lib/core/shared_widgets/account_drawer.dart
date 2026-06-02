@@ -87,6 +87,22 @@ class _Header extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider).value;
+    final selectedTeam = ref.watch(selectedTeamProvider);
+
+    String displayRole = 'PLAYER';
+    if (selectedTeam != null) {
+      if (selectedTeam.isCoach) {
+        displayRole = 'COACH';
+      } else if (selectedTeam.isParent) {
+        displayRole = 'PARENT';
+      } else if (selectedTeam.role.isNotEmpty) {
+        displayRole = selectedTeam.role.toUpperCase();
+      } else {
+        displayRole = user?.role.name.toUpperCase() ?? 'PLAYER';
+      }
+    } else {
+      displayRole = user?.role.name.toUpperCase() ?? 'PLAYER';
+    }
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 28, 28, 24),
@@ -132,7 +148,7 @@ class _Header extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      user?.role.name.toUpperCase() ?? 'PLAYER',
+                      displayRole,
                       style: AppTextStyles.heading14.copyWith(
                         color: colors.isDark ? colors.actionAccent : colors.primary,
                       ),

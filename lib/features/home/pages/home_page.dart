@@ -8,6 +8,7 @@ import '../../../core/shared_widgets/app_header.dart';
 import '../providers/home_provider.dart';
 import '../widgets/home_card.dart';
 import '../widgets/home_empty_state.dart';
+import '../widgets/sponsor_banner.dart';
 
 // ─── Home Screen ──────────────────────────────────────────────────────────────
 // Pure display — all data and business logic come from homeProvider.
@@ -40,23 +41,36 @@ class HomeScreen extends ConsumerWidget {
                     : viewModels.isEmpty
                         ? SingleChildScrollView(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            child: SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.7,
-                              child: const Center(
-                                child: HomeEmptyState(),
-                              ),
+                            child: Column(
+                              children: [
+                                const SizedBox(height: 10),
+                                SponsorBanner(imageUrl: homeState.bannerImageUrl),
+                                SizedBox(
+                                  height: MediaQuery.of(context).size.height * 0.6,
+                                  child: const Center(
+                                    child: HomeEmptyState(),
+                                  ),
+                                ),
+                              ],
                             ),
                           )
                         : ListView.separated(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            padding:          const EdgeInsets.symmetric(vertical: 10),
-                            itemCount:        viewModels.length,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            // Index 0 is always the sponsor banner
+                            itemCount: viewModels.length + 1,
                             separatorBuilder: (_, __) => const SizedBox(height: 10),
-                            itemBuilder: (_, i) => HomeCard(
-                              viewModel: viewModels[i],
-                              onEventDetails: () =>
-                                  context.push(AppRoutes.eventDetails(viewModels[i].id)),
-                            ),
+                            itemBuilder: (_, i) {
+                              if (i == 0) {
+                                return SponsorBanner(imageUrl: homeState.bannerImageUrl);
+                              }
+                              final vm = viewModels[i - 1];
+                              return HomeCard(
+                                viewModel: vm,
+                                onEventDetails: () =>
+                                    context.push(AppRoutes.eventDetails(vm.id)),
+                              );
+                            },
                           ),
               ),
             ),

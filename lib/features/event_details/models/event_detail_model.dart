@@ -7,6 +7,8 @@ class EventDetailModel {
   final String timeRange;   // e.g. "6:00 PM – 7:30 PM"
   final String locationName;
   final String locationAddress;
+  final String? latitude;
+  final String? longitude;
   final String uniform;
   final String homeAway;
   final String opponent;
@@ -20,6 +22,8 @@ class EventDetailModel {
     required this.timeRange,
     required this.locationName,
     required this.locationAddress,
+    this.latitude,
+    this.longitude,
     required this.uniform,
     required this.homeAway,
     required this.opponent,
@@ -35,6 +39,8 @@ class EventDetailModel {
       timeRange:       timeRange,
       locationName:    locationName,
       locationAddress: locationAddress,
+      latitude:        latitude,
+      longitude:       longitude,
       uniform:         uniform,
       homeAway:        homeAway,
       opponent:        opponent,

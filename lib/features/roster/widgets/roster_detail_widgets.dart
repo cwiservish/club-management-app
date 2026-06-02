@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../app/router/app_routes.dart';
 import '../../../core/enums/member_role.dart';
+import '../../../core/common_providers/selected_team_provider.dart';
 import '../models/roster_member.dart';
 import '../models/roster_detail_contact.dart';
 import '../models/player_profile_models.dart';
 import '../providers/player_profile_provider.dart';
+import '../../messages/pages/talkjs_chat_page.dart';
+import '../../messages/providers/chat_state_provider.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Profile Section
@@ -468,12 +474,12 @@ class RosterAddFamilyButton extends StatelessWidget {
 // Contact Action Dialog
 // ══════════════════════════════════════════════════════════════════════════════
 
-class RosterContactActionDialog extends StatelessWidget {
+class RosterContactActionDialog extends ConsumerWidget {
   final RosterDetailContact contact;
   const RosterContactActionDialog({super.key, required this.contact});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Dialog(
       backgroundColor: AppColors.current.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -509,19 +515,92 @@ class RosterContactActionDialog extends StatelessWidget {
             RosterDialogOption(
               icon: Icons.mail_outline,
               label: 'Send Email',
-              onTap: () => Navigator.pop(context),
+              onTap: () async {
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                Navigator.pop(context);
+
+                if (contact.email.isEmpty) {
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(content: Text('No email address provided for this contact.')),
+                  );
+                  return;
+                }
+
+                final Uri emailLaunchUri = Uri(
+                  scheme: 'mailto',
+                  path: contact.email,
+                );
+                try {
+                  await launchUrl(emailLaunchUri);
+                } catch (e) {
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(content: Text('Could not open email client: $e')),
+                  );
+                }
+              },
             ),
             const SizedBox(height: 10),
             RosterDialogOption(
               icon: Icons.sms_outlined,
               label: 'Send SMS Message',
-              onTap: () => Navigator.pop(context),
+              onTap: () async {
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                Navigator.pop(context);
+
+                if (contact.phone.isEmpty) {
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(content: Text('No phone number provided for this contact.')),
+                  );
+                  return;
+                }
+
+                final Uri smsLaunchUri = Uri(
+                  scheme: 'sms',
+                  path: contact.phone,
+                );
+                try {
+                  await launchUrl(smsLaunchUri);
+                } catch (e) {
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(content: Text('Could not open messaging client: $e')),
+                  );
+                }
+              },
             ),
             const SizedBox(height: 10),
             RosterDialogOption(
               icon: Icons.chat_bubble_outline,
               label: 'Direct Message In-App',
-              onTap: () => Navigator.pop(context),
+              onTap: () async {
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                final goRouter = GoRouter.of(context);
+                Navigator.pop(context);
+
+                if (contact.email.isEmpty) {
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(content: Text('No email address provided for this contact. TalkJS requires an email.')),
+                  );
+                  return;
+                }
+
+                await goRouter.push(
+                  '${AppRoutes.messages}/${AppRoutes.messagesChatDetail}',
+                  extra: TalkJSChatArgs(
+                    conversationId: contact.email,
+                    topic: contact.name,
+                    isGroup: false,
+                    otherUserId: contact.email,
+                    otherUserName: contact.name,
+                    otherUserEmail: contact.email,
+                  ),
+                );
+
+                final activeTeam = ref.read(selectedTeamProvider);
+                if (activeTeam != null) {
+                  ref.invalidate(chatChannelsProvider(activeTeam.uuid));
+                  ref.invalidate(chatMembersProvider(activeTeam.uuid));
+                }
+              },
             ),
           ],
         ),

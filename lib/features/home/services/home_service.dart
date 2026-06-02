@@ -4,7 +4,6 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/models/club_event.dart';
 import '../../../core/enums/event_type.dart';
-import '../models/home_models.dart';
 
 class HomeService {
   final ApiClient _apiClient;
@@ -12,7 +11,8 @@ class HomeService {
   HomeService(this._apiClient);
 
   /// Fetch events list from the QA endpoint for a specific team.
-  Future<List<ClubEvent>> fetchEvents(String teamUuid) async {
+  /// Returns a record containing the list of events and an optional sponsor banner URL.
+  Future<({List<ClubEvent> events, String? bannerImageUrl})> fetchEvents(String teamUuid) async {
     const endpoint = ApiEndpoints.teamEventsList;
     final requestBody = {
       'team_uuid': teamUuid,
@@ -30,12 +30,6 @@ class HomeService {
         body: requestBody,
       );
 
-      final rawResponseMap = {
-        'success': response.success,
-        'message': response.message ?? '',
-        'data': response.data,
-      };
-
       debugPrint('════════════════════════════════════════════════════════════════');
       debugPrint('[API Response] POST $endpoint');
       debugPrint('[API Response success]: ${response.success}');
@@ -43,14 +37,19 @@ class HomeService {
       debugPrint('════════════════════════════════════════════════════════════════');
 
       if (!response.success || response.data == null) {
-        return [];
+        return (events: <ClubEvent>[], bannerImageUrl: null);
       }
 
       final dataMap = response.data as Map<String, dynamic>?;
-      if (dataMap == null) return [];
+      if (dataMap == null) return (events: <ClubEvent>[], bannerImageUrl: null);
+
+      // Parse optional sponsor banner URL (field name may vary by API version)
+      final bannerImageUrl = dataMap['banner_image']?.toString()
+          ?? dataMap['sponsor_image']?.toString()
+          ?? dataMap['banner_url']?.toString();
 
       final grid = dataMap['grid'] as List?;
-      if (grid == null) return [];
+      if (grid == null) return (events: <ClubEvent>[], bannerImageUrl: bannerImageUrl);
 
       final List<ClubEvent> events = [];
       for (final item in grid) {
@@ -62,13 +61,14 @@ class HomeService {
         }
       }
 
-      return events;
+      return (events: events, bannerImageUrl: bannerImageUrl);
     } catch (e, stackTrace) {
       debugPrint('[HomeService] Error fetching events: $e');
       debugPrint(stackTrace.toString());
-      return [];
+      return (events: <ClubEvent>[], bannerImageUrl: null);
     }
   }
+
 
   /// Crash-proof parser from QA JSON item to ClubEvent domain model.
   ClubEvent? _parseClubEvent(Map<String, dynamic> json) {

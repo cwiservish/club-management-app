@@ -19,6 +19,10 @@ class EventEditDangerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!isEdit) {
+      return const SizedBox.shrink();
+    }
+
     final colors = AppColors.current;
 
     return Container(
