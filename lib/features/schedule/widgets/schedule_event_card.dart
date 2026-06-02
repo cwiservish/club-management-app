@@ -141,12 +141,12 @@ class ScheduleEventCard extends ConsumerWidget {
                             if (event.scheduleGameId != null) ...[
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.current.error.withValues(alpha: 0.1),
+                                  color: Colors.green.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
-                                    color: AppColors.current.error.withValues(alpha: 0.3),
+                                    color:Colors.green.withValues(alpha: 0.3),
                                     width: 1,
                                   ),
                                 ),
@@ -157,20 +157,11 @@ class ScheduleEventCard extends ConsumerWidget {
                                       width: 6,
                                       height: 6,
                                       decoration: BoxDecoration(
-                                        color: AppColors.current.error,
+                                        color: Colors.green,
                                         shape: BoxShape.circle,
                                       ),
                                     ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Live Event',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.current.error,
-                                        height: 1.1,
-                                      ),
-                                    ),
+
                                   ],
                                 ),
                               ),
