@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../common_providers/theme_provider.dart';
 import '../common_providers/current_user_provider.dart';
 import '../common_providers/selected_team_provider.dart';
 import '../models/team_model.dart';
+import '../../core/enums/member_role.dart';
 import '../../features/auth/providers/auth_provider.dart';
+import '../../features/roster/models/roster_member.dart';
 import '../constants/app_assets.dart';
 import 'custom_svg_icon.dart';
 
@@ -282,33 +286,20 @@ class _PlayerRow extends StatelessWidget {
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        onTap: () async {
+        onTap: () {
           Navigator.pop(context);
-          if (player.profileUrl.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('No profile URL available for this player.')),
-            );
-            return;
-          }
-          String cleanUrl = player.profileUrl;
-          if (cleanUrl.contains('.com//')) {
-            cleanUrl = cleanUrl.replaceAll('.com//', '.com/');
-          }
-          final uri = Uri.parse(cleanUrl);
-          try {
-            final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
-            if (!success && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Could not open player profile.')),
-              );
-            }
-          } catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Error opening player profile: $e')),
-              );
-            }
-          }
+          final member = RosterMember(
+            id: player.uuid,
+            playerId: player.playerId,
+            firstName: player.firstName,
+            lastName: player.lastName,
+            role: MemberRole.player,
+            phone: '',
+            email: '',
+            attendancePercent: 0,
+            avatarColor: Colors.blue,
+          );
+          context.push('/roster/${AppRoutes.rosterDetail}', extra: member);
         },
         borderRadius: BorderRadius.circular(12),
         splashColor: hoverBg,
