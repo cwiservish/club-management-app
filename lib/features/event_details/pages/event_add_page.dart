@@ -1173,12 +1173,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
           ref.read(scheduleProvider.notifier).fetchEvents(activeTeam.uuid);
         }
 
-        final isEdit = widget.eventId != 'new' && !widget.duplicate;
-        if (isEdit) {
-          context.go(widget.from == 'schedule' ? AppRoutes.schedule : AppRoutes.home);
-        } else {
-          Navigator.maybePop(context);
-        }
+        context.go(widget.from == 'schedule' ? AppRoutes.schedule : AppRoutes.home);
       }
     } else {
       if (mounted) {

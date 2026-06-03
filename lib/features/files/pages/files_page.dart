@@ -8,10 +8,46 @@ import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
 import '../providers/files_provider.dart';
 import '../widgets/files_widgets.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/file_item.dart';
 
 class FilesPage extends ConsumerWidget {
   const FilesPage({super.key});
+
+  Future<void> _downloadFile(BuildContext context, FileItem file) async {
+    final urlString = file.fileUrl;
+    if (urlString.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to download file'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final uri = Uri.parse(urlString);
+      final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!success && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to download file'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to download file'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _pickAndUploadFile(BuildContext context, WidgetRef ref, ImageSource source) async {
     try {
@@ -245,7 +281,7 @@ class FilesPage extends ConsumerWidget {
                                         padding: const EdgeInsets.only(bottom: 12),
                                         child: FileCard(
                                           file: file,
-                                          onDownloadTap: () {},
+                                          onDownloadTap: () => _downloadFile(context, file),
                                           onDeleteTap: () => _confirmDelete(context, ref, file),
                                         ),
                                       )),

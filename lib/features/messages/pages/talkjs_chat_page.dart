@@ -173,27 +173,15 @@ class TalkJSChatPage extends ConsumerWidget {
             child: Row(
               children: [
                 // Left: < Back
-                TextButton.icon(
+                IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.current.textPrimary,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
                   icon: Icon(
-                    Icons.arrow_back_ios,
-                    size: 16,
+                    Icons.arrow_back_ios_new,
+                    size: 20,
                     color: AppColors.current.textPrimary,
                   ),
-                  label: Text(
-                    'Back',
-                    style: AppTextStyles.body15.copyWith(
-                      color: AppColors.current.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(),
                 ),
 
                 // Center: Bold Title + Subtitle
@@ -203,7 +191,7 @@ class TalkJSChatPage extends ConsumerWidget {
                     children: [
                       Text(
                         displayName,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: AppTextStyles.body16.copyWith(
