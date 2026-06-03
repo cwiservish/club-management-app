@@ -18,11 +18,13 @@ import 'event_availability_tab_page.dart';
 class EventDetailPage extends ConsumerWidget {
   final String eventId;
   final EventDetailTab activeTab;
+  final String from;
 
   const EventDetailPage({
     super.key,
     required this.eventId,
     required this.activeTab,
+    this.from = 'home',
   });
 
   @override
@@ -40,9 +42,9 @@ class EventDetailPage extends ConsumerWidget {
             SubHeader(
               title:      'Event Details',
               rightText:  isCoach ? 'Edit' : null,
-              onRightTap: isCoach ? () => context.push(AppRoutes.eventEdit(eventId)) : null,
+              onRightTap: isCoach ? () => context.push('${AppRoutes.eventEdit(eventId)}?from=$from') : null,
             ),
-            EventDetailTabBar(eventId: eventId, activeTab: activeTab),
+            EventDetailTabBar(eventId: eventId, activeTab: activeTab, from: from),
             Expanded(
               child: switch (activeTab) {
                 EventDetailTab.details      => EventDetailsTabPage(eventId: eventId),

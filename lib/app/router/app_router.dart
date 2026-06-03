@@ -246,6 +246,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       child: ed.EventDetailPage(
                         eventId: state.pathParameters['eventId']!,
                         activeTab: EventDetailTab.details,
+                        from: state.uri.queryParameters['from'] ?? 'home',
                       ),
                     ),
                   ),
@@ -255,6 +256,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       child: ed.EventDetailPage(
                         eventId: state.pathParameters['eventId']!,
                         activeTab: EventDetailTab.availability,
+                        from: state.uri.queryParameters['from'] ?? 'home',
                       ),
                     ),
                   ),
@@ -263,6 +265,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => EventEditPage(
                       eventId: state.pathParameters['eventId']!,
                       duplicate: state.uri.queryParameters['duplicate'] == 'true',
+                      from: state.uri.queryParameters['from'] ?? 'home',
                     ),
                   ),
                 ],

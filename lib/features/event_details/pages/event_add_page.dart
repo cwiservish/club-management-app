@@ -29,11 +29,13 @@ import '../../../core/models/club_event.dart';
 class EventEditPage extends ConsumerStatefulWidget {
   final String eventId;
   final bool duplicate;
+  final String from;
 
   const EventEditPage({
     super.key,
     required this.eventId,
     this.duplicate = false,
+    this.from = 'home',
   });
 
   @override
@@ -1173,7 +1175,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
 
         final isEdit = widget.eventId != 'new' && !widget.duplicate;
         if (isEdit) {
-          context.go(AppRoutes.home);
+          context.go(widget.from == 'schedule' ? AppRoutes.schedule : AppRoutes.home);
         } else {
           Navigator.maybePop(context);
         }
@@ -1251,11 +1253,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
           ref.read(scheduleProvider.notifier).fetchEvents(activeTeam.uuid);
         }
 
-        Navigator.maybePop(context);
-        
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
+        context.go(widget.from == 'schedule' ? AppRoutes.schedule : AppRoutes.home);
       }
     } else {
       if (mounted) {

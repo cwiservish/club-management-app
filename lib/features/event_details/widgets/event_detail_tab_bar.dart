@@ -12,11 +12,13 @@ import '../models/event_detail_model.dart';
 class EventDetailTabBar extends ConsumerWidget {
   final String eventId;
   final EventDetailTab activeTab;
+  final String from;
 
   const EventDetailTabBar({
     super.key,
     required this.eventId,
     required this.activeTab,
+    this.from = 'home',
   });
 
   @override
@@ -31,13 +33,13 @@ class EventDetailTabBar extends ConsumerWidget {
           EventDetailTabItem(
             label:    'Details',
             isActive: activeTab == EventDetailTab.details,
-            onTap:    () => context.replace(AppRoutes.eventDetails(eventId)),
+            onTap:    () => context.replace('${AppRoutes.eventDetails(eventId)}?from=$from'),
             colors:   colors,
           ),
           EventDetailTabItem(
             label:    'Availability',
             isActive: activeTab == EventDetailTab.availability,
-            onTap:    () => context.replace(AppRoutes.eventAvailability(eventId)),
+            onTap:    () => context.replace('${AppRoutes.eventAvailability(eventId)}?from=$from'),
             colors:   colors,
           ),
         ],

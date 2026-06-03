@@ -68,7 +68,7 @@ class HomeScreen extends ConsumerWidget {
                               return HomeCard(
                                 viewModel: vm,
                                 onEventDetails: () =>
-                                    context.push(AppRoutes.eventDetails(vm.id)),
+                                    context.push('${AppRoutes.eventDetails(vm.id)}?from=home'),
                               );
                             },
                           ),
