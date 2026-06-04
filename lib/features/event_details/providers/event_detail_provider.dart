@@ -340,6 +340,9 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
       if (response.success) {
         // Refresh availability to get latest server state
         await refresh();
+        // Sync home and schedule lists so their counts update too
+        ref.read(homeProvider.notifier).refresh();
+        ref.read(scheduleProvider.notifier).refresh();
         return (success: true, message: response.message.isNotEmpty ? response.message : 'Status updated successfully.');
       } else {
         // Revert optimistic update on failure
