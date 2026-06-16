@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Playbook365</string>
+	<string>Playbook365 Club Management</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -51,5 +51,7 @@
 	<string>This app requires access to your camera to let you take and upload photos of team events.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app requires access to your microphone if recording audio with videos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app requires access to your location to show nearby sports clubs, facilities, and events.</string>
 </dict>
 </plist>

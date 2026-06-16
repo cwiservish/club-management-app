@@ -8,7 +8,7 @@
 PRODUCT_NAME = playbook365
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.playbook365
+PRODUCT_BUNDLE_IDENTIFIER = com.playbook365.clubManagement
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 com.playbook365. All rights reserved.

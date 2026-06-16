@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.playbook365"
+    namespace = "com.playbook365.clubManagement"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -22,7 +22,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.playbook365"
+        applicationId = "com.playbook365.clubManagement"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
