@@ -67,8 +67,10 @@ class HomeScreen extends ConsumerWidget {
                               final vm = viewModels[i - 1];
                               return HomeCard(
                                 viewModel: vm,
-                                onEventDetails: () =>
-                                    context.push('${AppRoutes.eventDetails(vm.id)}?from=home'),
+                                onEventDetails: () {
+                                  final event = homeState.events.firstWhere((e) => e.id == vm.id);
+                                  context.push('${AppRoutes.eventDetails(vm.id)}?from=home', extra: event);
+                                },
                               );
                             },
                           ),

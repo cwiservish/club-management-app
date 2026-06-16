@@ -2,11 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/club_event.dart';
 import '../../../core/enums/event_type.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
+import '../../../core/common_providers/event_refresh_provider.dart';
 import '../../../core/network/api_client.dart';
 import '../models/schedule_models.dart';
 import '../services/schedule_service.dart';
-import '../../event_details/providers/event_detail_provider.dart';
-import '../../event_details/services/event_detail_service.dart';
 
 export '../models/schedule_models.dart';
 
@@ -122,18 +121,27 @@ class ScheduleNotifier extends Notifier<ScheduleState> {
       Future.microtask(() => fetchEvents(activeTeam.uuid));
     }
 
+    // Refresh when any feature signals that event data has changed
+    ref.listen(eventRefreshSignalProvider, (_, __) {
+      final team = ref.read(selectedTeamProvider);
+      if (team != null) Future.microtask(() => fetchEvents(team.uuid));
+    });
+
+    // Preserve existing events across rebuilds so the UI never flashes blank.
+    final previous = stateOrNull;
     return ScheduleState(
-      events: const [],
-      selectedDate: now,
-      displayMonth: DateTime(now.year, now.month, 1),
-      monthView: false,
+      events:       previous?.events ?? const [],
+      selectedDate: previous?.selectedDate ?? now,
+      displayMonth: previous?.displayMonth ?? DateTime(now.year, now.month, 1),
+      monthView:    previous?.monthView ?? false,
       isLoading: activeTeam != null,
     );
   }
 
   /// Fetch events from QA API.
   Future<void> fetchEvents(String teamUuid) async {
-    state = state.copyWith(isLoading: true, errorMessage: null, events: []);
+    // Keep existing events visible — no blank screen during refresh
+    state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final fetched = await ref.read(scheduleServiceProvider).fetchScheduleEvents(teamUuid);
       state = state.copyWith(
@@ -188,7 +196,8 @@ class ScheduleNotifier extends Notifier<ScheduleState> {
     state = state.copyWith(events: newEvents);
   }
 
-  /// Asynchronously saves RSVP status on the server and refreshes the schedule event list.
+  /// Asynchronously saves RSVP status on the server.
+  /// Optimistically updates the UI immediately; reverts on failure.
   Future<({bool success, String message})> saveEventRsvp({
     required ClubEvent event,
     required ClubEventRsvpTarget target,
@@ -199,37 +208,42 @@ class ScheduleNotifier extends Notifier<ScheduleState> {
       return (success: false, message: 'No selected team found');
     }
 
+    // Derive previous status for revert
+    final previousStatus = event.rsvpYes.contains('me') ? 'going'
+        : event.rsvpNo.contains('me') ? 'no'
+        : event.rsvpMaybe.contains('me') ? 'maybe'
+        : '';
+
+    // Optimistic update — instant UI response
+    updateRsvp(event.id, status);
+
     int attendanceValue = 0;
     if (status == 'going') attendanceValue = 1;
     if (status == 'maybe') attendanceValue = 2;
     if (status == 'no') attendanceValue = 0;
 
     try {
-      final service = ref.read(eventDetailServiceProvider);
-      final response = await service.saveEventAttendee(
-        EventAttendeeSaveRequest(
-          teamUuid: activeTeam.uuid,
-          teamEventId: event.dbId ?? 0,
-          attendeeType: target.attendeeType,
-          customerId: target.customerId.toString(),
-          playerId: target.playerId ?? 0,
-          notes: target.notes,
-          attendance: attendanceValue,
-        ),
+      final result = await ref.read(scheduleServiceProvider).saveEventRsvp(
+        teamUuid: activeTeam.uuid,
+        teamEventId: event.dbId ?? 0,
+        target: target,
+        attendance: attendanceValue,
       );
 
-      if (response.success) {
-        // Optimistically update local RSVP choice
-        updateRsvp(event.id, status);
-        
-        // Refresh the schedule list silently to sync everything
-        await refresh();
-        
-        return (success: true, message: response.message.isNotEmpty ? response.message as String : 'RSVP updated successfully.');
+      if (result.success) {
+        // Background refresh — events not cleared so no loader is shown.
+        // Signal home to update its counts too.
+        fetchEvents(activeTeam.uuid);
+        ref.read(eventRefreshSignalProvider.notifier).signal();
+        return (success: true, message: result.message.isNotEmpty ? result.message : 'RSVP updated successfully.');
       } else {
-        return (success: false, message: response.message.isNotEmpty ? response.message as String : 'Failed to update RSVP.');
+        // Revert optimistic update
+        updateRsvp(event.id, previousStatus);
+        return (success: false, message: result.message.isNotEmpty ? result.message : 'Failed to update RSVP.');
       }
     } catch (e) {
+      // Revert optimistic update
+      updateRsvp(event.id, previousStatus);
       return (success: false, message: e.toString());
     }
   }

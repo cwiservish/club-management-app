@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/common_providers/current_user_provider.dart';
+import '../../core/models/club_event.dart';
 
 import '../../features/splash/pages/splash_page.dart';
 import '../../features/home/pages/home_page.dart';
@@ -247,6 +248,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         eventId: state.pathParameters['eventId']!,
                         activeTab: EventDetailTab.details,
                         from: state.uri.queryParameters['from'] ?? 'home',
+                        initialEvent: state.extra is ClubEvent ? state.extra as ClubEvent : null,
                       ),
                     ),
                   ),
@@ -257,6 +259,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         eventId: state.pathParameters['eventId']!,
                         activeTab: EventDetailTab.availability,
                         from: state.uri.queryParameters['from'] ?? 'home',
+                        initialEvent: state.extra is ClubEvent ? state.extra as ClubEvent : null,
                       ),
                     ),
                   ),

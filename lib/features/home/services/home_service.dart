@@ -255,6 +255,30 @@ class HomeService {
     }
   }
 
+  Future<({bool success, String message})> saveEventRsvp({
+    required String teamUuid,
+    required int teamEventId,
+    required String attendeeType,
+    required String customerId,
+    required int playerId,
+    required String notes,
+    required int attendance,
+  }) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.eventAttendeeSave,
+      body: {
+        'team_uuid': teamUuid,
+        'team_event_id': teamEventId,
+        'attendee_type': attendeeType,
+        'customer_id': customerId,
+        'player_id': playerId,
+        'notes': notes,
+        'attendance': attendance,
+      },
+    );
+    return (success: response.success, message: response.message ?? '');
+  }
+
   int _parseInt(dynamic value) {
     if (value == null) return 0;
     if (value is int) return value;

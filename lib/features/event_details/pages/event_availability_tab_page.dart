@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/models/club_event.dart';
 import '../providers/event_detail_provider.dart';
 import '../widgets/availability/player_group.dart';
 import '../widgets/dialogs/text_input_dialog.dart';
@@ -8,13 +9,14 @@ import '../widgets/event_status_picker_sheet.dart';
 
 class EventAvailabilityTabPage extends ConsumerWidget {
   final String eventId;
+  final ClubEvent? initialEvent;
 
-  const EventAvailabilityTabPage({super.key, required this.eventId});
+  const EventAvailabilityTabPage({super.key, required this.eventId, this.initialEvent});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state    = ref.watch(eventDetailProvider(eventId));
-    final notifier = ref.read(eventDetailProvider(eventId).notifier);
+    final state    = ref.watch(eventDetailProvider(EventDetailArgs(eventId, initialEvent)));
+    final notifier = ref.read(eventDetailProvider(EventDetailArgs(eventId, initialEvent)).notifier);
     final colors   = AppColors.current;
 
     void showNote(EventPlayerModel p) {

@@ -1,8 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/club_event.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
-import '../../home/providers/home_provider.dart';
-import '../../schedule/providers/schedule_provider.dart';
+import '../../../core/common_providers/event_refresh_provider.dart';
 import '../models/event_detail_model.dart';
 import '../models/event_player_model.dart';
 import '../models/event_availability_models.dart';
@@ -37,12 +36,49 @@ class EventDetailState {
     String? errorMessage,
   }) {
     return EventDetailState(
-      event:   event   ?? this.event,
+      event:    event    ?? this.event,
       rawEvent: rawEvent ?? this.rawEvent,
-      players: players ?? this.players,
+      players:  players  ?? this.players,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage == null ? this.errorMessage : (errorMessage.isEmpty ? null : errorMessage),
     );
+  }
+
+  // Once availability is loaded, derive counts directly from the live player list
+  // so optimistic updates to player statuses are immediately reflected.
+  // Before availability loads, fall back to the rawEvent snapshot + adjustment
+  // for the current user's own RSVP (mirrors the home page logic exactly).
+  int get goingCount {
+    if (players.isNotEmpty) {
+      return goingPlayers.length + (event.myRsvp == 'going' ? 1 : 0);
+    }
+    final base     = rawEvent?.rsvpYes.length ?? 0;
+    final hadGoing = rawEvent?.rsvpYes.contains('me') ?? false;
+    if (event.myRsvp == 'going' && !hadGoing) return base + 1;
+    if (hadGoing && event.myRsvp != 'going')  return base - 1;
+    return base;
+  }
+
+  int get maybeCount {
+    if (players.isNotEmpty) {
+      return maybePlayers.length + (event.myRsvp == 'maybe' ? 1 : 0);
+    }
+    final base     = rawEvent?.rsvpMaybe.length ?? 0;
+    final hadMaybe = rawEvent?.rsvpMaybe.contains('me') ?? false;
+    if (event.myRsvp == 'maybe' && !hadMaybe) return base + 1;
+    if (hadMaybe && event.myRsvp != 'maybe')  return base - 1;
+    return base;
+  }
+
+  int get noCount {
+    if (players.isNotEmpty) {
+      return noPlayers.length + (event.myRsvp == 'no' ? 1 : 0);
+    }
+    final base  = rawEvent?.rsvpNo.length ?? 0;
+    final hadNo = rawEvent?.rsvpNo.contains('me') ?? false;
+    if (event.myRsvp == 'no' && !hadNo) return base + 1;
+    if (hadNo && event.myRsvp != 'no')  return base - 1;
+    return base;
   }
 
   List<EventPlayerModel> get goingPlayers     => players.where((p) => p.status == PlayerStatus.going).toList();
@@ -54,8 +90,10 @@ class EventDetailState {
 // ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class EventDetailNotifier extends Notifier<EventDetailState> {
-  final String eventId;
-  EventDetailNotifier(this.eventId);
+  final EventDetailArgs _args;
+  EventDetailNotifier(this._args);
+
+  String get eventId => _args.eventId;
 
   int? _teamEventId;
 
@@ -63,24 +101,8 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
   EventDetailState build() {
     final service = ref.read(eventDetailServiceProvider);
     final activeTeam = ref.watch(selectedTeamProvider);
-    final homeState = ref.watch(homeProvider);
-    final scheduleState = ref.watch(scheduleProvider);
 
-    ClubEvent? foundEvent;
-    for (final e in homeState.events) {
-      if (e.id == eventId) {
-        foundEvent = e;
-        break;
-      }
-    }
-    if (foundEvent == null) {
-      for (final e in scheduleState.events) {
-        if (e.id == eventId) {
-          foundEvent = e;
-          break;
-        }
-      }
-    }
+    final ClubEvent? foundEvent = _args.event;
 
     final EventDetailModel eventDetail;
     if (foundEvent != null) {
@@ -155,7 +177,11 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
 
   /// Asynchronously fetches availability from the API
   Future<void> fetchAvailability(String teamUuid) async {
-    state = state.copyWith(isLoading: true, errorMessage: '', players: []);
+    // Only show loader on the very first fetch — subsequent refreshes update in place
+    final isInitialLoad = state.players.isEmpty;
+    if (isInitialLoad) {
+      state = state.copyWith(isLoading: true, errorMessage: '');
+    }
     try {
       final service = ref.read(eventDetailServiceProvider);
       final response = await service.fetchEventAvailability(
@@ -171,6 +197,7 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
         }
 
         final List<EventPlayerModel> mappedPlayers = [];
+
         for (final group in response.data!.groups) {
           final status = _mapGroupKeyToStatus(group.key);
           for (final player in group.players) {
@@ -234,6 +261,21 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
     state = state.copyWith(event: state.event.copyWith(myRsvp: rsvp));
   }
 
+  /// Updates rawEvent with a fresh ClubEvent snapshot (e.g. after navigating
+  /// back from home where the user changed their RSVP). Also re-derives myRsvp
+  /// from the fresh snapshot so counts stay consistent with the home page.
+  void syncRawEvent(ClubEvent? event) {
+    if (event == null) return;
+    String userRsvp = '';
+    if (event.rsvpYes.contains('me')) userRsvp = 'going';
+    else if (event.rsvpMaybe.contains('me')) userRsvp = 'maybe';
+    else if (event.rsvpNo.contains('me')) userRsvp = 'no';
+    state = state.copyWith(
+      rawEvent: event,
+      event: state.event.copyWith(myRsvp: userRsvp),
+    );
+  }
+
   /// Asynchronously saves RSVP status on the server and refreshes availability + home/schedule lists.
   Future<({bool success, String message})> saveEventRsvp({
     required ClubEventRsvpTarget target,
@@ -251,6 +293,10 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
     if (rsvp == 'maybe') attendanceValue = 2;
     if (rsvp == 'no') attendanceValue = 0;
 
+    // Optimistic update — instant UI response
+    final previousRsvp = state.event.myRsvp;
+    setRsvp(rsvp);
+
     try {
       final service = ref.read(eventDetailServiceProvider);
       final response = await service.saveEventAttendee(
@@ -266,21 +312,18 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
       );
 
       if (response.success) {
-        // Update local state
-        setRsvp(rsvp);
-
-        // Refresh the availability list
-        await refresh();
-
-        // Also refresh home and schedule lists silently
-        ref.read(homeProvider.notifier).refresh();
-        ref.read(scheduleProvider.notifier).refresh();
-
+        // Background refresh — no loader, players not cleared
+        refresh();
+        ref.read(eventRefreshSignalProvider.notifier).signal();
         return (success: true, message: response.message.isNotEmpty ? response.message : 'RSVP updated successfully.');
       } else {
+        // Revert optimistic update
+        setRsvp(previousRsvp);
         return (success: false, message: response.message.isNotEmpty ? response.message : 'Failed to update RSVP.');
       }
     } catch (e) {
+      // Revert optimistic update
+      setRsvp(previousRsvp);
       return (success: false, message: e.toString());
     }
   }
@@ -338,11 +381,9 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
       );
 
       if (response.success) {
-        // Refresh availability to get latest server state
-        await refresh();
-        // Sync home and schedule lists so their counts update too
-        ref.read(homeProvider.notifier).refresh();
-        ref.read(scheduleProvider.notifier).refresh();
+        // Optimistic state is already correct — no refresh needed.
+        // Signal home to update its counts in the background.
+        ref.read(eventRefreshSignalProvider.notifier).signal();
         return (success: true, message: response.message.isNotEmpty ? response.message : 'Status updated successfully.');
       } else {
         // Revert optimistic update on failure
@@ -420,6 +461,6 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
 // ─── Providers ────────────────────────────────────────────────────────────────
 
 final eventDetailProvider =
-    NotifierProvider.family<EventDetailNotifier, EventDetailState, String>(
+    NotifierProvider.family<EventDetailNotifier, EventDetailState, EventDetailArgs>(
   EventDetailNotifier.new,
 );

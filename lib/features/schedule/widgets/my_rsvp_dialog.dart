@@ -183,12 +183,6 @@ class MyRsvpDialog extends ConsumerWidget {
             // Fallback: local-only update when no targets are present.
             notifier.updateRsvp(latestEvent.id, value);
           }
-
-          if (context.mounted) {
-            Future.delayed(const Duration(milliseconds: 150), () {
-              if (context.mounted) Navigator.of(context).pop();
-            });
-          }
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),

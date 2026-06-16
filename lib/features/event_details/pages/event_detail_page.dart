@@ -5,9 +5,11 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
 import '../../../core/common_providers/theme_provider.dart';
+import '../../../core/models/club_event.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
 import '../models/event_detail_model.dart';
+import '../providers/event_detail_provider.dart';
 import '../widgets/event_detail_tab_bar.dart';
 import 'event_details_tab_page.dart';
 import 'event_availability_tab_page.dart';
@@ -15,20 +17,39 @@ import 'event_availability_tab_page.dart';
 // ─── Event Detail Shell ────────────────────────────────────────────────────────
 // Renders SubHeader + tab bar; delegates content to the active tab page.
 
-class EventDetailPage extends ConsumerWidget {
+class EventDetailPage extends ConsumerStatefulWidget {
   final String eventId;
   final EventDetailTab activeTab;
   final String from;
+  final ClubEvent? initialEvent;
 
   const EventDetailPage({
     super.key,
     required this.eventId,
     required this.activeTab,
     this.from = 'home',
+    this.initialEvent,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EventDetailPage> createState() => _EventDetailPageState();
+}
+
+class _EventDetailPageState extends ConsumerState<EventDetailPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Each time this page is pushed, sync the rawEvent so that RSVP counts
+    // reflect any changes the user made on the home page since last visit.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(eventDetailProvider(EventDetailArgs(widget.eventId, widget.initialEvent)).notifier)
+          .syncRawEvent(widget.initialEvent);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(themeModeProvider);
     final activeTeam = ref.watch(selectedTeamProvider);
     final isCoach = activeTeam?.isCoach ?? false;
@@ -42,13 +63,13 @@ class EventDetailPage extends ConsumerWidget {
             SubHeader(
               title:      'Event Details',
               rightText:  isCoach ? 'Edit' : null,
-              onRightTap: isCoach ? () => context.push('${AppRoutes.eventEdit(eventId)}?from=$from') : null,
+              onRightTap: isCoach ? () => context.push('${AppRoutes.eventEdit(widget.eventId)}?from=${widget.from}') : null,
             ),
-            EventDetailTabBar(eventId: eventId, activeTab: activeTab, from: from),
+            EventDetailTabBar(eventId: widget.eventId, activeTab: widget.activeTab, from: widget.from),
             Expanded(
-              child: switch (activeTab) {
-                EventDetailTab.details      => EventDetailsTabPage(eventId: eventId),
-                EventDetailTab.availability => EventAvailabilityTabPage(eventId: eventId),
+              child: switch (widget.activeTab) {
+                EventDetailTab.details      => EventDetailsTabPage(eventId: widget.eventId, initialEvent: widget.initialEvent),
+                EventDetailTab.availability => EventAvailabilityTabPage(eventId: widget.eventId, initialEvent: widget.initialEvent),
               },
             ),
           ],

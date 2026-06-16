@@ -6,6 +6,9 @@ import '../../../core/local_storage/app_storage.dart';
 import '../../../core/common_providers/current_user_provider.dart';
 import '../../../core/common_providers/user_teams_provider.dart';
 import '../../../core/config/environment_config.dart';
+import '../../../core/models/team_model.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/interceptors/logging_interceptor.dart';
 import '../../../core/network/token_storage.dart';
 
@@ -13,43 +16,56 @@ final authServiceProvider = Provider<AuthService>((ref) {
   final timeout = Duration(seconds: EnvironmentConfig.timeoutSeconds);
   final dio = Dio(
     BaseOptions(
+      baseUrl: EnvironmentConfig.fusionAuthBaseUrl,
       connectTimeout: timeout,
       receiveTimeout: timeout,
       sendTimeout: timeout,
     ),
   );
-
-  dio.interceptors.addAll([
-    if (EnvironmentConfig.enableLogging) LoggingInterceptor(),
-  ]);
-
-  return AuthService(dio, ref.read(appStorageProvider));
+  if (EnvironmentConfig.enableLogging) {
+    dio.interceptors.add(LoggingInterceptor());
+  }
+  return AuthService(dio);
 });
 
-class AuthNotifier extends AsyncNotifier<void> {
+// ─── Login ────────────────────────────────────────────────────────────────────
+
+class LoginNotifier extends AsyncNotifier<void> {
   @override
-  FutureOr<void> build() {
-    // Initial state
-    return null;
-  }
+  FutureOr<void> build() => null;
 
   Future<void> login(String email, String password) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final authService = ref.read(authServiceProvider);
-      final user = await authService.login(email, password);
-      if (user != null) {
-        // Sync token in memory
-        final token = await ref.read(appStorageProvider).readToken();
-        ref.read(authTokenProvider.notifier).setToken(token);
+      final (:user, :token) = await ref.read(authServiceProvider).login(email, password);
 
-        await ref.read(currentUserProvider.notifier).setUser(user);
-        ref.invalidate(userTeamsProvider);
-      } else {
-        throw Exception('Login failed: Invalid user data received');
-      }
+      await ref.read(appStorageProvider).saveToken(token);
+      ref.read(authTokenProvider.notifier).setToken(token);
+
+      final res = await ref.read(apiClientProvider).post(
+        ApiEndpoints.clubTeamsList,
+        body: '',
+        options: Options(contentType: 'application/x-www-form-urlencoded'),
+      );
+      final grid = ((res.data as Map<String, dynamic>?)?['grid'] as List?) ?? [];
+      final teams = grid.map((e) => Team.fromJson(e as Map<String, dynamic>)).toList();
+      await ref.read(appStorageProvider).saveTeams(teams);
+
+      await ref.read(currentUserProvider.notifier).setUser(user);
+      ref.invalidate(userTeamsProvider);
     });
   }
+}
+
+final loginProvider = AsyncNotifierProvider<LoginNotifier, void>(
+  LoginNotifier.new,
+);
+
+// ─── Forgot Password ──────────────────────────────────────────────────────────
+
+class ForgotPasswordNotifier extends AsyncNotifier<void> {
+  @override
+  FutureOr<void> build() => null;
 
   Future<void> forgotPassword(String email) async {
     state = const AsyncLoading();
@@ -57,6 +73,17 @@ class AuthNotifier extends AsyncNotifier<void> {
       await ref.read(authServiceProvider).forgotPassword(email);
     });
   }
+}
+
+final forgotPasswordProvider = AsyncNotifierProvider<ForgotPasswordNotifier, void>(
+  ForgotPasswordNotifier.new,
+);
+
+// ─── Logout ───────────────────────────────────────────────────────────────────
+
+class AuthNotifier extends AsyncNotifier<void> {
+  @override
+  FutureOr<void> build() => null;
 
   Future<void> logout() async {
     state = const AsyncLoading();

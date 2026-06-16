@@ -10,23 +10,25 @@ import '../widgets/details/event_header_card.dart';
 import '../widgets/details/rsvp_section.dart';
 import '../widgets/details/logistics_section.dart';
 
-import '../../home/providers/home_provider.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
+import '../../../core/models/club_event.dart';
 
 class EventDetailsTabPage extends ConsumerWidget {
   final String eventId;
+  final ClubEvent? initialEvent;
 
-  const EventDetailsTabPage({super.key, required this.eventId});
+  const EventDetailsTabPage({super.key, required this.eventId, this.initialEvent});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(eventDetailProvider(eventId));
-    final notifier = ref.read(eventDetailProvider(eventId).notifier);
+    final state = ref.watch(eventDetailProvider(EventDetailArgs(eventId, initialEvent)));
+    final notifier = ref.read(eventDetailProvider(EventDetailArgs(eventId, initialEvent)).notifier);
     final colors = AppColors.current;
     final activeTeam = ref.watch(selectedTeamProvider);
     final isCoach = activeTeam?.isCoach ?? false;
 
-    if (state.isLoading) {
+    // Only block the UI on the very first load when there is no data to show yet
+    if (state.isLoading && state.rawEvent == null) {
       return ColoredBox(
         color: colors.card,
         child: Center(
@@ -89,12 +91,7 @@ class EventDetailsTabPage extends ConsumerWidget {
     }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        final activeTeam = ref.read(selectedTeamProvider);
-        if (activeTeam != null) {
-          await ref.read(homeProvider.notifier).fetchEvents(activeTeam.uuid);
-        }
-      },
+      onRefresh: () => notifier.refresh(),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 20),
@@ -102,34 +99,13 @@ class EventDetailsTabPage extends ConsumerWidget {
           children: [
             EventHeaderCard(event: state.event, scheduleGameId: state.rawEvent?.scheduleGameId),
             const SizedBox(height: 16),
-            // Use the same counts shown on the home list page for this event.
-            // homeProvider.viewModels already applies the same attendance_counts
-            // arithmetic used on the list screen, so the numbers always match.
-            Builder(builder: (context) {
-              final homeVm = ref
-                  .watch(homeProvider)
-                  .viewModels
-                  .cast<HomeCardViewModel?>()
-                  .firstWhere((vm) => vm?.id == eventId, orElse: () => null);
-
-              final goingCount = homeVm?.goingCount
-                  ?? state.rawEvent?.rsvpYes.length
-                  ?? state.goingPlayers.length;
-              final maybeCount = homeVm?.maybeCount
-                  ?? state.rawEvent?.rsvpMaybe.length
-                  ?? state.maybePlayers.length;
-              final noCount = homeVm?.noCount
-                  ?? state.rawEvent?.rsvpNo.length
-                  ?? state.noPlayers.length;
-
-              return RsvpSection(
-                selected: state.event.myRsvp,
-                onSelect: handleRsvpTap,
-                goingCount: goingCount,
-                maybeCount: maybeCount,
-                noCount: noCount,
-              );
-            }),
+            RsvpSection(
+              selected: state.event.myRsvp,
+              onSelect: handleRsvpTap,
+              goingCount: state.goingCount,
+              maybeCount: state.maybeCount,
+              noCount: state.noCount,
+            ),
             const SizedBox(height: 16),
             LogisticsSection(
               event: state.event,

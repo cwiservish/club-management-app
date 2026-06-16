@@ -33,16 +33,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    await ref.read(authNotifierProvider.notifier).login(email, password);
+    await ref.read(loginProvider.notifier).login(email, password);
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.current;
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(loginProvider);
 
     // Listen for errors
-    ref.listen<AsyncValue<void>>(authNotifierProvider, (previous, next) {
+    ref.listen<AsyncValue<void>>(loginProvider, (previous, next) {
       next.whenOrNull(
         error: (error, _) {
           ScaffoldMessenger.of(context).showSnackBar(

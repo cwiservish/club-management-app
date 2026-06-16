@@ -1,17 +1,18 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/enums/event_type.dart';
 import '../../../core/models/club_event.dart';
+import '../../../core/models/team_model.dart';
 import '../../../core/local_storage/app_storage.dart';
-import '../../../core/network/token_storage.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/token_storage.dart';
 import '../../../core/common_providers/user_teams_provider.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
-import '../../auth/providers/auth_provider.dart';
+import '../../../core/common_providers/event_refresh_provider.dart';
 import '../models/home_models.dart';
 import '../services/home_service.dart';
-import '../../event_details/providers/event_detail_provider.dart';
-import '../../event_details/services/event_detail_service.dart';
 
 export '../models/home_models.dart';
 
@@ -123,6 +124,25 @@ class HomeState {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/// Moves 'me' into the correct rsvp array on a ClubEvent to match [rsvp].
+/// Used for optimistic updates so navigation always passes current RSVP state.
+List<ClubEvent> _withOptimisticRsvp(
+  List<ClubEvent> events,
+  String eventId,
+  HomeRsvp rsvp,
+) {
+  return events.map((e) {
+    if (e.id != eventId) return e;
+    final yes   = List<String>.of(e.rsvpYes)..remove('me');
+    final maybe = List<String>.of(e.rsvpMaybe)..remove('me');
+    final no    = List<String>.of(e.rsvpNo)..remove('me');
+    if (rsvp == HomeRsvp.going) yes.add('me');
+    if (rsvp == HomeRsvp.maybe) maybe.add('me');
+    if (rsvp == HomeRsvp.no)    no.add('me');
+    return e.copyWith(rsvpYes: yes, rsvpMaybe: maybe, rsvpNo: no);
+  }).toList();
+}
+
 String _fmtTime(DateTime t) {
   final h = t.hour > 12 ? t.hour - 12 : (t.hour == 0 ? 12 : t.hour);
   final hStr = h.toString().padLeft(2, '0');
@@ -149,16 +169,27 @@ class HomeNotifier extends Notifier<HomeState> {
       Future.microtask(() => fetchEvents(activeTeam.uuid));
     }
 
+    // Refresh events whenever any feature signals that event data has changed
+    // (e.g. RSVP saved in event details). This keeps home in sync in real-time.
+    ref.listen(eventRefreshSignalProvider, (_, __) {
+      final team = ref.read(selectedTeamProvider);
+      if (team != null) Future.microtask(() => fetchEvents(team.uuid));
+    });
+
+    // Preserve existing events across rebuilds (e.g. when selectedTeamProvider
+    // re-emits the same team) so the UI never flashes a blank/loading state.
+    final previous = stateOrNull;
     return HomeState(
-      events:    const [],
-      userRsvps: const {},
+      events:         previous?.events         ?? const [],
+      bannerImageUrl: previous?.bannerImageUrl,
+      userRsvps:      previous?.userRsvps      ?? const {},
       isLoading: activeTeam != null,
     );
   }
 
   /// Fetches events for the selected team from QA API.
   Future<void> fetchEvents(String teamUuid) async {
-    state = state.copyWith(isLoading: true, errorMessage: null, events: []);
+    state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final result = await ref.read(homeServiceProvider).fetchEvents(teamUuid);
       final fetched = result.events;
@@ -202,7 +233,8 @@ class HomeNotifier extends Notifier<HomeState> {
     );
   }
 
-  /// Asynchronously saves RSVP status on the server and refreshes the home event list.
+  /// Asynchronously saves RSVP status on the server.
+  /// Optimistically updates the UI immediately; reverts on failure.
   Future<({bool success, String message})> saveEventRsvp({
     required ClubEvent event,
     required ClubEventRsvpTarget target,
@@ -213,38 +245,49 @@ class HomeNotifier extends Notifier<HomeState> {
       return (success: false, message: 'No selected team found');
     }
 
+    // Optimistic update — instant UI response.
+    // Update both userRsvps (for counts) and the ClubEvent's rsvp arrays (so
+    // navigating to event details immediately passes the correct RSVP state).
+    final previousRsvp = state.userRsvps[event.id] ?? HomeRsvp.none;
+    state = state.copyWith(
+      userRsvps: {...state.userRsvps, event.id: rsvp},
+      events: _withOptimisticRsvp(state.events, event.id, rsvp),
+    );
+
     int attendanceValue = 0;
     if (rsvp == HomeRsvp.going) attendanceValue = 1;
     if (rsvp == HomeRsvp.maybe) attendanceValue = 2;
     if (rsvp == HomeRsvp.no) attendanceValue = 0;
 
     try {
-      final service = ref.read(eventDetailServiceProvider);
-      final response = await service.saveEventAttendee(
-        EventAttendeeSaveRequest(
-          teamUuid: activeTeam.uuid,
-          teamEventId: event.dbId ?? 0,
-          attendeeType: target.attendeeType,
-          customerId: target.customerId.toString(),
-          playerId: target.playerId ?? 0,
-          notes: target.notes,
-          attendance: attendanceValue,
-        ),
+      final result = await ref.read(homeServiceProvider).saveEventRsvp(
+        teamUuid: activeTeam.uuid,
+        teamEventId: event.dbId ?? 0,
+        attendeeType: target.attendeeType,
+        customerId: target.customerId.toString(),
+        playerId: target.playerId ?? 0,
+        notes: target.notes,
+        attendance: attendanceValue,
       );
 
-      if (response.success) {
-        // Optimistically update local RSVP choice
-        final Map<String, HomeRsvp> updatedRsvps = {...state.userRsvps, event.id: rsvp};
-        state = state.copyWith(userRsvps: updatedRsvps);
-        
-        // Refresh the event list silently to sync everything
-        await refresh();
-        
-        return (success: true, message: response.message.isNotEmpty ? response.message : 'RSVP updated successfully.');
+      if (result.success) {
+        // Background refresh — events not cleared so no loader is shown
+        fetchEvents(activeTeam.uuid);
+        return (success: true, message: result.message.isNotEmpty ? result.message : 'RSVP updated successfully.');
       } else {
-        return (success: false, message: response.message.isNotEmpty ? response.message : 'Failed to update RSVP.');
+        // Revert optimistic update
+        state = state.copyWith(
+          userRsvps: {...state.userRsvps, event.id: previousRsvp},
+          events: _withOptimisticRsvp(state.events, event.id, previousRsvp),
+        );
+        return (success: false, message: result.message.isNotEmpty ? result.message : 'Failed to update RSVP.');
       }
     } catch (e) {
+      // Revert optimistic update
+      state = state.copyWith(
+        userRsvps: {...state.userRsvps, event.id: previousRsvp},
+        events: _withOptimisticRsvp(state.events, event.id, previousRsvp),
+      );
       return (success: false, message: e.toString());
     }
   }
@@ -263,8 +306,13 @@ class HomeNotifier extends Notifier<HomeState> {
       }
 
       if (token != null) {
-        final authService = ref.read(authServiceProvider);
-        final teams = await authService.fetchTeams(token);
+        final res = await ref.read(apiClientProvider).post(
+          ApiEndpoints.clubTeamsList,
+          body: '',
+          options: Options(contentType: 'application/x-www-form-urlencoded'),
+        );
+        final grid = ((res.data as Map<String, dynamic>?)?['grid'] as List?) ?? [];
+        final teams = grid.map((e) => Team.fromJson(e as Map<String, dynamic>)).toList();
         await ref.read(appStorageProvider).saveTeams(teams);
         ref.invalidate(userTeamsProvider);
       }

@@ -25,28 +25,25 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
-
-    final email = _emailController.text.trim();
-    await ref.read(authNotifierProvider.notifier).forgotPassword(email);
-
-    if (mounted && !ref.read(authNotifierProvider).hasError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password reset email sent. Please check your inbox.'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      context.pop(); // Go back to login
-    }
+    await ref.read(forgotPasswordProvider.notifier).forgotPassword(_emailController.text.trim());
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.current;
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(forgotPasswordProvider);
 
-    ref.listen<AsyncValue<void>>(authNotifierProvider, (previous, next) {
+    ref.listen<AsyncValue<void>>(forgotPasswordProvider, (previous, next) {
       next.whenOrNull(
+        data: (_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Password reset email sent. Please check your inbox.'),
+              backgroundColor: colors.success,
+            ),
+          );
+          context.pop();
+        },
         error: (error, _) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -61,7 +58,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.background,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: colors.textPrimary),

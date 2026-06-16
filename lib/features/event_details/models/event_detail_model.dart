@@ -1,3 +1,23 @@
+import '../../../core/models/club_event.dart';
+
+// ─── Event Detail Args ────────────────────────────────────────────────────────
+// Carrier for the family provider key. Equality is based on eventId only so
+// that tab switching (which passes null event) reuses the same provider instance.
+
+class EventDetailArgs {
+  final String eventId;
+  final ClubEvent? event;
+
+  const EventDetailArgs(this.eventId, [this.event]);
+
+  @override
+  bool operator ==(Object other) =>
+      other is EventDetailArgs && other.eventId == eventId;
+
+  @override
+  int get hashCode => eventId.hashCode;
+}
+
 // ─── Event Detail Model ────────────────────────────────────────────────────────
 
 class EventDetailModel {

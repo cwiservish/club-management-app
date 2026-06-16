@@ -1,75 +1,17 @@
 import 'package:dio/dio.dart';
 import '../../../core/config/environment_config.dart';
-import '../../../core/network/api_endpoints.dart';
 import '../../../core/models/user_model.dart';
 import '../../../core/enums/user_role.dart';
-import '../../../core/local_storage/app_storage.dart';
-import '../../../core/models/team_model.dart';
 
 class AuthService {
   final Dio _dio;
-  final AppStorage _appStorage;
 
-  AuthService(this._dio, this._appStorage);
+  AuthService(this._dio);
 
-  Future<List<Team>> fetchTeams(String token) async {
+  Future<({AppUser user, String token})> login(String email, String password) async {
     try {
       final response = await _dio.post(
-        '${ApiEndpoints.baseUrl}${ApiEndpoints.clubTeamsList}',
-        data: '',
-        options: Options(
-          headers: {
-            'Accept': '*/*',
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'Authorization': 'Bearer $token',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        final data = response.data;
-        if (data is Map<String, dynamic> && data['success'] == true) {
-          final teamsList = data['data']?['grid'];
-          if (teamsList is List) {
-            return teamsList
-                .map((t) => Team.fromJson(t is Map<String, dynamic> ? t : {}))
-                .toList();
-          }
-          return [];
-        } else {
-          final msg = data is Map ? data['message'] : null;
-          if (msg is String && msg.contains('Unauthorized')) {
-            throw 'Unauthorized access';
-          }
-          throw msg ?? 'Failed to retrieve teams: success was false';
-        }
-      } else {
-        if (response.statusCode == 401) {
-          throw 'Unauthorized access';
-        }
-        throw 'Failed to fetch teams from server (status: ${response.statusCode})';
-      }
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
-        throw 'Unauthorized access';
-      }
-      final responseData = e.response?.data;
-      if (responseData is Map) {
-        final msg = responseData['message'];
-        if (msg is String && msg.contains('Unauthorized')) {
-          throw 'Unauthorized access';
-        }
-      }
-      throw 'Network error while fetching teams: ${e.message}';
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<AppUser?> login(String email, String password) async {
-    try {
-      final response = await _dio.post(
-        '${EnvironmentConfig.fusionAuthBaseUrl}/api/login',
+        '/api/login',
         data: {
           'loginId': email,
           'password': password,
@@ -85,53 +27,31 @@ class AuthService {
         ),
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        final user = data['user'];
-        final token = data['token'] as String?;
+      final data = response.data as Map<String, dynamic>;
+      final token = data['token'] as String?;
+      if (token == null) throw 'Login failed: missing token';
 
-        if (token == null) {
-          throw 'Login failed: Missing authentication token';
-        }
+      final rawUser = data['user'] as Map<String, dynamic>;
+      final user = AppUser(
+        id: rawUser['id'] as String,
+        displayName: (rawUser['firstName'] as String?) ?? (rawUser['email'] as String),
+        email: rawUser['email'] as String,
+        role: UserRole.athlete,
+        teamId: null,
+      );
 
-        print('[Login API] Token received: $token');
-
-        // Fetch teams and validate the response
-        final teams = await fetchTeams(token);
-
-        // Save token and teams locally
-        await _appStorage.saveToken(token);
-        print('[Login API] Token saved locally.');
-        await _appStorage.saveTeams(teams);
-
-        // Map FusionAuth user to AppUser
-        // In a real app, you'd extract roles from FusionAuth registrations
-        return AppUser(
-          id: user['id'],
-          displayName: user['firstName'] ?? user['email'],
-          email: user['email'],
-          role: UserRole.athlete, // Default role, should be mapped from FusionAuth
-          teamId: null,
-        );
-      }
+      return (user: user, token: token);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        throw 'User not found or invalid credentials';
-      }
-      throw e.message ?? 'An error occurred during login';
-    } catch (e) {
-      rethrow;
+      if (e.response?.statusCode == 404) throw 'Invalid email or password';
+      throw e.message ?? 'Login failed';
     }
-    return null;
   }
 
   Future<void> forgotPassword(String email) async {
     try {
       await _dio.post(
-        '${EnvironmentConfig.fusionAuthBaseUrl}/api/user/forgot-password',
-        data: {
-          'loginId': email,
-        },
+        '/api/user/forgot-password',
+        data: {'loginId': email},
         options: Options(
           headers: {
             if (EnvironmentConfig.fusionAuthApiKey.isNotEmpty)
@@ -143,12 +63,10 @@ class AuthService {
       );
     } on DioException catch (e) {
       throw 'Failed to send reset email: ${e.message}';
-    } catch (e) {
-      throw 'An unexpected error occurred';
     }
   }
 
   Future<void> logout() async {
-    // Implement FusionAuth logout if needed (e.g. invalidate session)
+    // FusionAuth session invalidation if needed
   }
 }

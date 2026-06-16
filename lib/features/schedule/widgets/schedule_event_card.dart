@@ -82,7 +82,7 @@ class ScheduleEventCard extends ConsumerWidget {
       );
     }
     return GestureDetector(
-      onTap: () => context.push('${AppRoutes.eventDetails(event.id)}?from=schedule'),
+      onTap: () => context.push('${AppRoutes.eventDetails(latestEvent.id)}?from=schedule', extra: latestEvent),
       child: Container(
         color: AppColors.current.surface,
         padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 18),

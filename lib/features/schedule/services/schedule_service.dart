@@ -65,4 +65,29 @@ class ScheduleService {
       return [];
     }
   }
+
+  Future<({bool success, String message})> saveEventRsvp({
+    required String teamUuid,
+    required int teamEventId,
+    required ClubEventRsvpTarget target,
+    required int attendance,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.eventAttendeeSave,
+        body: {
+          'team_uuid': teamUuid,
+          'team_event_id': teamEventId,
+          'attendee_type': target.attendeeType,
+          'customer_id': target.customerId.toString(),
+          'player_id': target.playerId ?? 0,
+          'notes': target.notes,
+          'attendance': attendance,
+        },
+      );
+      return (success: response.success, message: response.message ?? '');
+    } catch (e) {
+      return (success: false, message: e.toString());
+    }
+  }
 }
