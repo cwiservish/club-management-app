@@ -28,6 +28,8 @@ import '../../features/schedule/pages/schedule_page.dart';
 import '../../features/event_details/models/event_detail_model.dart';
 import '../../features/event_details/pages/event_detail_page.dart' as ed;
 import '../../features/event_details/pages/event_add_page.dart';
+import '../../features/event_details/pages/new_event_page.dart';
+import '../../features/event_details/pages/import_schedule_page.dart';
 import '../../features/auth/pages/login_page.dart';
 import '../../features/auth/pages/forgot_password_page.dart';
 import '../../shell/app_shell.dart';
@@ -100,6 +102,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => ProfileWebViewPage(
           url: state.extra as String,
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.newEvent,
+        builder: (context, state) => const NewEventPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.importSchedule,
+        builder: (context, state) => const ImportSchedulePage(),
       ),
 
       StatefulShellRoute.indexedStack(

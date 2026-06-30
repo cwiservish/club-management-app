@@ -34,6 +34,8 @@ abstract class AppRoutes {
   static const eventDetailAvailability = 'availability';
 
   static const eventDetailEdit = 'edit';
+  static const newEvent = '/event/new-event';
+  static const importSchedule = '/event/import-schedule';
 
   static String eventDetails(String id)      => '/event/$id/details';
   static String eventAvailability(String id) => '/event/$id/availability';

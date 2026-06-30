@@ -76,7 +76,9 @@ void showAddMenu(BuildContext context, {Team? activeTeam}) {
                             label: 'Event',
                             onTap: () {
                               Navigator.of(context).pop();
-                              context.push(AppRoutes.eventEdit('new'));
+                              // Commented out old redirection:
+                              // context.push(AppRoutes.eventEdit('new'));
+                              context.push(AppRoutes.newEvent);
                             },
                           ),
                         if (viewModel.showPlayer)
