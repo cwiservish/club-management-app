@@ -68,6 +68,50 @@ class NewEventArrivalTimeOption {
   }
 }
 
+// ─── Opponent Team ────────────────────────────────────────────────────────────
+
+class OpponentTeam {
+  final int id;
+  final String name;
+
+  const OpponentTeam({required this.id, required this.name});
+
+  factory OpponentTeam.fromJson(Map<String, dynamic> json) {
+    return OpponentTeam(
+      id: (json['id'] as num).toInt(),
+      name: json['name']?.toString() ?? '',
+    );
+  }
+}
+
+// ─── Uniform Template ─────────────────────────────────────────────────────────
+
+class NewEventUniformTemplate {
+  final int id;
+  final String templateName;
+  final String topColor;
+  final String bottomColor;
+  final String socksColor;
+
+  const NewEventUniformTemplate({
+    required this.id,
+    required this.templateName,
+    required this.topColor,
+    required this.bottomColor,
+    required this.socksColor,
+  });
+
+  factory NewEventUniformTemplate.fromJson(Map<String, dynamic> json) {
+    return NewEventUniformTemplate(
+      id: (json['id'] as num).toInt(),
+      templateName: json['template_name']?.toString() ?? '',
+      topColor: json['top_color']?.toString() ?? '',
+      bottomColor: json['bottom_color']?.toString() ?? '',
+      socksColor: json['socks_color']?.toString() ?? '',
+    );
+  }
+}
+
 // ─── Full Dropdown Options ────────────────────────────────────────────────────
 
 class NewEventDropdownOptions {
@@ -76,8 +120,8 @@ class NewEventDropdownOptions {
   final List<NewEventType> eventTypes;
   final List<NewEventHomeAwayOption> homeAwayOptions;
   final List<NewEventArrivalTimeOption> arrivalTimeOptions;
-  final List<dynamic> teams;
-  final List<dynamic> uniformTemplates;
+  final List<OpponentTeam> teams;
+  final List<NewEventUniformTemplate> uniformTemplates;
 
   const NewEventDropdownOptions({
     required this.timezones,
@@ -130,9 +174,17 @@ class NewEventDropdownOptions {
           .map((e) => NewEventArrivalTimeOption.fromJson(e)),
     ];
 
-    // teams + uniform_templates (empty for now, stored for future use)
-    final teams = json['teams'] as List? ?? [];
-    final uniformTemplates = json['uniform_templates'] as List? ?? [];
+    // teams (opponent teams for game/scrimmage dropdown)
+    final teams = (json['teams'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map((e) => OpponentTeam.fromJson(e))
+        .toList();
+
+    // uniform_templates
+    final uniformTemplates = (json['uniform_templates'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map((e) => NewEventUniformTemplate.fromJson(e))
+        .toList();
 
     return NewEventDropdownOptions(
       timezones: timezones,
