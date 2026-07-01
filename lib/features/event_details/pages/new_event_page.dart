@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/common_providers/theme_provider.dart';
 import '../../../core/shared_widgets/sub_header.dart';
+import '../services/event_detail_service.dart';
 
 // ─── Enums & Models ──────────────────────────────────────────────────────────
 
@@ -77,8 +79,15 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   final _locationController = TextEditingController(text: 'Gillis-Rother Soccer Complex');
   final _notesController = TextEditingController();
 
-  // Location Suggestion overlay
-  bool _showLocationSuggestions = false;
+  // Location state
+  String _locationName = '';
+  String _latitude = '';
+  String _longitude = '';
+  List<dynamic> _locationSuggestions = [];
+  bool _isLoadingLocation = false;
+  OverlayEntry? _locationOverlay;
+  Timer? _locationDebounceTimer;
+  final GlobalKey _locationFieldKey = GlobalKey();
 
   // Save template states
   bool _showSaveTemplateForm = false;
@@ -170,6 +179,190 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
     UniformColor(name: 'Tan', color: Color(0xFFD7CCC8)),
   ];
 
+  // ─── Location Overlay ────────────────────────────────────────────────────────
+
+  void _showLocationOverlay() {
+    final renderBox = _locationFieldKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+
+    if (_locationOverlay != null) {
+      _locationOverlay!.markNeedsBuild();
+      return;
+    }
+
+    _locationOverlay = OverlayEntry(
+      builder: (_) {
+        final colors = AppColors.current;
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: _hideLocationOverlay,
+                child: const SizedBox.expand(),
+              ),
+            ),
+            Positioned(
+              left: offset.dx,
+              top: offset.dy + size.height + 4,
+              width: size.width,
+              child: Material(
+                color: Colors.transparent,
+                child: GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    constraints: const BoxConstraints(maxHeight: 220),
+                    decoration: BoxDecoration(
+                      color: colors.isDark ? colors.card : Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: colors.border),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: _isLoadingLocation
+                        ? const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            padding: EdgeInsets.zero,
+                            itemCount: _locationSuggestions.length,
+                            itemBuilder: (ctx, i) {
+                              final item = _locationSuggestions[i] as Map;
+                              final name = item['structured_formatting']?['main_text'] ?? item['description'] ?? '';
+                              final subtitle = item['structured_formatting']?['secondary_text'] ?? '';
+                              return InkWell(
+                                onTap: () => _selectLocation(item),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      bottom: BorderSide(color: colors.border.withValues(alpha: 0.3)),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.location_on_outlined, color: colors.primary, size: 18),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              name,
+                                              style: AppTextStyles.body15.copyWith(
+                                                color: colors.textPrimary,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            if ((subtitle as String).isNotEmpty) ...[
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                subtitle,
+                                                style: AppTextStyles.body13.copyWith(color: colors.textSecondary),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    Overlay.of(context).insert(_locationOverlay!);
+  }
+
+  void _hideLocationOverlay() {
+    _locationOverlay?.remove();
+    _locationOverlay = null;
+  }
+
+  void _onLocationChanged(String val) {
+    _locationDebounceTimer?.cancel();
+    if (val.trim().isEmpty) {
+      _hideLocationOverlay();
+      setState(() {
+        _locationSuggestions = [];
+        _locationName = '';
+        _latitude = '';
+        _longitude = '';
+      });
+      return;
+    }
+    _locationDebounceTimer = Timer(const Duration(milliseconds: 400), () async {
+      final service = ref.read(eventDetailServiceProvider);
+      setState(() => _isLoadingLocation = true);
+      _showLocationOverlay();
+      try {
+        final results = await service.fetchPlacesAutocomplete(val);
+        if (!mounted) return;
+        setState(() {
+          _locationSuggestions = results;
+          _isLoadingLocation = false;
+        });
+        _locationOverlay?.markNeedsBuild();
+      } catch (_) {
+        if (!mounted) return;
+        setState(() {
+          _locationSuggestions = [];
+          _isLoadingLocation = false;
+        });
+        _hideLocationOverlay();
+      }
+    });
+  }
+
+  Future<void> _selectLocation(Map item) async {
+    final service = ref.read(eventDetailServiceProvider);
+    if (item.containsKey('latitude')) {
+      setState(() {
+        _locationName = item['name']?.toString() ?? '';
+        _latitude = item['latitude']?.toString() ?? '';
+        _longitude = item['longitude']?.toString() ?? '';
+        _locationController.text = _locationName;
+      });
+      _hideLocationOverlay();
+    } else {
+      final placeId = item['place_id']?.toString() ?? '';
+      final name = item['structured_formatting']?['main_text'] ?? item['description'] ?? '';
+      if (placeId.isNotEmpty) {
+        setState(() => _isLoadingLocation = true);
+        _locationOverlay?.markNeedsBuild();
+        final details = await service.fetchPlaceDetails(placeId);
+        if (!mounted) return;
+        setState(() {
+          _locationName = name;
+          _latitude = details?['geometry']?['location']?['lat']?.toString() ?? '';
+          _longitude = details?['geometry']?['location']?['lng']?.toString() ?? '';
+          _locationController.text = name;
+          _isLoadingLocation = false;
+        });
+        _hideLocationOverlay();
+      }
+    }
+  }
+
   @override
   void _showStartTimeOverlay() {
     _removeTimePickerOverlay();
@@ -221,6 +414,8 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   @override
   void dispose() {
     _removeTimePickerOverlay();
+    _hideLocationOverlay();
+    _locationDebounceTimer?.cancel();
     _titleController.dispose();
     _locationController.dispose();
     _notesController.dispose();
@@ -711,6 +906,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
 
         // Location Field
         _buildTextField(
+          fieldKey: _locationFieldKey,
           label: 'Location',
           hintText: 'Search location...',
           controller: _locationController,
@@ -720,22 +916,17 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
                   onTap: () {
                     setState(() {
                       _locationController.clear();
-                      _showLocationSuggestions = false;
+                      _locationName = '';
+                      _latitude = '';
+                      _longitude = '';
                     });
+                    _hideLocationOverlay();
                   },
                   child: Icon(Icons.close, color: colors.textSecondary),
                 )
               : null,
-          onChanged: (val) {
-            setState(() {
-              _showLocationSuggestions = val.isNotEmpty;
-            });
-          },
+          onChanged: _onLocationChanged,
         ),
-        if (_showLocationSuggestions) ...[
-          const SizedBox(height: 8),
-          _buildLocationSuggestionsCard(),
-        ],
         const SizedBox(height: 24),
 
         // Uniform Section
@@ -982,6 +1173,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
 
         // Location Field
         _buildTextField(
+          fieldKey: _locationFieldKey,
           label: 'Location',
           hintText: 'Search location...',
           controller: _locationController,
@@ -991,22 +1183,17 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
                   onTap: () {
                     setState(() {
                       _locationController.clear();
-                      _showLocationSuggestions = false;
+                      _locationName = '';
+                      _latitude = '';
+                      _longitude = '';
                     });
+                    _hideLocationOverlay();
                   },
                   child: Icon(Icons.close, color: colors.textSecondary),
                 )
               : null,
-          onChanged: (val) {
-            setState(() {
-              _showLocationSuggestions = val.isNotEmpty;
-            });
-          },
+          onChanged: _onLocationChanged,
         ),
-        if (_showLocationSuggestions) ...[
-          const SizedBox(height: 8),
-          _buildLocationSuggestionsCard(),
-        ],
         const SizedBox(height: 20),
 
         // Uniform Section
@@ -1168,6 +1355,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   }
 
   Widget _buildTextField({
+    Key? fieldKey,
     required String label,
     required String hintText,
     required TextEditingController controller,
@@ -1186,6 +1374,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
         ),
         const SizedBox(height: 8),
         TextField(
+          key: fieldKey,
           controller: controller,
           maxLines: maxLines,
           onChanged: onChanged,
@@ -1744,78 +1933,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
     );
   }
 
-  Widget _buildLocationSuggestionsCard() {
-    final colors = AppColors.current;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _locationController.text = 'Gillis-Rother Soccer Complex';
-          _showLocationSuggestions = false;
-        });
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colors.isDark ? colors.card : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: colors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.location_on_outlined, color: colors.textSecondary, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Gillis-Rother Soccer Complex',
-                        style: AppTextStyles.body15.copyWith(
-                          color: colors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '4000 36th Ave NW, Norman, OK',
-                        style: AppTextStyles.body13.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: Text(
-                'Powered by Google',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: colors.textSecondary.withValues(alpha: 0.7),
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // _buildLocationSuggestionsCard removed — replaced by _showLocationOverlay()
 
   Widget _buildCustomTimePickerCard({required VoidCallback onTimeChanged}) {
     final colors = AppColors.current;
