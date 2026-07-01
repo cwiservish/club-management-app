@@ -11,6 +11,7 @@ import '../models/event_player_model.dart';
 import '../models/event_save_models.dart';
 import '../models/event_delete_models.dart';
 import '../models/event_availability_models.dart';
+import '../models/new_event_dropdown_options_model.dart';
 
 class EventDetailService {
   final ApiClient _apiClient;
@@ -211,6 +212,37 @@ class EventDetailService {
     debugPrint('════════════════════════════════════════════════════════════════');
 
     return EventAttendeeSaveResponse.fromJson(rawResponseMap);
+  }
+
+  /// Fetches dropdown options for the new event / session form.
+  Future<NewEventDropdownOptions> fetchNewEventDropdownOptions(String? teamUuid) async {
+    final queryParams = <String, dynamic>{};
+    if (teamUuid != null && teamUuid.isNotEmpty) {
+      queryParams['team_uuid'] = teamUuid;
+    }
+
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Request] GET ${ApiEndpoints.baseUrl}${ApiEndpoints.newEventDropdownOptions}');
+    debugPrint('[API Request Query Parameters]: $queryParams');
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    final response = await _apiClient.get(
+      ApiEndpoints.newEventDropdownOptions,
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Response] GET ${ApiEndpoints.newEventDropdownOptions}');
+    debugPrint('[success]: ${response.success}');
+    debugPrint('[message]: ${response.message}');
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      return NewEventDropdownOptions.fromJson(data);
+    }
+    // Fallback: try rawJson directly (some endpoints return data at root level)
+    return NewEventDropdownOptions.fromJson(response.rawJson);
   }
 
   /// Searches Google Places Autocomplete API with a robust Radar Autocomplete fallback.

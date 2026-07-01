@@ -6,7 +6,7 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/config/environment_config.dart';
-import '../providers/event_edit_provider.dart';
+import '../providers/event_add_edit_provider.dart';
 import '../models/event_dropdown_options_models.dart';
 import '../services/event_detail_service.dart';
 import '../../../core/shared_widgets/app_header.dart';
@@ -1103,7 +1103,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
 
   // ─── Save event invocation ────────────────────────────────────────────────
 
-  Future<void> _onSave(EventEditState state, EventEditNotifier notifier) async {
+  Future<void> _onSave(EventAddEditState state, EventAddEditNotifier notifier) async {
     final eventName = _eventNameController.text.trim();
     if (eventName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1159,7 +1159,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
 
     if (success) {
       if (mounted) {
-        final successMsg = ref.read(eventEditProvider).saveSuccessMessage;
+        final successMsg = ref.read(eventAddEditProvider).saveSuccessMessage;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(successMsg != null && successMsg.isNotEmpty ? successMsg : 'Event saved successfully'),
@@ -1177,7 +1177,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
       }
     } else {
       if (mounted) {
-        final errMsg = ref.read(eventEditProvider).saveError;
+        final errMsg = ref.read(eventAddEditProvider).saveError;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errMsg != null && errMsg.isNotEmpty ? errMsg : 'Failed to save event'),
@@ -1188,7 +1188,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
     }
   }
 
-  Future<void> _onDelete(EventEditState state, EventEditNotifier notifier) async {
+  Future<void> _onDelete(EventAddEditState state, EventAddEditNotifier notifier) async {
     final colors = AppColors.current;
     
     final confirm = await showDialog<bool>(
@@ -1234,7 +1234,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
 
     if (success) {
       if (mounted) {
-        final successMsg = ref.read(eventEditProvider).saveSuccessMessage;
+        final successMsg = ref.read(eventAddEditProvider).saveSuccessMessage;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(successMsg != null && successMsg.isNotEmpty ? successMsg : 'Event deleted successfully'),
@@ -1252,7 +1252,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
       }
     } else {
       if (mounted) {
-        final errMsg = ref.read(eventEditProvider).saveError;
+        final errMsg = ref.read(eventAddEditProvider).saveError;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errMsg != null && errMsg.isNotEmpty ? errMsg : 'Failed to delete event'),
@@ -1265,7 +1265,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
 
   // ─── Timezone Selector dropdown ─────────────────────────────────────────────
 
-  void _showTimezoneSheet(EventEditState state, EventEditNotifier notifier) {
+  void _showTimezoneSheet(EventAddEditState state, EventAddEditNotifier notifier) {
     if (state.isLoadingTimezones) return;
 
     // If no timezones loaded yet, try fetching first
@@ -1462,7 +1462,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
     );
   }
 
-  Widget _buildTimezoneDropdownField(EventEditState timezoneState, EventEditNotifier notifier) {
+  Widget _buildTimezoneDropdownField(EventAddEditState timezoneState, EventAddEditNotifier notifier) {
     final colors = AppColors.current;
 
     return Opacity(
@@ -1554,8 +1554,8 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    final timezoneState = ref.watch(eventEditProvider);
-    final notifier = ref.read(eventEditProvider.notifier);
+    final timezoneState = ref.watch(eventAddEditProvider);
+    final notifier = ref.read(eventAddEditProvider.notifier);
     final colors = AppColors.current;
     final isEdit = widget.eventId != 'new' && !widget.duplicate;
 

@@ -8,10 +8,10 @@ import '../../../app/theme/app_text_styles.dart';
 import '../../../core/common_providers/theme_provider.dart';
 import '../../../core/shared_widgets/sub_header.dart';
 import '../services/event_detail_service.dart';
+import '../providers/event_add_edit_provider.dart';
+import '../models/new_event_dropdown_options_model.dart';
 
-// ─── Enums & Models ──────────────────────────────────────────────────────────
-
-enum EventCategory { singleSession, tournament, league }
+// ─── Models ──────────────────────────────────────────────────────────────────
 
 class UniformColor {
   final String name;
@@ -68,12 +68,11 @@ class NewEventPage extends ConsumerStatefulWidget {
 }
 
 class _NewEventPageState extends ConsumerState<NewEventPage> {
-  // Category state
-  EventCategory _category = EventCategory.singleSession;
+  // Scheduling type key: 1=Single Session, 2=Tournament, 3=League (from API)
+  int _schedulingTypeKey = 1;
 
-  // Single Session specific state
-  String _selectedEventType = 'Practice';
-  final List<String> _eventTypes = ['Game', 'Practice', 'Scrimmage', 'Team event', 'Camp'];
+  // Event type key from API (2=Practice default)
+  int _eventTypeKey = 2;
 
   final _titleController = TextEditingController();
   final _locationController = TextEditingController(text: 'Gillis-Rother Soccer Complex');
@@ -121,17 +120,8 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
     'PDA White (1-0-1 all-time)',
     '+ Add a new opponent...',
   ];
-  String _homeOrAway = 'Home'; // 'Home', 'Away', 'Neutral'
-  String _arriveEarly = 'No set arrival time';
-  final List<String> _arriveEarlyOptions = [
-    'No set arrival time',
-    '15 min early',
-    '30 min early',
-    '45 min early',
-    '1 hr early',
-    '1 hr 15 min early',
-    '1 hr 30 min early',
-  ];
+  int _homeAwayKey = 1; // 1=Home, 2=Away, 3=Neutral (from API)
+  int _arrivalTimeKey = 0; // 0=No set arrival time (from API)
 
   // Tournament/League specific state
   bool _knowsSchedule = false; // false = Not yet — placeholder, true = Yes, I have it
@@ -501,33 +491,90 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   Widget build(BuildContext context) {
     ref.watch(themeModeProvider);
     final colors = AppColors.current;
+    final dropdownState = ref.watch(eventAddEditProvider);
+
+    final subHeader = SubHeader(
+      title: 'New Event',
+      leftIcon: Icons.close,
+      leftLabel: 'Close',
+      onLeftTap: () => context.pop(),
+      rightText: 'Save',
+      onRightTap: dropdownState.isLoadingNewEventDropdowns ? null : _onSave,
+    );
+
+    // Full-screen loader while fetching dropdown options
+    if (dropdownState.isLoadingNewEventDropdowns) {
+      return Scaffold(
+        backgroundColor: colors.isDark ? colors.background : const Color(0xFFF4F5F7),
+        body: SafeArea(
+          child: Column(
+            children: [
+              subHeader,
+              Expanded(child: Center(child: CircularProgressIndicator(color: colors.primary))),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Retry screen if API failed
+    if (dropdownState.newEventDropdownsError != null) {
+      return Scaffold(
+        backgroundColor: colors.isDark ? colors.background : const Color(0xFFF4F5F7),
+        body: SafeArea(
+          child: Column(
+            children: [
+              subHeader,
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Failed to load form options',
+                        style: AppTextStyles.body16.copyWith(color: colors.textSecondary),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => ref.read(eventAddEditProvider.notifier).fetchNewEventDropdowns(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final dropdowns = dropdownState.newEventDropdowns!;
 
     return Scaffold(
       backgroundColor: colors.isDark ? colors.background : const Color(0xFFF4F5F7),
       body: SafeArea(
         child: Column(
           children: [
-            SubHeader(
-              title: 'New Event',
-              leftIcon: Icons.close,
-              leftLabel: 'Close',
-              onLeftTap: () => context.pop(),
-              rightText: 'Save',
-              onRightTap: _onSave,
-            ),
+            subHeader,
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(left: 6),
+                    padding: const EdgeInsets.only(left: 4),
                     child: Text(
                       'New Event',
                       style: AppTextStyles.heading22.copyWith(color: colors.textPrimary, fontWeight: FontWeight.bold),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildFormContainer(),
+                  _buildFormContainer(dropdowns),
                 ],
               ),
             ),
@@ -537,7 +584,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
     );
   }
 
-  Widget _buildFormContainer() {
+  Widget _buildFormContainer(NewEventDropdownOptions dropdowns) {
     final colors = AppColors.current;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -563,11 +610,10 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _buildCategoryButton(EventCategory.singleSession, 'Single session'),
-              const SizedBox(width: 8),
-              _buildCategoryButton(EventCategory.tournament, 'Tournament'),
-              const SizedBox(width: 8),
-              _buildCategoryButton(EventCategory.league, 'League'),
+              for (int i = 0; i < dropdowns.schedulingTypes.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                _buildCategoryButton(dropdowns.schedulingTypes[i].key, dropdowns.schedulingTypes[i].label),
+              ],
             ],
           ),
           const SizedBox(height: 12),
@@ -581,12 +627,12 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
           const SizedBox(height: 24),
 
           // ── Category Specific Form Body ──
-          if (_category == EventCategory.singleSession) ...[
-            _buildSingleSessionForm()
-          ] else if (_category == EventCategory.tournament) ...[
-            _buildTournamentForm()
-          ] else if (_category == EventCategory.league) ...[
-            _buildLeagueForm()
+          if (_schedulingTypeKey == 1) ...[
+            _buildSingleSessionForm(dropdowns)
+          ] else if (_schedulingTypeKey == 2) ...[
+            _buildTournamentForm(dropdowns)
+          ] else if (_schedulingTypeKey == 3) ...[
+            _buildLeagueForm(dropdowns)
           ]
         ],
       ),
@@ -594,22 +640,21 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   }
 
   String _getCategorySubtext() {
-    switch (_category) {
-      case EventCategory.singleSession:
-        return 'A single game, practice, or team event with a known date and time. Add one for each session if you have several in a day.';
-      case EventCategory.tournament:
-        return 'A multi-day tournament. You usually know the date range months ahead but not each game time until closer — add it as a placeholder now and fill in games later.';
-      case EventCategory.league:
-        return 'A league season spanning several weeks. Add the date range now; fill in individual game dates and times as the league publishes them.';
+    if (_schedulingTypeKey == 1) {
+      return 'A single game, practice, or team event with a known date and time. Add one for each session if you have several in a day.';
+    } else if (_schedulingTypeKey == 2) {
+      return 'A multi-day tournament. You usually know the date range months ahead but not each game time until closer — add it as a placeholder now and fill in games later.';
+    } else {
+      return 'A league season spanning several weeks. Add the date range now; fill in individual game dates and times as the league publishes them.';
     }
   }
 
-  Widget _buildCategoryButton(EventCategory category, String label) {
+  Widget _buildCategoryButton(int key, String label) {
     final colors = AppColors.current;
-    final isSelected = _category == category;
+    final isSelected = _schedulingTypeKey == key;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _category = category),
+        onTap: () => setState(() => _schedulingTypeKey = key),
         child: Container(
           height: 44,
           alignment: Alignment.center,
@@ -643,7 +688,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   Widget _buildBottomButton() {
     final colors = AppColors.current;
     String buttonText = 'Save';
-    if (_category == EventCategory.singleSession) {
+    if (_schedulingTypeKey == 1) {
       buttonText = 'Save event';
     } else {
       buttonText = _knowsSchedule ? 'Save event' : 'Save placeholder';
@@ -689,7 +734,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   }
 
   // ── Single Session Form ──
-  Widget _buildSingleSessionForm() {
+  Widget _buildSingleSessionForm(NewEventDropdownOptions dropdowns) {
     final colors = AppColors.current;
     final dateStr = _selectedDate == null
         ? 'dd-mm-yyyy'
@@ -711,7 +756,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
         Wrap(
           spacing: 8,
           runSpacing: 10,
-          children: _eventTypes.map((type) => _buildEventTypeChip(type)).toList(),
+          children: dropdowns.eventTypes.map((type) => _buildEventTypeChip(type)).toList(),
         ),
         // Import Link
         // GestureDetector(
@@ -735,7 +780,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
         const SizedBox(height: 20),
 
         // Title or Opponent Field
-        if (_selectedEventType == 'Game' || _selectedEventType == 'Scrimmage') ...[
+        if (_eventTypeKey == 1 || _eventTypeKey == 3) ...[
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -859,7 +904,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
             ),
           ],
         ),
-        if (_selectedEventType == 'Game' || _selectedEventType == 'Scrimmage') ...[
+        if (_eventTypeKey == 1 || _eventTypeKey == 3) ...[
           const SizedBox(height: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -871,11 +916,10 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  _buildHomeOrAwayButton('Home'),
-                  const SizedBox(width: 12),
-                  _buildHomeOrAwayButton('Away'),
-                  const SizedBox(width: 12),
-                  _buildHomeOrAwayButton('Neutral'),
+                  for (int i = 0; i < dropdowns.homeAwayOptions.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 12),
+                    _buildHomeOrAwayButton(dropdowns.homeAwayOptions[i]),
+                  ],
                 ],
               ),
             ],
@@ -889,14 +933,14 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
                 style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
               ),
               const SizedBox(height: 8),
-              _buildDropdownField<String>(
-                value: _arriveEarly,
-                items: _arriveEarlyOptions,
-                itemLabel: (v) => v,
+              _buildDropdownField<int>(
+                value: _arrivalTimeKey,
+                items: dropdowns.arrivalTimeOptions.map((o) => o.key).toList(),
+                itemLabel: (key) => dropdowns.arrivalTimeOptions
+                    .firstWhere((o) => o.key == key, orElse: () => const NewEventArrivalTimeOption(key: 0, label: 'No set arrival time'))
+                    .label,
                 onChanged: (val) {
-                  if (val != null) {
-                    setState(() => _arriveEarly = val);
-                  }
+                  if (val != null) setState(() => _arrivalTimeKey = val);
                 },
               ),
             ],
@@ -951,21 +995,21 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   }
 
   // ── Tournament Form ──
-  Widget _buildTournamentForm() {
-    return _buildSharedMultiDayForm(
+  Widget _buildTournamentForm(NewEventDropdownOptions dropdowns) {
+    return _buildSharedMultiDayForm(dropdowns: dropdowns,
       titlePlaceholder: 'e.g. Spring Showcase Tournament',
     );
   }
 
   // ── League Form ──
-  Widget _buildLeagueForm() {
-    return _buildSharedMultiDayForm(
+  Widget _buildLeagueForm(NewEventDropdownOptions dropdowns) {
+    return _buildSharedMultiDayForm(dropdowns: dropdowns,
       titlePlaceholder: 'e.g. Fall ECNL RL League',
     );
   }
 
   // Tournament and League share a very similar structure
-  Widget _buildSharedMultiDayForm({required String titlePlaceholder}) {
+  Widget _buildSharedMultiDayForm({required String titlePlaceholder, required NewEventDropdownOptions dropdowns}) {
     final colors = AppColors.current;
     final dateStr = _selectedDate == null
         ? 'dd-mm-yyyy'
@@ -1136,11 +1180,10 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  _buildHomeOrAwayButton('Home'),
-                  const SizedBox(width: 12),
-                  _buildHomeOrAwayButton('Away'),
-                  const SizedBox(width: 12),
-                  _buildHomeOrAwayButton('Neutral'),
+                  for (int i = 0; i < dropdowns.homeAwayOptions.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 12),
+                    _buildHomeOrAwayButton(dropdowns.homeAwayOptions[i]),
+                  ],
                 ],
               ),
             ],
@@ -1156,14 +1199,14 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
                 style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
               ),
               const SizedBox(height: 8),
-              _buildDropdownField<String>(
-                value: _arriveEarly,
-                items: _arriveEarlyOptions,
-                itemLabel: (v) => v,
+              _buildDropdownField<int>(
+                value: _arrivalTimeKey,
+                items: dropdowns.arrivalTimeOptions.map((o) => o.key).toList(),
+                itemLabel: (key) => dropdowns.arrivalTimeOptions
+                    .firstWhere((o) => o.key == key, orElse: () => const NewEventArrivalTimeOption(key: 0, label: 'No set arrival time'))
+                    .label,
                 onChanged: (val) {
-                  if (val != null) {
-                    setState(() => _arriveEarly = val);
-                  }
+                  if (val != null) setState(() => _arrivalTimeKey = val);
                 },
               ),
             ],
@@ -1221,45 +1264,37 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
 
   // ── Helper Widgets ──
 
-  Color _getEventTypeBgColor(String type, bool isSelected) {
+  // Event type keys: 1=Game, 2=Practice, 3=Scrimmage, 4=Team Event, 5=Camp
+  Color _getEventTypeBgColor(int key, bool isSelected) {
     if (!isSelected) return Colors.transparent;
-    switch (type) {
-      case 'Game':
-        return const Color(0xFFFFC107);
-      case 'Practice':
-        return const Color(0xFF00E5FF);
-      case 'Scrimmage':
-        return const Color(0xFF2F54EB);
-      case 'Team event':
-        return const Color(0xFFE91E63);
-      case 'Camp':
-        return const Color(0xFF00C853);
-      default:
-        return const Color(0xFF00E5FF);
+    switch (key) {
+      case 1: return const Color(0xFFFFC107); // Game
+      case 2: return const Color(0xFF00E5FF); // Practice
+      case 3: return const Color(0xFF2F54EB); // Scrimmage
+      case 4: return const Color(0xFFE91E63); // Team Event
+      case 5: return const Color(0xFF00C853); // Camp
+      default: return const Color(0xFF00E5FF);
     }
   }
 
-  Color _getEventTypeTextColor(String type, bool isSelected) {
+  Color _getEventTypeTextColor(int key, bool isSelected) {
     final colors = AppColors.current;
     if (!isSelected) return colors.textSecondary;
-    switch (type) {
-      case 'Game':
-      case 'Practice':
-        return Colors.black;
-      case 'Scrimmage':
-      case 'Team event':
-      case 'Camp':
-        return Colors.white;
-      default:
-        return Colors.black;
+    switch (key) {
+      case 1:
+      case 2: return Colors.black;
+      case 3:
+      case 4:
+      case 5: return Colors.white;
+      default: return Colors.black;
     }
   }
 
-  Widget _buildHomeOrAwayButton(String option) {
+  Widget _buildHomeOrAwayButton(NewEventHomeAwayOption option) {
     final colors = AppColors.current;
-    final isSelected = _homeOrAway == option;
+    final isSelected = _homeAwayKey == option.key;
     return GestureDetector(
-      onTap: () => setState(() => _homeOrAway = option),
+      onTap: () => setState(() => _homeAwayKey = option.key),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 15),
         decoration: BoxDecoration(
@@ -1275,7 +1310,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
           ),
         ),
         child: Text(
-          option,
+          option.label,
           style: AppTextStyles.body14.copyWith(
             color: isSelected
                 ? (colors.isDark ? Colors.black : Colors.white)
@@ -1287,16 +1322,16 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
     );
   }
 
-  Widget _buildEventTypeChip(String type) {
+  Widget _buildEventTypeChip(NewEventType type) {
     final colors = AppColors.current;
-    final isSelected = _selectedEventType == type;
+    final isSelected = _eventTypeKey == type.key;
 
-    final selectedColor = _getEventTypeBgColor(type, isSelected);
-    final textColor = _getEventTypeTextColor(type, isSelected);
+    final selectedColor = _getEventTypeBgColor(type.key, isSelected);
+    final textColor = _getEventTypeTextColor(type.key, isSelected);
     final borderColor = isSelected ? selectedColor : colors.border;
 
     return GestureDetector(
-      onTap: () => setState(() => _selectedEventType = type),
+      onTap: () => setState(() => _eventTypeKey = type.key),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
@@ -1308,7 +1343,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
           ),
         ),
         child: Text(
-          type,
+          type.label,
           style: AppTextStyles.body14.copyWith(
             color: textColor,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
