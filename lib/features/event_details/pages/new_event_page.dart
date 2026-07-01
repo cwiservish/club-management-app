@@ -324,6 +324,14 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: Text(
+                      'New Event',
+                      style: AppTextStyles.heading22.copyWith(color: colors.textPrimary, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   _buildFormContainer(),
                 ],
               ),
@@ -352,13 +360,6 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Page Title ──
-          Text(
-            'New Event',
-            style: AppTextStyles.heading22.copyWith(color: colors.textPrimary, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
           // ── Category Header ──
           Text(
             'What are you adding?',
@@ -496,8 +497,8 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   Widget _buildSingleSessionForm() {
     final colors = AppColors.current;
     final dateStr = _selectedDate == null
-        ? 'dd/mm/yyyy'
-        : '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}';
+        ? 'dd-mm-yyyy'
+        : '${_selectedDate!.day.toString().padLeft(2, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.year}';
     final startHour = _startTime.hour == 0 ? 12 : (_startTime.hour > 12 ? _startTime.hour - 12 : _startTime.hour);
     final startMinuteStr = _startTime.minute.toString().padLeft(2, '0');
     final startAmPm = _startTime.hour >= 12 ? 'PM' : 'AM';
@@ -776,51 +777,29 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   Widget _buildSharedMultiDayForm({required String titlePlaceholder}) {
     final colors = AppColors.current;
     final dateStr = _selectedDate == null
-        ? 'dd/mm/yyyy'
-        : '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}';
+        ? 'dd-mm-yyyy'
+        : '${_selectedDate!.day.toString().padLeft(2, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.year}';
     final startHour = _startTime.hour == 0 ? 12 : (_startTime.hour > 12 ? _startTime.hour - 12 : _startTime.hour);
     final startMinuteStr = _startTime.minute.toString().padLeft(2, '0');
     final startAmPm = _startTime.hour >= 12 ? 'PM' : 'AM';
     final timeStr = '$startHour:$startMinuteStr $startAmPm';
 
     final startStr = _startDate == null
-        ? 'dd/mm/yyyy'
-        : '${_startDate!.day.toString().padLeft(2, '0')}/${_startDate!.month.toString().padLeft(2, '0')}/${_startDate!.year}';
+        ? 'dd-mm-yyyy'
+        : '${_startDate!.day.toString().padLeft(2, '0')}-${_startDate!.month.toString().padLeft(2, '0')}-${_startDate!.year}';
     final endStr = _endDate == null
-        ? 'dd/mm/yyyy'
-        : '${_endDate!.day.toString().padLeft(2, '0')}/${_endDate!.month.toString().padLeft(2, '0')}/${_endDate!.year}';
+        ? 'dd-mm-yyyy'
+        : '${_endDate!.day.toString().padLeft(2, '0')}-${_endDate!.month.toString().padLeft(2, '0')}-${_endDate!.year}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Opponent Field
-        Text(
-          'Opponent',
-          style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
+        // Title
+        _buildTextField(
+          label: 'Title',
+          hintText: titlePlaceholder,
+          controller: _titleController,
         ),
-        const SizedBox(height: 8),
-        _buildDropdownField<String>(
-          value: _selectedOpponent,
-          items: _opponents,
-          itemLabel: (v) => v,
-          onChanged: (val) {
-            if (val == '+ Add a new opponent...') {
-              setState(() {
-                _showAddOpponentInline = true;
-                _selectedOpponent = '+ Add a new opponent...';
-              });
-            } else if (val != null) {
-              setState(() {
-                _selectedOpponent = val;
-                _showAddOpponentInline = false;
-              });
-            }
-          },
-        ),
-        if (_showAddOpponentInline) ...[
-          const SizedBox(height: 12),
-          _buildAddOpponentInlineCard(),
-        ],
         const SizedBox(height: 20),
 
         // Do you know the game schedule?
