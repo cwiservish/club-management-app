@@ -10,6 +10,8 @@ import '../../../core/shared_widgets/sub_header.dart';
 import '../services/event_detail_service.dart';
 import '../providers/event_add_edit_provider.dart';
 import '../models/new_event_dropdown_options_model.dart';
+import '../models/new_event_save_request_model.dart';
+import '../../../core/common_providers/selected_team_provider.dart';
 
 // ─── Models ──────────────────────────────────────────────────────────────────
 
@@ -75,7 +77,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   int _eventTypeKey = 2;
 
   final _titleController = TextEditingController();
-  final _locationController = TextEditingController(text: 'Gillis-Rother Soccer Complex');
+  final _locationController = TextEditingController();
   final _notesController = TextEditingController();
 
   // Location state
@@ -91,6 +93,8 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   // Save template states
   bool _showSaveTemplateForm = false;
   final _templateNameController = TextEditingController();
+  bool _chooseComboAsTemplate = false;
+  String _uniformTemplateName = '';
 
   // Saved Uniform templates
   final List<UniformTemplate> _savedTemplates = [
@@ -402,6 +406,12 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => ref.read(eventAddEditProvider.notifier).fetchNewEventDropdowns());
+  }
+
+  @override
   void dispose() {
     _removeTimePickerOverlay();
     _hideLocationOverlay();
@@ -477,14 +487,268 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   }
 
 
-  void _onSave() {
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  String _colorToHex(UniformColor c) {
+    if (c.isNone) return '';
+    final r = c.color.red.toRadixString(16).padLeft(2, '0');
+    final g = c.color.green.toRadixString(16).padLeft(2, '0');
+    final b = c.color.blue.toRadixString(16).padLeft(2, '0');
+    return '#$r$g$b'.toUpperCase();
+  }
+
+  String _formatSessionDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  String _formatStartTime24(TimeOfDay time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Event created successfully (mocked)'),
-        backgroundColor: AppColors.current.success,
-      ),
+      SnackBar(content: Text(message), backgroundColor: AppColors.current.error),
     );
-    context.pop();
+  }
+
+  void _showErrorDialog(String message) {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        final colors = AppColors.current;
+        return AlertDialog(
+          backgroundColor: colors.isDark ? colors.card : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Text(
+            'Something went wrong',
+            style: AppTextStyles.heading16.copyWith(color: colors.textPrimary),
+          ),
+          content: Text(
+            message,
+            style: AppTextStyles.body14.copyWith(color: colors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text('OK', style: AppTextStyles.body14.copyWith(color: colors.primary, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _handleSaveResult(bool success) {
+    if (!mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Event saved - families will be notified'),
+          backgroundColor: AppColors.current.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      context.go(AppRoutes.home);
+    } else {
+      _showErrorDialog(
+        ref.read(eventAddEditProvider).newEventSaveError ?? 'Failed to create event',
+      );
+    }
+  }
+
+  void _onSave() => _doSave();
+
+  Future<void> _doSave() async {
+    if (ref.read(eventAddEditProvider).isSavingNewEvent) return;
+
+    // ── Flow 1: Single Session ─────────────────────────────────────────────
+    if (_schedulingTypeKey == 1) {
+      if (_selectedDate == null) {
+        _showError('Please select a date');
+        return;
+      }
+
+      final locationText = _locationController.text.trim();
+      if (locationText.isEmpty) {
+        _showError('Please enter a location');
+        return;
+      }
+
+      // Title vs Opponent depending on event type
+      String title = '';
+      String opponentName = '';
+      bool allowForFutureGames = false;
+
+      final isGameOrScrimmage = _eventTypeKey == 1 || _eventTypeKey == 3;
+      if (isGameOrScrimmage) {
+        // Flow 1: Game or Scrimmage — opponent is required
+        if (_showAddOpponentInline) {
+          opponentName = _newOpponentNameController.text.trim();
+          if (opponentName.isEmpty) {
+            _showError('Please enter opponent name');
+            return;
+          }
+          allowForFutureGames = _saveOpponentForFuture;
+        } else if (_selectedOpponent != 'Select opponent...' && _selectedOpponent != '+ Add a new opponent...') {
+          opponentName = _selectedOpponent;
+          allowForFutureGames = false;
+        } else {
+          _showError('Please select or add an opponent');
+          return;
+        }
+      } else {
+        // Flow 2: Practice, Team Event, Camp — title is required, no opponent
+        title = _titleController.text.trim();
+        if (title.isEmpty) {
+          _showError('Please enter a title');
+          return;
+        }
+        allowForFutureGames = false;
+      }
+
+      final activeTeam = ref.read(selectedTeamProvider);
+      if (activeTeam == null) {
+        _showError('No active team selected');
+        return;
+      }
+
+      final request = NewEventSaveRequest(
+        teamUuid: activeTeam.uuid,
+        schedulingMode: _schedulingTypeKey,
+        eventType: _eventTypeKey,
+        title: title,
+        sessionDate: _formatSessionDate(_selectedDate!),
+        startTime: _formatStartTime24(_startTime),
+        duration: _durationHours * 60 + _durationMinutes,
+        homeAway: isGameOrScrimmage ? _homeAwayKey : 0,
+        arrivalEarly: isGameOrScrimmage ? _arrivalTimeKey : 0,
+        location: _locationName.isNotEmpty ? _locationName : locationText,
+        latitude: _latitude,
+        longitude: _longitude,
+        opponentTeamName: opponentName,
+        allowForFutureGames: allowForFutureGames,
+        uniformTopColor: _colorToHex(_uniformColors[_topColorIndex]),
+        uniformBottomColor: _colorToHex(_uniformColors[_bottomColorIndex]),
+        uniformSocksColor: _colorToHex(_uniformColors[_socksColorIndex]),
+        chooseComboAsTemplate: _chooseComboAsTemplate,
+        uniformTemplateName: _uniformTemplateName,
+        notes: _notesController.text,
+      );
+
+      final success = await ref.read(eventAddEditProvider.notifier).saveNewEvent(request);
+      _handleSaveResult(success);
+      return;
+    }
+
+    // ── Flows 3 & 4: Tournament / League ──────────────────────────────────
+    if (_schedulingTypeKey == 2 || _schedulingTypeKey == 3) {
+      if (!_knowsSchedule) {
+        // Flow 3: Placeholder — date range only
+        final title = _titleController.text.trim();
+        if (title.isEmpty) {
+          _showError('Please enter a title');
+          return;
+        }
+        if (_startDate == null) {
+          _showError('Please select a start date');
+          return;
+        }
+        if (_endDate == null) {
+          _showError('Please select an end date');
+          return;
+        }
+        final locationText = _locationController.text.trim();
+        if (locationText.isEmpty) {
+          _showError('Please enter a location');
+          return;
+        }
+
+        final activeTeam = ref.read(selectedTeamProvider);
+        if (activeTeam == null) {
+          _showError('No active team selected');
+          return;
+        }
+
+        final request = NewEventSaveRequest(
+          teamUuid: activeTeam.uuid,
+          schedulingMode: _schedulingTypeKey,
+          eventType: 0,
+          title: title,
+          sessionDate: '',
+          startTime: '',
+          duration: 0,
+          homeAway: 0,
+          arrivalEarly: 0,
+          location: _locationName.isNotEmpty ? _locationName : locationText,
+          latitude: _latitude,
+          longitude: _longitude,
+          opponentTeamName: '',
+          allowForFutureGames: false,
+          uniformTopColor: '',
+          uniformBottomColor: '',
+          uniformSocksColor: '',
+          chooseComboAsTemplate: false,
+          uniformTemplateName: '',
+          startDate: _formatSessionDate(_startDate!),
+          endDate: _formatSessionDate(_endDate!),
+          notes: _notesController.text,
+        );
+
+        final success = await ref.read(eventAddEditProvider.notifier).saveNewEvent(request);
+        _handleSaveResult(success);
+        return;
+      }
+
+      // Flow 4: Yes, I have the schedule — specific date/time
+      final title = _titleController.text.trim();
+      if (title.isEmpty) {
+        _showError('Please enter a title');
+        return;
+      }
+      if (_selectedDate == null) {
+        _showError('Please select a date');
+        return;
+      }
+      final locationText = _locationController.text.trim();
+      if (locationText.isEmpty) {
+        _showError('Please enter a location');
+        return;
+      }
+
+      final activeTeam = ref.read(selectedTeamProvider);
+      if (activeTeam == null) {
+        _showError('No active team selected');
+        return;
+      }
+
+      final request = NewEventSaveRequest(
+        teamUuid: activeTeam.uuid,
+        schedulingMode: _schedulingTypeKey,
+        eventType: 0,
+        title: title,
+        sessionDate: _formatSessionDate(_selectedDate!),
+        startTime: _formatStartTime24(_startTime),
+        duration: _durationHours * 60 + _durationMinutes,
+        homeAway: _homeAwayKey,
+        arrivalEarly: _arrivalTimeKey,
+        location: _locationName.isNotEmpty ? _locationName : locationText,
+        latitude: _latitude,
+        longitude: _longitude,
+        opponentTeamName: '',
+        allowForFutureGames: false,
+        uniformTopColor: _colorToHex(_uniformColors[_topColorIndex]),
+        uniformBottomColor: _colorToHex(_uniformColors[_bottomColorIndex]),
+        uniformSocksColor: _colorToHex(_uniformColors[_socksColorIndex]),
+        chooseComboAsTemplate: _chooseComboAsTemplate,
+        uniformTemplateName: _uniformTemplateName,
+        notes: _notesController.text,
+      );
+
+      final success = await ref.read(eventAddEditProvider.notifier).saveNewEvent(request);
+      _handleSaveResult(success);
+    }
   }
 
   @override
@@ -499,7 +763,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
       leftLabel: 'Close',
       onLeftTap: () => context.pop(),
       rightText: 'Save',
-      onRightTap: dropdownState.isLoadingNewEventDropdowns ? null : _onSave,
+      onRightTap: (dropdownState.isLoadingNewEventDropdowns || dropdownState.isSavingNewEvent) ? null : _onSave,
     );
 
     // Full-screen loader while fetching dropdown options
@@ -687,6 +951,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
 
   Widget _buildBottomButton() {
     final colors = AppColors.current;
+    final isSaving = ref.watch(eventAddEditProvider).isSavingNewEvent;
     String buttonText = 'Save';
     if (_schedulingTypeKey == 1) {
       buttonText = 'Save event';
@@ -698,7 +963,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
       mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
-          onTap: _onSave,
+          onTap: isSaving ? null : _onSave,
           child: Container(
             height: 48,
             width: double.infinity,
@@ -707,13 +972,22 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
               color: const Color(0xFF00E5FF),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Text(
-              buttonText,
-              style: AppTextStyles.heading16.copyWith(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: isSaving
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                    ),
+                  )
+                : Text(
+                    buttonText,
+                    style: AppTextStyles.heading16.copyWith(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ),
         const SizedBox(height: 12),
@@ -1648,6 +1922,8 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
                     _topColorIndex = template.topIndex;
                     _bottomColorIndex = template.bottomIndex;
                     _socksColorIndex = template.socksIndex;
+                    _chooseComboAsTemplate = false;
+                    _uniformTemplateName = '';
                   });
                 },
                 child: Container(
@@ -1683,6 +1959,8 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
               onTap: () {
                 setState(() {
                   _selectedUniformMode = 'New combo';
+                  _chooseComboAsTemplate = false;
+                  _uniformTemplateName = '';
                 });
               },
               child: Container(
@@ -1742,22 +2020,21 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
           ),
           const SizedBox(height: 16),
 
-          if (!_showSaveTemplateForm) ...[
-            TextButton(
-              onPressed: () => setState(() => _showSaveTemplateForm = true),
-              style: TextButton.styleFrom(padding: EdgeInsets.zero),
-              child: Text(
-                'Save this combo as a template',
-                style: AppTextStyles.body14.copyWith(
-                  color: colors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
+          GestureDetector(
+            onTap: () => setState(() => _showSaveTemplateForm = !_showSaveTemplateForm),
+            child: Text(
+              'Save this combo as a template',
+              style: AppTextStyles.body14.copyWith(
+                color: colors.primary,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ] else ...[
+          ),
+          if (_showSaveTemplateForm) ...[
             const SizedBox(height: 12),
             TextField(
               controller: _templateNameController,
+              onChanged: (_) => setState(() {}),
               style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
               cursorColor: colors.primary,
               decoration: InputDecoration(
@@ -1781,45 +2058,47 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
               ),
             ),
             const SizedBox(height: 12),
-            GestureDetector(
-              onTap: () {
-                if (_templateNameController.text.isNotEmpty) {
-                  final newTemplate = UniformTemplate(
-                    name: _templateNameController.text,
-                    topIndex: _topColorIndex,
-                    bottomIndex: _bottomColorIndex,
-                    socksIndex: _socksColorIndex,
-                  );
-                  setState(() {
-                    _savedTemplates.add(newTemplate);
-                    _selectedUniformMode = newTemplate.name;
-                    _showSaveTemplateForm = false;
-                    _templateNameController.clear();
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Template "${newTemplate.name}" saved!'),
-                      backgroundColor: colors.success,
+            Builder(
+              builder: (_) {
+                final canSave = _templateNameController.text.trim().isNotEmpty;
+                return GestureDetector(
+                  onTap: canSave
+                      ? () {
+                          final name = _templateNameController.text.trim();
+                          final newTemplate = UniformTemplate(
+                            name: name,
+                            topIndex: _topColorIndex,
+                            bottomIndex: _bottomColorIndex,
+                            socksIndex: _socksColorIndex,
+                          );
+                          setState(() {
+                            _savedTemplates.add(newTemplate);
+                            _selectedUniformMode = name;
+                            _chooseComboAsTemplate = true;
+                            _uniformTemplateName = name;
+                            _showSaveTemplateForm = false;
+                            _templateNameController.clear();
+                          });
+                        }
+                      : null,
+                  child: Container(
+                    height: 48,
+                    width: double.infinity,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: canSave ? const Color(0xFF00E5FF) : const Color(0xFFE0E0E0),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  );
-                }
-              },
-              child: Container(
-                height: 48,
-                width: double.infinity,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00E5FF),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  'Save template',
-                  style: AppTextStyles.heading16.copyWith(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
+                    child: Text(
+                      'Save template',
+                      style: AppTextStyles.heading16.copyWith(
+                        color: canSave ? Colors.black : const Color(0xFFAAAAAA),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ],

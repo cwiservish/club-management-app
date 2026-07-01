@@ -12,6 +12,7 @@ import '../models/event_save_models.dart';
 import '../models/event_delete_models.dart';
 import '../models/event_availability_models.dart';
 import '../models/new_event_dropdown_options_model.dart';
+import '../models/new_event_save_request_model.dart';
 
 class EventDetailService {
   final ApiClient _apiClient;
@@ -123,6 +124,32 @@ class EventDetailService {
     debugPrint('════════════════════════════════════════════════════════════════');
 
     return EventSaveResponse.fromJson(rawResponseMap);
+  }
+
+  /// Creates a new event (all 4 flows from new_event_page).
+  Future<NewEventSaveResponse> saveNewEvent(NewEventSaveRequest request) async {
+    final body = request.toJson();
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventSave}');
+    debugPrint('[API Request Body]:');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(body));
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    final response = await _apiClient.post(ApiEndpoints.eventSave, body: body);
+
+    final rawResponseMap = {
+      'success': response.success,
+      'message': response.message ?? '',
+      'data': response.data,
+    };
+
+    debugPrint('════════════════════════════════════════════════════════════════');
+    debugPrint('[API Response] POST ${ApiEndpoints.eventSave}');
+    debugPrint('[success]: ${response.success}');
+    debugPrint('[message]: ${response.message}');
+    debugPrint('════════════════════════════════════════════════════════════════');
+
+    return NewEventSaveResponse.fromJson(rawResponseMap);
   }
 
   /// Deletes / removes an event.

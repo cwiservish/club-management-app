@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
 import '../models/event_dropdown_options_models.dart';
 import '../models/new_event_dropdown_options_model.dart';
+import '../models/new_event_save_request_model.dart';
 import '../services/event_detail_service.dart';
 import '../models/event_save_models.dart';
 import '../models/event_delete_models.dart';
@@ -25,7 +26,12 @@ class EventAddEditState {
   // ── Selected timezone for new event page ──────────────────────────────────
   final TimezoneModel? newEventSelectedTimezone;
 
-  // ── Save / delete state ───────────────────────────────────────────────────
+  // ── New event save state ──────────────────────────────────────────────────
+  final bool isSavingNewEvent;
+  final String? newEventSaveError;
+  final String? newEventSaveSuccessMessage;
+
+  // ── Edit-page save / delete state ────────────────────────────────────────
   final bool isSaving;
   final String? saveError;
   final String? saveSuccessMessage;
@@ -40,6 +46,9 @@ class EventAddEditState {
     this.isLoadingNewEventDropdowns = false,
     this.newEventDropdownsError,
     this.newEventSelectedTimezone,
+    this.isSavingNewEvent = false,
+    this.newEventSaveError,
+    this.newEventSaveSuccessMessage,
     this.isSaving = false,
     this.saveError,
     this.saveSuccessMessage,
@@ -55,6 +64,9 @@ class EventAddEditState {
     bool? isLoadingNewEventDropdowns,
     Object? newEventDropdownsError = const Object(),
     Object? newEventSelectedTimezone = const Object(),
+    bool? isSavingNewEvent,
+    Object? newEventSaveError = const Object(),
+    Object? newEventSaveSuccessMessage = const Object(),
     bool? isSaving,
     Object? saveError = const Object(),
     Object? saveSuccessMessage = const Object(),
@@ -75,6 +87,13 @@ class EventAddEditState {
       newEventSelectedTimezone: identical(newEventSelectedTimezone, const Object())
           ? this.newEventSelectedTimezone
           : (newEventSelectedTimezone as TimezoneModel?),
+      isSavingNewEvent: isSavingNewEvent ?? this.isSavingNewEvent,
+      newEventSaveError: identical(newEventSaveError, const Object())
+          ? this.newEventSaveError
+          : (newEventSaveError as String?),
+      newEventSaveSuccessMessage: identical(newEventSaveSuccessMessage, const Object())
+          ? this.newEventSaveSuccessMessage
+          : (newEventSaveSuccessMessage as String?),
       isSaving: isSaving ?? this.isSaving,
       saveError: identical(saveError, const Object())
           ? this.saveError
@@ -190,6 +209,34 @@ class EventAddEditNotifier extends Notifier<EventAddEditState> {
 
   void selectNewEventTimezone(TimezoneModel tz) {
     state = state.copyWith(newEventSelectedTimezone: tz);
+  }
+
+  Future<bool> saveNewEvent(NewEventSaveRequest request) async {
+    state = state.copyWith(
+      isSavingNewEvent: true,
+      newEventSaveError: null,
+      newEventSaveSuccessMessage: null,
+    );
+    try {
+      final eventService = ref.read(eventDetailServiceProvider);
+      final response = await eventService.saveNewEvent(request);
+      if (response.success) {
+        state = state.copyWith(
+          isSavingNewEvent: false,
+          newEventSaveSuccessMessage: response.message.isNotEmpty ? response.message : 'Event created successfully',
+        );
+        return true;
+      } else {
+        state = state.copyWith(
+          isSavingNewEvent: false,
+          newEventSaveError: response.message.isNotEmpty ? response.message : 'Failed to create event',
+        );
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(isSavingNewEvent: false, newEventSaveError: e.toString());
+      return false;
+    }
   }
 
   // ── Save / Delete ──────────────────────────────────────────────────────────
