@@ -99,9 +99,9 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   TimeOfDay _startTime = const TimeOfDay(hour: 12, minute: 0); // 12:00 PM
   int _durationHours = 1;
   int _durationMinutes = 30;
-  // Custom Time Picker states
-  bool _showSingleSessionTimePicker = false;
-  bool _showMultiDayTimePicker = false;
+  // Custom Time Picker overlay
+  final GlobalKey _startTimeFieldKey = GlobalKey();
+  OverlayEntry? _timePickerOverlay;
   // Game & Scrimmage specific fields
   String _selectedOpponent = 'Select opponent...';
   final List<String> _opponents = [
@@ -116,12 +116,12 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   String _arriveEarly = 'No set arrival time';
   final List<String> _arriveEarlyOptions = [
     'No set arrival time',
-    '10 min early',
     '15 min early',
-    '20 min early',
     '30 min early',
     '45 min early',
-    '1 hour early',
+    '1 hr early',
+    '1 hr 15 min early',
+    '1 hr 30 min early',
   ];
 
   // Tournament/League specific state
@@ -171,7 +171,56 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   ];
 
   @override
+  void _showStartTimeOverlay() {
+    _removeTimePickerOverlay();
+
+    final renderBox = _startTimeFieldKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+
+    _timePickerOverlay = OverlayEntry(
+      builder: (_) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: _removeTimePickerOverlay,
+              child: const SizedBox.expand(),
+            ),
+          ),
+          Positioned(
+            left: offset.dx,
+            top: offset.dy + size.height + 4,
+            child: Material(
+              color: Colors.transparent,
+              child: GestureDetector(
+                onTap: () {},
+                child: _buildCustomTimePickerCard(
+                  onTimeChanged: () {
+                    setState(() {});
+                    _timePickerOverlay?.markNeedsBuild();
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    Overlay.of(context).insert(_timePickerOverlay!);
+  }
+
+  void _removeTimePickerOverlay() {
+    _timePickerOverlay?.remove();
+    _timePickerOverlay = null;
+  }
+
+  @override
   void dispose() {
+    _removeTimePickerOverlay();
     _titleController.dispose();
     _locationController.dispose();
     _notesController.dispose();
@@ -303,6 +352,13 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Page Title ──
+          Text(
+            'New Event',
+            style: AppTextStyles.heading22.copyWith(color: colors.textPrimary, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+
           // ── Category Header ──
           Text(
             'What are you adding?',
@@ -461,28 +517,26 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
           runSpacing: 10,
           children: _eventTypes.map((type) => _buildEventTypeChip(type)).toList(),
         ),
-        const SizedBox(height: 16),
-
         // Import Link
-        GestureDetector(
-          onTap: () => context.push(AppRoutes.importSchedule),
-          child: Row(
-            children: [
-              Icon(Icons.file_download_outlined, color: colors.primary, size: 20),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Have a full schedule? Import a calendar (CSV / iCal)',
-                  style: AppTextStyles.body14.copyWith(
-                    color: colors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
+        // GestureDetector(
+        //   onTap: () => context.push(AppRoutes.importSchedule),
+        //   child: Row(
+        //     children: [
+        //       Icon(Icons.file_download_outlined, color: colors.primary, size: 20),
+        //       const SizedBox(width: 6),
+        //       Expanded(
+        //         child: Text(
+        //           'Have a full schedule? Import a calendar (CSV / iCal)',
+        //           style: AppTextStyles.body14.copyWith(
+        //             color: colors.primary,
+        //             fontWeight: FontWeight.w600,
+        //           ),
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+        const SizedBox(height: 20),
 
         // Title or Opponent Field
         if (_selectedEventType == 'Game' || _selectedEventType == 'Scrimmage') ...[
@@ -542,14 +596,15 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
           children: [
             Expanded(
               flex: 4,
-              child: _buildPickerField(
-                label: 'Start time',
-                valueText: timeStr,
-                isPlaceholder: false,
-                icon: Icons.access_time,
-                onTap: () => setState(() {
-                  _showSingleSessionTimePicker = !_showSingleSessionTimePicker;
-                }),
+              child: KeyedSubtree(
+                key: _startTimeFieldKey,
+                child: _buildPickerField(
+                  label: 'Start time',
+                  valueText: timeStr,
+                  isPlaceholder: false,
+                  icon: Icons.access_time,
+                  onTap: _showStartTimeOverlay,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -597,18 +652,6 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
             ),
           ],
         ),
-        if (_showSingleSessionTimePicker) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _buildCustomTimePickerCard(
-                onTimeChanged: () => setState(() {}),
-              ),
-              const Spacer(),
-            ],
-          ),
-          const SizedBox(height: 12),
-        ],
         const SizedBox(height: 8),
         Row(
           children: [
@@ -843,14 +886,15 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
             children: [
               Expanded(
                 flex: 4,
-                child: _buildPickerField(
-                  label: 'Start time',
-                  valueText: timeStr,
-                  isPlaceholder: false,
-                  icon: Icons.access_time,
-                  onTap: () => setState(() {
-                    _showMultiDayTimePicker = !_showMultiDayTimePicker;
-                  }),
+                child: KeyedSubtree(
+                  key: _startTimeFieldKey,
+                  child: _buildPickerField(
+                    label: 'Start time',
+                    valueText: timeStr,
+                    isPlaceholder: false,
+                    icon: Icons.access_time,
+                    onTap: _showStartTimeOverlay,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -898,18 +942,6 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
               ),
             ],
           ),
-          if (_showMultiDayTimePicker) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _buildCustomTimePickerCard(
-                  onTimeChanged: () => setState(() {}),
-                ),
-                const Spacer(),
-              ],
-            ),
-            const SizedBox(height: 12),
-          ],
           const SizedBox(height: 8),
           Row(
             children: [
@@ -1060,32 +1092,29 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
   Widget _buildHomeOrAwayButton(String option) {
     final colors = AppColors.current;
     final isSelected = _homeOrAway == option;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _homeOrAway = option),
-        child: Container(
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
+    return GestureDetector(
+      onTap: () => setState(() => _homeOrAway = option),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 15),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (colors.isDark ? colors.primary : const Color(0xFF2F54EB))
+              : (colors.isDark ? colors.background : Colors.white),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
             color: isSelected
                 ? (colors.isDark ? colors.primary : const Color(0xFF2F54EB))
-                : (colors.isDark ? colors.background : Colors.white),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isSelected
-                  ? (colors.isDark ? colors.primary : const Color(0xFF2F54EB))
-                  : colors.border,
-              width: 1.2,
-            ),
+                : colors.border,
+            width: 1.2,
           ),
-          child: Text(
-            option,
-            style: AppTextStyles.body14.copyWith(
-              color: isSelected
-                  ? (colors.isDark ? Colors.black : Colors.white)
-                  : colors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
+        ),
+        child: Text(
+          option,
+          style: AppTextStyles.body14.copyWith(
+            color: isSelected
+                ? (colors.isDark ? Colors.black : Colors.white)
+                : colors.textPrimary,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -1650,12 +1679,13 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
             child: Row(
               children: [
                 SizedBox(
-                  width: 24,
-                  height: 24,
+                  width: 25,
+                  height: 25,
                   child: Checkbox(
                     value: _saveOpponentForFuture,
-                    activeColor: const Color(0xFF00E5FF),
-                    checkColor: Colors.black,
+                    activeColor: colors.isDark ? colors.primary : const Color(0xFF2F54EB),
+                    checkColor: Colors.white,
+                    side: BorderSide(color: colors.textSecondary.withValues(alpha: 0.5), width: 1),
                     onChanged: (val) {
                       if (val != null) {
                         setState(() => _saveOpponentForFuture = val);
