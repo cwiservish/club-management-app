@@ -717,19 +717,11 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       final isGameOrScrimmage = _eventTypeKey == 1 || _eventTypeKey == 3;
       if (isGameOrScrimmage) {
         // Flow 1: Game or Scrimmage — opponent is required
-        if (_showAddOpponentInline) {
-          // Inline form still open — use current text
-          opponentTeamName = _newOpponentNameController.text.trim();
-          if (opponentTeamName.isEmpty) {
-            _showError('Please enter opponent name');
-            return;
-          }
-          allowForFutureGames = _saveOpponentForFuture;
-        } else if (_selectedOpponentId == '__confirmed_new__') {
+        if (_selectedOpponentId == '__confirmed_new__') {
           // New opponent was confirmed via "Add opponent" button
           opponentTeamName = _confirmedNewOpponentName;
           allowForFutureGames = _saveOpponentForFuture;
-        } else if (_selectedOpponentId.isNotEmpty) {
+        } else if (_selectedOpponentId.isNotEmpty && _selectedOpponentId != '__new__') {
           // Existing team selected from API list — send ID only
           opponentTeamId = _selectedOpponentId;
           allowForFutureGames = false;
@@ -867,17 +859,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       String flow4OpponentTeamName = '';
       bool flow4AllowForFutureGames = false;
 
-      if (_showAddOpponentInline) {
-        flow4OpponentTeamName = _newOpponentNameController.text.trim();
-        if (flow4OpponentTeamName.isEmpty) {
-          _showError('Please enter opponent name');
-          return;
-        }
-        flow4AllowForFutureGames = _saveOpponentForFuture;
-      } else if (_selectedOpponentId == '__confirmed_new__') {
+      if (_selectedOpponentId == '__confirmed_new__') {
         flow4OpponentTeamName = _confirmedNewOpponentName;
         flow4AllowForFutureGames = _saveOpponentForFuture;
-      } else if (_selectedOpponentId.isNotEmpty) {
+      } else if (_selectedOpponentId.isNotEmpty && _selectedOpponentId != '__new__') {
         flow4OpponentTeamId = _selectedOpponentId;
         flow4AllowForFutureGames = false;
       } else {
