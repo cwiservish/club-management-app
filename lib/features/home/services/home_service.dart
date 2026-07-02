@@ -239,8 +239,29 @@ class HomeService {
       final longitude = json['longitude']?.toString() ?? '';
       final scheduleGameId = _parseInt(json['schedule_game_id']) > 0 ? _parseInt(json['schedule_game_id']) : null;
       final status = _parseInt(json['status'] ?? 1);
-      // home_away: 1=Home, 2=Away, 3=Neutral
-      final isHome = _parseInt(json['home_away']) == 1;
+      final homeAwayKey = _parseInt(json['home_away']);
+      final isHome = homeAwayKey == 1;
+      final schedulingMode = _parseInt(json['scheduling_mode'] ?? 1);
+      final existingSchedulingMode = _parseInt(json['existing_scheduling_mode'] ?? schedulingMode);
+      final opponentTeamId = _parseInt(json['opponent_team_id']);
+      final uniformTopColor = json['uniform_top_color']?.toString() ?? '';
+      final uniformBottomColor = json['uniform_bottom_color']?.toString() ?? '';
+      final uniformSocksColor = json['uniform_socks_color']?.toString() ?? '';
+      final uniformTemplateId = _parseInt(json['uniform_template_id']);
+      final isFullSchedule = _parseBool(json['is_full_schedule']);
+      final titleRaw = json['title']?.toString() ?? '';
+
+      // start_date / end_date for tournament/league placeholder
+      DateTime? startDate;
+      DateTime? endDate;
+      try {
+        final sd = json['start_date']?.toString() ?? '';
+        if (sd.isNotEmpty) startDate = DateTime.parse(sd);
+      } catch (_) {}
+      try {
+        final ed = json['end_date']?.toString() ?? '';
+        if (ed.isNotEmpty) endDate = DateTime.parse(ed);
+      } catch (_) {}
 
       return ClubEvent(
         id: uuid,
@@ -274,6 +295,19 @@ class HomeService {
         requiresPlayerSelection: requiresPlayerSelection,
         rsvpTargets: rsvpTargets,
         status: status,
+        schedulingMode: schedulingMode,
+        existingSchedulingMode: existingSchedulingMode,
+        eventTypeKey: eventTypeInt,
+        homeAwayKey: homeAwayKey,
+        opponentTeamId: opponentTeamId,
+        uniformTopColor: uniformTopColor,
+        uniformBottomColor: uniformBottomColor,
+        uniformSocksColor: uniformSocksColor,
+        uniformTemplateId: uniformTemplateId,
+        startDate: startDate,
+        endDate: endDate,
+        isFullSchedule: isFullSchedule,
+        titleRaw: titleRaw,
       );
     } catch (e) {
       debugPrint('[HomeService] Error parsing event: $e');

@@ -18,6 +18,21 @@ class ClubEvent {
   final List<String> rsvpNo;
   final List<String> rsvpMaybe;
 
+  // Raw API fields needed for edit pre-fill
+  final int schedulingMode;
+  final int existingSchedulingMode;
+  final int eventTypeKey;
+  final int homeAwayKey;
+  final int opponentTeamId;
+  final String uniformTopColor;
+  final String uniformBottomColor;
+  final String uniformSocksColor;
+  final int uniformTemplateId;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final bool isFullSchedule;
+  final String titleRaw;
+
   final bool timeTbd;
   final String? timeLabel;
   final String? dateLabel;
@@ -51,6 +66,19 @@ class ClubEvent {
     this.rsvpYes = const [],
     this.rsvpNo = const [],
     this.rsvpMaybe = const [],
+    this.schedulingMode = 1,
+    this.existingSchedulingMode = 1,
+    this.eventTypeKey = 0,
+    this.homeAwayKey = 0,
+    this.opponentTeamId = 0,
+    this.uniformTopColor = '',
+    this.uniformBottomColor = '',
+    this.uniformSocksColor = '',
+    this.uniformTemplateId = 0,
+    this.startDate,
+    this.endDate,
+    this.isFullSchedule = false,
+    this.titleRaw = '',
     this.timeTbd = false,
     this.timeLabel,
     this.dateLabel,
@@ -85,6 +113,19 @@ class ClubEvent {
     List<String>? rsvpYes,
     List<String>? rsvpNo,
     List<String>? rsvpMaybe,
+    int? schedulingMode,
+    int? existingSchedulingMode,
+    int? eventTypeKey,
+    int? homeAwayKey,
+    int? opponentTeamId,
+    String? uniformTopColor,
+    String? uniformBottomColor,
+    String? uniformSocksColor,
+    int? uniformTemplateId,
+    DateTime? startDate,
+    DateTime? endDate,
+    bool? isFullSchedule,
+    String? titleRaw,
     bool? timeTbd,
     String? timeLabel,
     String? dateLabel,
@@ -118,6 +159,19 @@ class ClubEvent {
       rsvpYes: rsvpYes ?? this.rsvpYes,
       rsvpNo: rsvpNo ?? this.rsvpNo,
       rsvpMaybe: rsvpMaybe ?? this.rsvpMaybe,
+      schedulingMode: schedulingMode ?? this.schedulingMode,
+      existingSchedulingMode: existingSchedulingMode ?? this.existingSchedulingMode,
+      eventTypeKey: eventTypeKey ?? this.eventTypeKey,
+      homeAwayKey: homeAwayKey ?? this.homeAwayKey,
+      opponentTeamId: opponentTeamId ?? this.opponentTeamId,
+      uniformTopColor: uniformTopColor ?? this.uniformTopColor,
+      uniformBottomColor: uniformBottomColor ?? this.uniformBottomColor,
+      uniformSocksColor: uniformSocksColor ?? this.uniformSocksColor,
+      uniformTemplateId: uniformTemplateId ?? this.uniformTemplateId,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      isFullSchedule: isFullSchedule ?? this.isFullSchedule,
+      titleRaw: titleRaw ?? this.titleRaw,
       timeTbd: timeTbd ?? this.timeTbd,
       timeLabel: timeLabel ?? this.timeLabel,
       dateLabel: dateLabel ?? this.dateLabel,

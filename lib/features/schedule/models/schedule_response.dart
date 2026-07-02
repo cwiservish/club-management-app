@@ -116,12 +116,23 @@ class ScheduleEvent {
   final int teamId;
   final int? scheduleGameId;
   final String displayName;
+  final String titleRaw;
   final String eventName;
   final String sessionDate;
   final String eventDate;
   final String dateLabel;
   final int eventType;
   final int homeAway;
+  final int schedulingMode;
+  final int existingSchedulingMode;
+  final int opponentTeamId;
+  final String uniformTopColor;
+  final String uniformBottomColor;
+  final String uniformSocksColor;
+  final int uniformTemplateId;
+  final bool isFullSchedule;
+  final String startDateStr;
+  final String endDateStr;
   final String day;
   final String dayName;
   final String monthKey;
@@ -157,12 +168,23 @@ class ScheduleEvent {
     required this.teamId,
     this.scheduleGameId,
     required this.displayName,
+    required this.titleRaw,
     required this.eventName,
     required this.sessionDate,
     required this.eventDate,
     required this.dateLabel,
     required this.eventType,
     required this.homeAway,
+    required this.schedulingMode,
+    required this.existingSchedulingMode,
+    required this.opponentTeamId,
+    required this.uniformTopColor,
+    required this.uniformBottomColor,
+    required this.uniformSocksColor,
+    required this.uniformTemplateId,
+    required this.isFullSchedule,
+    required this.startDateStr,
+    required this.endDateStr,
     required this.day,
     required this.dayName,
     required this.monthKey,
@@ -200,12 +222,23 @@ class ScheduleEvent {
         uuid: '',
         teamId: 0,
         displayName: '',
+        titleRaw: '',
         eventName: '',
         sessionDate: '',
         eventDate: '',
         dateLabel: '',
         eventType: 0,
         homeAway: 0,
+        schedulingMode: 1,
+        existingSchedulingMode: 1,
+        opponentTeamId: 0,
+        uniformTopColor: '',
+        uniformBottomColor: '',
+        uniformSocksColor: '',
+        uniformTemplateId: 0,
+        isFullSchedule: false,
+        startDateStr: '',
+        endDateStr: '',
         day: '',
         dayName: '',
         monthKey: '',
@@ -251,7 +284,18 @@ class ScheduleEvent {
           ? _parseInt(json['schedule_game_id'])
           : null,
       displayName: _parseString(json['display_name']),
+      titleRaw: _parseString(json['title']),
       eventName: _parseString(json['event_name'] ?? json['title']),
+      schedulingMode: _parseInt(json['scheduling_mode'] ?? 1),
+      existingSchedulingMode: _parseInt(json['existing_scheduling_mode'] ?? json['scheduling_mode'] ?? 1),
+      opponentTeamId: _parseInt(json['opponent_team_id']),
+      uniformTopColor: _parseString(json['uniform_top_color']),
+      uniformBottomColor: _parseString(json['uniform_bottom_color']),
+      uniformSocksColor: _parseString(json['uniform_socks_color']),
+      uniformTemplateId: _parseInt(json['uniform_template_id']),
+      isFullSchedule: _parseBool(json['is_full_schedule']),
+      startDateStr: _parseString(json['start_date']),
+      endDateStr: _parseString(json['end_date']),
       sessionDate: _parseString(json['session_date']),
       eventDate: _parseString(json['event_date'] ?? json['session_date']),
       dateLabel: _parseString(json['date_label']),
@@ -421,6 +465,19 @@ class ScheduleEvent {
       arrivalTime: arrivalTime.isNotEmpty ? arrivalTime : null,
       flagColor: flagColor.isNotEmpty ? flagColor : null,
       dbId: id,
+      schedulingMode: schedulingMode,
+      existingSchedulingMode: existingSchedulingMode,
+      eventTypeKey: eventType,
+      homeAwayKey: homeAway,
+      opponentTeamId: opponentTeamId,
+      uniformTopColor: uniformTopColor,
+      uniformBottomColor: uniformBottomColor,
+      uniformSocksColor: uniformSocksColor,
+      uniformTemplateId: uniformTemplateId,
+      isFullSchedule: isFullSchedule,
+      titleRaw: titleRaw,
+      startDate: startDateStr.isNotEmpty ? (() { try { return DateTime.parse(startDateStr); } catch (_) { return null; } })() : null,
+      endDate: endDateStr.isNotEmpty ? (() { try { return DateTime.parse(endDateStr); } catch (_) { return null; } })() : null,
       timezone: timezone.isNotEmpty ? timezone : null,
       notificationEnabled: notificationEnabled,
       arrivalEarly: arrivalEarly,

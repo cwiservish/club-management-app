@@ -63,7 +63,7 @@ class _EventDetailPageState extends ConsumerState<EventDetailPage> {
             SubHeader(
               title:      'Event Details',
               rightText:  isCoach ? 'Edit' : null,
-              onRightTap: isCoach ? () => context.push('${AppRoutes.eventEdit(widget.eventId)}?from=${widget.from}') : null,
+              onRightTap: isCoach ? () => context.push(AppRoutes.eventEdit(widget.eventId), extra: widget.initialEvent) : null,
             ),
             EventDetailTabBar(eventId: widget.eventId, activeTab: widget.activeTab, from: widget.from),
             Expanded(

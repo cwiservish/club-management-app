@@ -27,8 +27,7 @@ import '../../features/invoice/pages/invoice_form_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
 import '../../features/event_details/models/event_detail_model.dart';
 import '../../features/event_details/pages/event_detail_page.dart' as ed;
-import '../../features/event_details/pages/event_add_page.dart';
-import '../../features/event_details/pages/new_event_page.dart';
+import '../../features/event_details/pages/add_edit_event_page.dart';
 import '../../features/event_details/pages/import_schedule_page.dart';
 import '../../features/auth/pages/login_page.dart';
 import '../../features/auth/pages/forgot_password_page.dart';
@@ -105,7 +104,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.newEvent,
-        builder: (context, state) => const NewEventPage(),
+        builder: (context, state) => const AddEditEventPage(),
       ),
       GoRoute(
         path: AppRoutes.importSchedule,
@@ -275,10 +274,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: AppRoutes.eventDetailEdit,
-                    builder: (context, state) => EventEditPage(
-                      eventId: state.pathParameters['eventId']!,
-                      duplicate: state.uri.queryParameters['duplicate'] == 'true',
-                      from: state.uri.queryParameters['from'] ?? 'home',
+                    builder: (context, state) => AddEditEventPage(
+                      editEvent: state.extra as ClubEvent?,
                     ),
                   ),
                 ],
