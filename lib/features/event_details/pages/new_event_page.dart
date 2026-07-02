@@ -758,11 +758,35 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
         return;
       }
 
+      // Flow 4: "Yes I have it" → same opponent logic as flow 1
+      String flow4OpponentTeamId = '';
+      String flow4OpponentTeamName = '';
+      bool flow4AllowForFutureGames = false;
+
+      if (_showAddOpponentInline) {
+        flow4OpponentTeamName = _newOpponentNameController.text.trim();
+        if (flow4OpponentTeamName.isEmpty) {
+          _showError('Please enter opponent name');
+          return;
+        }
+        flow4AllowForFutureGames = _saveOpponentForFuture;
+      } else if (_selectedOpponentId == '__confirmed_new__') {
+        flow4OpponentTeamName = _confirmedNewOpponentName;
+        flow4AllowForFutureGames = _saveOpponentForFuture;
+      } else if (_selectedOpponentId.isNotEmpty) {
+        flow4OpponentTeamId = _selectedOpponentId;
+        flow4AllowForFutureGames = false;
+      } else {
+        _showError('Please select or add an opponent');
+        return;
+      }
+
+      // Flow 4: "Yes I have it" → always sent as single session game (scheduling_mode=1, event_type=1)
       final request = NewEventSaveRequest(
         teamUuid: activeTeam.uuid,
-        schedulingMode: _schedulingTypeKey,
-        eventType: 0,
-        title: title,
+        schedulingMode: 1,
+        eventType: 1,
+        title: '',
         sessionDate: _formatSessionDate(_selectedDate!),
         startTime: _formatStartTime24(_startTime),
         duration: _durationHours * 60 + _durationMinutes,
@@ -771,8 +795,9 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
         location: _locationName.isNotEmpty ? _locationName : locationText,
         latitude: _latitude,
         longitude: _longitude,
-        opponentTeamName: '',
-        allowForFutureGames: false,
+        opponentTeamId: flow4OpponentTeamId,
+        opponentTeamName: flow4OpponentTeamName,
+        allowForFutureGames: flow4AllowForFutureGames,
         uniformTemplateId: _buildUniformFields().templateId,
         uniformTopColor: _buildUniformFields().topColor,
         uniformBottomColor: _buildUniformFields().bottomColor,
@@ -1091,51 +1116,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
 
         // Title or Opponent Field
         if (_eventTypeKey == 1 || _eventTypeKey == 3) ...[
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Opponent',
-                style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
-              ),
-              const SizedBox(height: 8),
-              _buildDropdownField<String>(
-                value: _selectedOpponentId,
-                items: [
-                  '',
-                  ...dropdowns.teams.map((t) => t.id.toString()),
-                  if (_selectedOpponentId == '__confirmed_new__') '__confirmed_new__',
-                  '__new__',
-                ],
-                itemLabel: (v) {
-                  if (v == '') return 'Select opponent...';
-                  if (v == '__new__') return '+ Add a new opponent...';
-                  if (v == '__confirmed_new__') return _confirmedNewOpponentName;
-                  final match = dropdowns.teams.where((t) => t.id.toString() == v).firstOrNull;
-                  return match?.name ?? v;
-                },
-                onChanged: (val) {
-                  if (val == '__new__') {
-                    setState(() {
-                      _showAddOpponentInline = true;
-                      _selectedOpponentId = '__new__';
-                      _confirmedNewOpponentName = '';
-                    });
-                  } else if (val != null) {
-                    setState(() {
-                      _selectedOpponentId = val;
-                      _showAddOpponentInline = false;
-                      _confirmedNewOpponentName = '';
-                    });
-                  }
-                },
-              ),
-              if (_showAddOpponentInline) ...[
-                const SizedBox(height: 12),
-                _buildAddOpponentInlineCard(),
-              ],
-            ],
-          ),
+          _buildOpponentSection(dropdowns),
         ] else ...[
           _buildTextField(
             label: 'Title',
@@ -1352,13 +1333,15 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title
-        _buildTextField(
-          label: 'Title',
-          hintText: titlePlaceholder,
-          controller: _titleController,
-        ),
-        const SizedBox(height: 20),
+        // Title — only for placeholder mode; "Yes I have it" shows opponent instead
+        if (!_knowsSchedule) ...[
+          _buildTextField(
+            label: 'Title',
+            hintText: titlePlaceholder,
+            controller: _titleController,
+          ),
+          const SizedBox(height: 20),
+        ],
 
         // Do you know the game schedule?
         Text(
@@ -1408,6 +1391,10 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
             ],
           ),
         ] else ...[
+          // Opponent dropdown (flow 4 — Tournament/League with known schedule)
+          _buildOpponentSection(dropdowns),
+          const SizedBox(height: 20),
+
           // Date Field
           _buildPickerField(
             label: 'Date',
@@ -2162,6 +2149,54 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildOpponentSection(NewEventDropdownOptions dropdowns) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Opponent',
+          style: AppTextStyles.heading14.copyWith(color: AppColors.current.textPrimary),
+        ),
+        const SizedBox(height: 8),
+        _buildDropdownField<String>(
+          value: _selectedOpponentId,
+          items: [
+            '',
+            ...dropdowns.teams.map((t) => t.id.toString()),
+            if (_selectedOpponentId == '__confirmed_new__') '__confirmed_new__',
+            '__new__',
+          ],
+          itemLabel: (v) {
+            if (v == '') return 'Select opponent...';
+            if (v == '__new__') return '+ Add a new opponent...';
+            if (v == '__confirmed_new__') return _confirmedNewOpponentName;
+            final match = dropdowns.teams.where((t) => t.id.toString() == v).firstOrNull;
+            return match?.name ?? v;
+          },
+          onChanged: (val) {
+            if (val == '__new__') {
+              setState(() {
+                _showAddOpponentInline = true;
+                _selectedOpponentId = '__new__';
+                _confirmedNewOpponentName = '';
+              });
+            } else if (val != null) {
+              setState(() {
+                _selectedOpponentId = val;
+                _showAddOpponentInline = false;
+                _confirmedNewOpponentName = '';
+              });
+            }
+          },
+        ),
+        if (_showAddOpponentInline) ...[
+          const SizedBox(height: 12),
+          _buildAddOpponentInlineCard(),
+        ],
+      ],
     );
   }
 

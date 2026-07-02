@@ -76,14 +76,24 @@ class HomeService {
       final uuid = json['uuid']?.toString() ?? json['id']?.toString() ?? '';
       if (uuid.isEmpty) return null;
 
-      final title = json['event_name']?.toString() ?? 'Event';
+      // display_name is the canonical display title in the new API
+      final title = json['display_name']?.toString()
+          ?? json['title']?.toString()
+          ?? json['event_name']?.toString()
+          ?? 'Event';
       final subtitle = json['extra_label']?.toString() ?? '';
-      
-      // Parse start_time / end_time safely
-      final startTimeStr = json['start_time']?.toString() ?? json['event_date']?.toString() ?? '';
+
+      // Combine session_date + start_time into a full DateTime.
+      // start_time is "HH:mm:ss" (time only), session_date is "yyyy-MM-dd".
+      final sessionDate = json['session_date']?.toString() ?? '';
+      final startTimeStr = json['start_time']?.toString() ?? '';
       DateTime dateTime;
       try {
-        dateTime = DateTime.parse(startTimeStr);
+        if (sessionDate.isNotEmpty && startTimeStr.isNotEmpty) {
+          dateTime = DateTime.parse('$sessionDate $startTimeStr');
+        } else {
+          dateTime = DateTime.parse(startTimeStr);
+        }
       } catch (_) {
         dateTime = DateTime.now();
       }
@@ -91,32 +101,39 @@ class HomeService {
       final endTimeStr = json['end_time']?.toString() ?? '';
       DateTime endTime;
       try {
-        endTime = DateTime.parse(endTimeStr);
+        if (sessionDate.isNotEmpty && endTimeStr.isNotEmpty) {
+          endTime = DateTime.parse('$sessionDate $endTimeStr');
+        } else {
+          endTime = DateTime.parse(endTimeStr);
+        }
       } catch (_) {
         endTime = dateTime.add(const Duration(hours: 1));
       }
 
       final durationMin = _parseInt(json['duration']);
-      final duration = durationMin > 0 
+      final duration = durationMin > 0
           ? Duration(minutes: durationMin)
           : endTime.difference(dateTime);
 
       final location = json['location']?.toString() ?? '';
-      
-      // Determine EventType using schedule_game_id / name heuristics
-      EventType type = EventType.other;
-      if (json['schedule_game_id'] != null) {
-        type = EventType.game;
-      } else {
-        final lowerTitle = title.toLowerCase();
-        if (lowerTitle.contains('practice') || lowerTitle.contains('training')) {
-          type = EventType.practice;
-        } else if (lowerTitle.contains('game') || lowerTitle.contains('scrimmage') || lowerTitle.contains('match')) {
+
+      // Map event_type int from API → EventType enum
+      // 1=Game, 2=Practice, 3=Scrimmage (→game), 4=Team Event, 5=Camp
+      final eventTypeInt = _parseInt(json['event_type']);
+      EventType type;
+      switch (eventTypeInt) {
+        case 1:
+        case 3:
           type = EventType.game;
-        }
+        case 2:
+          type = EventType.practice;
+        default:
+          type = EventType.other;
       }
 
-      final opponent = json['opponant']?.toString() ?? json['opponent']?.toString();
+      final opponent = json['opponent_team_name']?.toString()
+          ?? json['opponant']?.toString()
+          ?? json['opponent']?.toString();
       final trackAvailability = _parseBool(json['track_availability']);
       final notes = json['notes']?.toString();
 
@@ -161,10 +178,14 @@ class HomeService {
               rsvpTargets.add(
                 ClubEventRsvpTarget(
                   attendeeType: t['attendee_type']?.toString() ?? '',
-                  customerId: _parseInt(t['customer_id']),
+                  // new API uses attendee_id; old used customer_id
+                  customerId: _parseInt(t['attendee_id'] ?? t['customer_id']),
                   playerId: t['player_id'] != null ? _parseInt(t['player_id']) : null,
                   name: t['name']?.toString() ?? '',
-                  teamEventAttendeeId: t['team_event_attendee_id'] != null ? _parseInt(t['team_event_attendee_id']) : null,
+                  // new API uses team_event_session_attendee_id
+                  teamEventAttendeeId: _parseInt(
+                    t['team_event_session_attendee_id'] ?? t['team_event_attendee_id'],
+                  ) > 0 ? _parseInt(t['team_event_session_attendee_id'] ?? t['team_event_attendee_id']) : null,
                   attendance: t['attendance'],
                   notes: t['notes']?.toString() ?? '',
                 ),
@@ -204,18 +225,22 @@ class HomeService {
 
       final timeTbd = _parseBool(json['time_tbd']);
       final timeLabel = json['time_label']?.toString();
+      final dateLabel = json['date_label']?.toString();
       final locationDetails = json['location_details']?.toString();
       final uniformColor = json['uniform_color']?.toString();
       final arrivalTime = json['arrival_time']?.toString();
       final flagColor = json['flag_color']?.toString();
-      final dbId = _parseInt(json['team_event_id'] ?? json['id']);
+      // New API uses numeric 'id'; keep 'team_event_id' as fallback for older responses
+      final dbId = _parseInt(json['id'] ?? json['team_event_id']);
       final timezone = json['timezone']?.toString();
       final notificationEnabled = _parseBool(json['notification_enabled'] ?? true);
-      final arrivalEarly = json['arrival_early'] != null ? _parseInt(json['arrival_early']) : 15;
+      final arrivalEarly = json['arrival_early'] != null ? _parseInt(json['arrival_early']) : 0;
       final latitude = json['latitude']?.toString() ?? '';
       final longitude = json['longitude']?.toString() ?? '';
-      final scheduleGameId = json['schedule_game_id'] != null ? _parseInt(json['schedule_game_id']) : null;
+      final scheduleGameId = _parseInt(json['schedule_game_id']) > 0 ? _parseInt(json['schedule_game_id']) : null;
       final status = _parseInt(json['status'] ?? 1);
+      // home_away: 1=Home, 2=Away, 3=Neutral
+      final isHome = _parseInt(json['home_away']) == 1;
 
       return ClubEvent(
         id: uuid,
@@ -225,8 +250,8 @@ class HomeService {
         duration: duration,
         location: location,
         type: type,
-        isHome: true, // fallback default
-        opponent: opponent,
+        isHome: isHome,
+        opponent: (opponent?.isNotEmpty == true) ? opponent : null,
         rsvpRequired: trackAvailability,
         notes: notes,
         rsvpYes: rsvpYes,
@@ -234,6 +259,7 @@ class HomeService {
         rsvpNo: rsvpNo,
         timeTbd: timeTbd,
         timeLabel: timeLabel,
+        dateLabel: dateLabel,
         locationDetails: locationDetails,
         uniformColor: uniformColor,
         arrivalTime: arrivalTime,

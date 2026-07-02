@@ -76,10 +76,12 @@ class HomeState {
       if (hadMaybe && userChoice != HomeRsvp.maybe) maybe--;
       if (hadNo && userChoice != HomeRsvp.no) no--;
 
-      // Format date / time strings
+      // Format date / time strings — prefer server-formatted labels
       final dt  = event.dateTime;
       final end = event.endTime;
-      final date = '${_monthName(dt.month)} ${dt.day}, ${dt.year}';
+      final date = (event.dateLabel != null && event.dateLabel!.isNotEmpty)
+          ? event.dateLabel!
+          : '${_monthName(dt.month)} ${dt.day}, ${dt.year}';
       final timeRange = (event.timeLabel != null && event.timeLabel!.isNotEmpty)
           ? event.timeLabel!
           : '${_fmtTime(dt)} - ${_fmtTime(end)}';
