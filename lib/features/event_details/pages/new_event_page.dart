@@ -736,12 +736,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
         return;
       }
 
-      // Flow 4: Yes, I have the schedule — specific date/time
-      final title = _titleController.text.trim();
-      if (title.isEmpty) {
-        _showError('Please enter a title');
-        return;
-      }
+      // Flow 4: Yes, I have the schedule — title not required, sent as empty
       if (_selectedDate == null) {
         _showError('Please select a date');
         return;
@@ -892,7 +887,7 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(left: 4),
+                    padding: const EdgeInsets.only(left: 10),
                     child: Text(
                       'New Event',
                       style: AppTextStyles.heading22.copyWith(color: colors.textPrimary, fontWeight: FontWeight.bold),
@@ -1333,15 +1328,17 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title — only for placeholder mode; "Yes I have it" shows opponent instead
+        // Title for placeholder mode / Opponent for "Yes, I have it"
         if (!_knowsSchedule) ...[
           _buildTextField(
             label: 'Title',
             hintText: titlePlaceholder,
             controller: _titleController,
           ),
-          const SizedBox(height: 20),
+        ] else ...[
+          _buildOpponentSection(dropdowns),
         ],
+        const SizedBox(height: 20),
 
         // Do you know the game schedule?
         Text(
@@ -1391,10 +1388,6 @@ class _NewEventPageState extends ConsumerState<NewEventPage> {
             ],
           ),
         ] else ...[
-          // Opponent dropdown (flow 4 — Tournament/League with known schedule)
-          _buildOpponentSection(dropdowns),
-          const SizedBox(height: 20),
-
           // Date Field
           _buildPickerField(
             label: 'Date',

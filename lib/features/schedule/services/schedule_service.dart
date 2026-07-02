@@ -15,6 +15,7 @@ class ScheduleService {
     const endpoint = ApiEndpoints.teamEventsAll;
     final queryParameters = {
       'team_uuid': teamUuid,
+      'formate': 'month-wise',
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');

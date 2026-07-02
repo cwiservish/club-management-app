@@ -94,7 +94,7 @@ class ScheduleMonth {
   });
 
   factory ScheduleMonth.fromJson(Map<String, dynamic>? json) {
-    final list = json?['events'] as List?;
+    final list = (json?['sessions'] ?? json?['events']) as List?;
     final parsedEvents = list != null
         ? list
             .map((e) => e is Map<String, dynamic> ? ScheduleEvent.fromJson(e) : null)
@@ -115,9 +115,13 @@ class ScheduleEvent {
   final String uuid;
   final int teamId;
   final int? scheduleGameId;
+  final String displayName;
   final String eventName;
+  final String sessionDate;
   final String eventDate;
   final String dateLabel;
+  final int eventType;
+  final int homeAway;
   final String day;
   final String dayName;
   final String monthKey;
@@ -152,9 +156,13 @@ class ScheduleEvent {
     required this.uuid,
     required this.teamId,
     this.scheduleGameId,
+    required this.displayName,
     required this.eventName,
+    required this.sessionDate,
     required this.eventDate,
     required this.dateLabel,
+    required this.eventType,
+    required this.homeAway,
     required this.day,
     required this.dayName,
     required this.monthKey,
@@ -191,9 +199,13 @@ class ScheduleEvent {
         teamEventId: 0,
         uuid: '',
         teamId: 0,
+        displayName: '',
         eventName: '',
+        sessionDate: '',
         eventDate: '',
         dateLabel: '',
+        eventType: 0,
+        homeAway: 0,
         day: '',
         dayName: '',
         monthKey: '',
@@ -233,12 +245,18 @@ class ScheduleEvent {
     return ScheduleEvent(
       id: _parseInt(json['id']),
       teamEventId: _parseInt(json['team_event_id']),
-      uuid: _parseString(json['uuid']),
+      uuid: _parseString(json['uuid'] ?? json['team_event_uuid'] ?? json['team_event_session_uuid']),
       teamId: _parseInt(json['team_id']),
-      scheduleGameId: json['schedule_game_id'] != null ? _parseInt(json['schedule_game_id']) : null,
-      eventName: _parseString(json['event_name']),
-      eventDate: _parseString(json['event_date']),
+      scheduleGameId: json['schedule_game_id'] != null && _parseInt(json['schedule_game_id']) > 0
+          ? _parseInt(json['schedule_game_id'])
+          : null,
+      displayName: _parseString(json['display_name']),
+      eventName: _parseString(json['event_name'] ?? json['title']),
+      sessionDate: _parseString(json['session_date']),
+      eventDate: _parseString(json['event_date'] ?? json['session_date']),
       dateLabel: _parseString(json['date_label']),
+      eventType: _parseInt(json['event_type']),
+      homeAway: _parseInt(json['home_away']),
       day: _parseString(json['day']),
       dayName: _parseString(json['day_name']),
       monthKey: _parseString(json['month_key']),
@@ -258,7 +276,7 @@ class ScheduleEvent {
       trackAvailability: _parseBool(json['track_availability']),
       flagColor: _parseString(json['flag_color']),
       uniformColor: _parseString(json['uniform_color']),
-      opponent: _parseString(json['opponant'] ?? json['opponent']),
+      opponent: _parseString(json['opponent_team_name'] ?? json['opponant'] ?? json['opponent']),
       extraLabel: _parseString(json['extra_label']),
       notes: _parseString(json['notes']),
       status: _parseInt(json['status']),
@@ -271,59 +289,72 @@ class ScheduleEvent {
     );
   }
 
-  /// Converts this highly resilient model into the application's domain [ClubEvent].
+  /// Converts to the application domain [ClubEvent] using new API field names.
   ClubEvent toDomain() {
-    // 1. Base details parsing
     final String domainId = uuid.isNotEmpty ? uuid : id.toString();
-    
-    // Parse times safely
+
+    // Parse datetime from session_date + start_time ("HH:mm:ss")
     DateTime parsedDateTime;
     try {
-      parsedDateTime = DateTime.parse(startTime.isNotEmpty ? startTime : eventDate);
+      if (sessionDate.isNotEmpty && startTime.isNotEmpty) {
+        parsedDateTime = DateTime.parse('$sessionDate $startTime');
+      } else if (sessionDate.isNotEmpty) {
+        parsedDateTime = DateTime.parse(sessionDate);
+      } else {
+        parsedDateTime = DateTime.now();
+      }
     } catch (_) {
       parsedDateTime = DateTime.now();
     }
 
     DateTime parsedEndTime;
     try {
-      parsedEndTime = DateTime.parse(endTime);
+      if (sessionDate.isNotEmpty && endTime.isNotEmpty) {
+        parsedEndTime = DateTime.parse('$sessionDate $endTime');
+      } else {
+        parsedEndTime = parsedDateTime.add(Duration(minutes: duration > 0 ? duration : 60));
+      }
     } catch (_) {
       parsedEndTime = parsedDateTime.add(Duration(minutes: duration > 0 ? duration : 60));
     }
 
-    final computedDuration = duration > 0 ? Duration(minutes: duration) : parsedEndTime.difference(parsedDateTime);
+    final computedDuration = duration > 0
+        ? Duration(minutes: duration)
+        : parsedEndTime.difference(parsedDateTime);
 
-    // 2. Identify EventType using helper heuristics matching HomeService
-    EventType domainType = EventType.other;
-    if (scheduleGameId != null) {
-      domainType = EventType.game;
-    } else {
-      final lowerTitle = eventName.toLowerCase();
-      if (lowerTitle.contains('practice') || lowerTitle.contains('training')) {
-        domainType = EventType.practice;
-      } else if (lowerTitle.contains('game') || lowerTitle.contains('scrimmage') || lowerTitle.contains('match')) {
+    // event_type int → EventType (1=Game, 3=Scrimmage→game, 2=Practice, else Other)
+    EventType domainType;
+    switch (eventType) {
+      case 1:
+      case 3:
         domainType = EventType.game;
-      }
+      case 2:
+        domainType = EventType.practice;
+      default:
+        domainType = EventType.other;
     }
 
-    // 3. Build RSVP counts (yes/no/maybe lists matching HomeService logic)
+    // Title: prefer display_name, then event_name/title
+    final title = displayName.isNotEmpty
+        ? displayName
+        : (eventName.isNotEmpty ? eventName : 'Event');
+
+    // RSVP counts
     final int goingCount = attendanceCounts?.going ?? 0;
     final int maybeCount = attendanceCounts?.maybe ?? 0;
     final int noCount = attendanceCounts?.no ?? 0;
 
     String? myRsvpStatus;
     if (myRsvp != null) {
-      // Explicitly check for null so that integer 0 (= No) is never skipped
       final dynamic rawAttendance = myRsvp!.attendance;
       if (rawAttendance != null) {
         myRsvpStatus = rawAttendance.toString().toLowerCase();
         if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
       }
-      final targetsList = myRsvp!.targets;
-      if (myRsvpStatus == null && targetsList.isNotEmpty) {
-        final dynamic rawTargetAttendance = targetsList.first.attendance;
-        if (rawTargetAttendance != null) {
-          myRsvpStatus = rawTargetAttendance.toString().toLowerCase();
+      if (myRsvpStatus == null && myRsvp!.targets.isNotEmpty) {
+        final dynamic raw = myRsvp!.targets.first.attendance;
+        if (raw != null) {
+          myRsvpStatus = raw.toString().toLowerCase();
           if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
         }
       }
@@ -335,56 +366,47 @@ class ScheduleEvent {
 
     if (myRsvpStatus == 'going' || myRsvpStatus == 'yes' || myRsvpStatus == '1') {
       rsvpYes.add('me');
-      final remaining = (goingCount - 1).clamp(0, 999999);
-      rsvpYes.addAll(List.generate(remaining, (i) => 'player_yes_$i'));
+      rsvpYes.addAll(List.generate((goingCount - 1).clamp(0, 999999), (i) => 'player_yes_$i'));
       rsvpMaybe.addAll(List.generate(maybeCount, (i) => 'player_maybe_$i'));
       rsvpNo.addAll(List.generate(noCount, (i) => 'player_no_$i'));
     } else if (myRsvpStatus == 'maybe' || myRsvpStatus == '2') {
       rsvpMaybe.add('me');
       rsvpYes.addAll(List.generate(goingCount, (i) => 'player_yes_$i'));
-      final remaining = (maybeCount - 1).clamp(0, 999999);
-      rsvpMaybe.addAll(List.generate(remaining, (i) => 'player_maybe_$i'));
+      rsvpMaybe.addAll(List.generate((maybeCount - 1).clamp(0, 999999), (i) => 'player_maybe_$i'));
       rsvpNo.addAll(List.generate(noCount, (i) => 'player_no_$i'));
-    } else if (myRsvpStatus == 'no' || myRsvpStatus == '0') {
+    } else if (myRsvpStatus == 'no' || myRsvpStatus == '0' || myRsvpStatus == '3') {
       rsvpNo.add('me');
       rsvpYes.addAll(List.generate(goingCount, (i) => 'player_yes_$i'));
       rsvpMaybe.addAll(List.generate(maybeCount, (i) => 'player_maybe_$i'));
-      final remaining = (noCount - 1).clamp(0, 999999);
-      rsvpNo.addAll(List.generate(remaining, (i) => 'player_no_$i'));
+      rsvpNo.addAll(List.generate((noCount - 1).clamp(0, 999999), (i) => 'player_no_$i'));
     } else {
-      // No recognized RSVP status — add raw counts only
       rsvpYes.addAll(List.generate(goingCount, (i) => 'player_yes_$i'));
       rsvpMaybe.addAll(List.generate(maybeCount, (i) => 'player_maybe_$i'));
       rsvpNo.addAll(List.generate(noCount, (i) => 'player_no_$i'));
     }
 
     final bool requiresPlayerSelection = myRsvp?.requiresPlayerSelection ?? false;
-    final List<ClubEventRsvpTarget> domainTargets = [];
-    if (myRsvp != null) {
-      for (final t in myRsvp!.targets) {
-        domainTargets.add(
-          ClubEventRsvpTarget(
-            attendeeType: t.attendeeType,
-            customerId: t.customerId,
-            playerId: t.playerId,
-            name: t.name,
-            teamEventAttendeeId: t.teamEventAttendeeId,
-            attendance: t.attendance,
-            notes: t.notes,
-          ),
-        );
-      }
-    }
+    final List<ClubEventRsvpTarget> domainTargets = myRsvp?.targets.map((t) =>
+      ClubEventRsvpTarget(
+        attendeeType: t.attendeeType,
+        customerId: t.customerId,
+        playerId: t.playerId,
+        name: t.name,
+        teamEventAttendeeId: t.teamEventAttendeeId,
+        attendance: t.attendance,
+        notes: t.notes,
+      ),
+    ).toList() ?? [];
 
     return ClubEvent(
       id: domainId,
-      title: eventName.isNotEmpty ? eventName : 'Event',
+      title: title,
       subtitle: extraLabel,
       dateTime: parsedDateTime,
       duration: computedDuration,
       location: location,
       type: domainType,
-      isHome: true,
+      isHome: homeAway == 1,
       opponent: opponent.isNotEmpty ? opponent : null,
       rsvpRequired: trackAvailability,
       notes: notes.isNotEmpty ? notes : null,
@@ -393,11 +415,12 @@ class ScheduleEvent {
       rsvpNo: rsvpNo,
       timeTbd: timeTbd,
       timeLabel: timeLabel.isNotEmpty ? timeLabel : null,
+      dateLabel: dateLabel.isNotEmpty ? dateLabel : null,
       locationDetails: locationDetails.isNotEmpty ? locationDetails : null,
       uniformColor: uniformColor.isNotEmpty ? uniformColor : null,
       arrivalTime: arrivalTime.isNotEmpty ? arrivalTime : null,
       flagColor: flagColor.isNotEmpty ? flagColor : null,
-      dbId: teamEventId > 0 ? teamEventId : id,
+      dbId: id,
       timezone: timezone.isNotEmpty ? timezone : null,
       notificationEnabled: notificationEnabled,
       arrivalEarly: arrivalEarly,
@@ -478,10 +501,13 @@ class RsvpTargetDetail {
   factory RsvpTargetDetail.fromJson(Map<String, dynamic>? json) {
     return RsvpTargetDetail(
       attendeeType: _parseString(json?['attendee_type']),
-      customerId: _parseInt(json?['customer_id']),
+      customerId: _parseInt(json?['attendee_id'] ?? json?['customer_id']),
       playerId: json?['player_id'] != null ? _parseInt(json?['player_id']) : null,
       name: _parseString(json?['name']),
-      teamEventAttendeeId: json?['team_event_attendee_id'] != null ? _parseInt(json?['team_event_attendee_id']) : null,
+      teamEventAttendeeId: (() {
+        final v = json?['team_event_session_attendee_id'] ?? json?['team_event_attendee_id'];
+        return v != null && _parseInt(v) > 0 ? _parseInt(v) : null;
+      })(),
       attendance: json?['attendance'],
       notes: _parseString(json?['notes']),
     );
