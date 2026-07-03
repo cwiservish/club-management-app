@@ -36,6 +36,7 @@ class ClubEvent {
   final bool timeTbd;
   final String? timeLabel;
   final String? dateLabel;
+  final String? homeAwayLabel;
   final String? locationDetails;
   final String? uniformColor;
   final String? arrivalTime;
@@ -82,6 +83,7 @@ class ClubEvent {
     this.timeTbd = false,
     this.timeLabel,
     this.dateLabel,
+    this.homeAwayLabel,
     this.locationDetails,
     this.uniformColor,
     this.arrivalTime,
@@ -129,6 +131,7 @@ class ClubEvent {
     bool? timeTbd,
     String? timeLabel,
     String? dateLabel,
+    String? homeAwayLabel,
     String? locationDetails,
     String? uniformColor,
     String? arrivalTime,
@@ -175,6 +178,7 @@ class ClubEvent {
       timeTbd: timeTbd ?? this.timeTbd,
       timeLabel: timeLabel ?? this.timeLabel,
       dateLabel: dateLabel ?? this.dateLabel,
+      homeAwayLabel: homeAwayLabel ?? this.homeAwayLabel,
       locationDetails: locationDetails ?? this.locationDetails,
       uniformColor: uniformColor ?? this.uniformColor,
       arrivalTime: arrivalTime ?? this.arrivalTime,

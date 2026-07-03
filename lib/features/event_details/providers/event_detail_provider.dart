@@ -139,7 +139,9 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
         uniformBottomColor: foundEvent.uniformBottomColor,
         uniformSocksColor: foundEvent.uniformSocksColor,
         isGame: foundEvent.type == EventType.game,
-        homeAway: _homeAwayLabel(foundEvent.homeAwayKey),
+        homeAway: (foundEvent.homeAwayLabel != null && foundEvent.homeAwayLabel!.isNotEmpty)
+            ? foundEvent.homeAwayLabel!
+            : _homeAwayLabel(foundEvent.homeAwayKey),
         opponent: foundEvent.opponent ?? '',
         arrivalTime: (foundEvent.arrivalTime != null && foundEvent.arrivalTime!.isNotEmpty)
             ? foundEvent.arrivalTime!

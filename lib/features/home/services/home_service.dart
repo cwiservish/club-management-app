@@ -299,6 +299,7 @@ class HomeService {
         existingSchedulingMode: existingSchedulingMode,
         eventTypeKey: eventTypeInt,
         homeAwayKey: homeAwayKey,
+        homeAwayLabel: json['home_away_label']?.toString(),
         opponentTeamId: opponentTeamId,
         uniformTopColor: uniformTopColor,
         uniformBottomColor: uniformBottomColor,
@@ -317,21 +318,19 @@ class HomeService {
 
   Future<({bool success, String message})> saveEventRsvp({
     required String teamUuid,
-    required int teamEventId,
+    required int teamEventSessionId,
     required String attendeeType,
-    required String customerId,
-    required int playerId,
+    required int attendeeId,
     required String notes,
     required int attendance,
   }) async {
     final response = await _apiClient.post(
-      ApiEndpoints.eventAttendeeSave,
+      ApiEndpoints.eventSessionAttendeeSave,
       body: {
         'team_uuid': teamUuid,
-        'team_event_id': teamEventId,
+        'team_event_session_id': teamEventSessionId,
         'attendee_type': attendeeType,
-        'customer_id': customerId,
-        'player_id': playerId,
+        'attendee_id': attendeeId,
         'notes': notes,
         'attendance': attendance,
       },

@@ -69,19 +69,18 @@ class ScheduleService {
 
   Future<({bool success, String message})> saveEventRsvp({
     required String teamUuid,
-    required int teamEventId,
+    required int teamEventSessionId,
     required ClubEventRsvpTarget target,
     required int attendance,
   }) async {
     try {
       final response = await _apiClient.post(
-        ApiEndpoints.eventAttendeeSave,
+        ApiEndpoints.eventSessionAttendeeSave,
         body: {
           'team_uuid': teamUuid,
-          'team_event_id': teamEventId,
+          'team_event_session_id': teamEventSessionId,
           'attendee_type': target.attendeeType,
-          'customer_id': target.customerId.toString(),
-          'player_id': target.playerId ?? 0,
+          'attendee_id': target.customerId,
           'notes': target.notes,
           'attendance': attendance,
         },

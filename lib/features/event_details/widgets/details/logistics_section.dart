@@ -96,7 +96,7 @@ class LogisticsSection extends StatelessWidget {
           if (event.isGame) ...[
             _LogisticsRow(
               icon: Icons.swap_horiz,
-              label: 'Home / Away',
+              label: 'Home / Away / Neutral',
               value: event.homeAway,
               borderBottom: true,
             ),

@@ -264,10 +264,9 @@ class HomeNotifier extends Notifier<HomeState> {
     try {
       final result = await ref.read(homeServiceProvider).saveEventRsvp(
         teamUuid: activeTeam.uuid,
-        teamEventId: event.dbId ?? 0,
+        teamEventSessionId: event.dbId ?? 0,
         attendeeType: target.attendeeType,
-        customerId: target.customerId.toString(),
-        playerId: target.playerId ?? 0,
+        attendeeId: target.customerId,
         notes: target.notes,
         attendance: attendanceValue,
       );

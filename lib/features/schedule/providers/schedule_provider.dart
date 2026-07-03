@@ -225,7 +225,7 @@ class ScheduleNotifier extends Notifier<ScheduleState> {
     try {
       final result = await ref.read(scheduleServiceProvider).saveEventRsvp(
         teamUuid: activeTeam.uuid,
-        teamEventId: event.dbId ?? 0,
+        teamEventSessionId: event.dbId ?? 0,
         target: target,
         attendance: attendanceValue,
       );

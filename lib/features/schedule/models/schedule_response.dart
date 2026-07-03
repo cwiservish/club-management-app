@@ -123,6 +123,7 @@ class ScheduleEvent {
   final String dateLabel;
   final int eventType;
   final int homeAway;
+  final String homeAwayLabel;
   final int schedulingMode;
   final int existingSchedulingMode;
   final int opponentTeamId;
@@ -175,6 +176,7 @@ class ScheduleEvent {
     required this.dateLabel,
     required this.eventType,
     required this.homeAway,
+    required this.homeAwayLabel,
     required this.schedulingMode,
     required this.existingSchedulingMode,
     required this.opponentTeamId,
@@ -263,7 +265,7 @@ class ScheduleEvent {
         notes: '',
         status: 0,
         notificationEnabled: false,
-        rsvpTargets: [],
+        rsvpTargets: [], homeAwayLabel: '',
       );
     }
 
@@ -301,6 +303,7 @@ class ScheduleEvent {
       dateLabel: _parseString(json['date_label']),
       eventType: _parseInt(json['event_type']),
       homeAway: _parseInt(json['home_away']),
+      homeAwayLabel: _parseString(json['home_away_label']),
       day: _parseString(json['day']),
       dayName: _parseString(json['day_name']),
       monthKey: _parseString(json['month_key']),
@@ -469,6 +472,7 @@ class ScheduleEvent {
       existingSchedulingMode: existingSchedulingMode,
       eventTypeKey: eventType,
       homeAwayKey: homeAway,
+      homeAwayLabel: homeAwayLabel,
       opponentTeamId: opponentTeamId,
       uniformTopColor: uniformTopColor,
       uniformBottomColor: uniformBottomColor,
