@@ -71,7 +71,10 @@ class AddEditEventPage extends ConsumerStatefulWidget {
   /// Where the user came from — 'home' or 'schedule'. Used for post-save navigation.
   final String origin;
 
-  const AddEditEventPage({super.key, this.editEvent, this.origin = 'home'});
+  /// True → pre-fill from [editEvent] but save as a brand-new event (no id sent).
+  final bool isDuplicate;
+
+  const AddEditEventPage({super.key, this.editEvent, this.origin = 'home', this.isDuplicate = false});
 
   @override
   ConsumerState<AddEditEventPage> createState() => _AddEditEventPageState();
@@ -696,10 +699,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
   Future<void> _doSave() async {
     if (ref.read(eventAddEditProvider).isSavingNewEvent) return;
 
-    // Edit-mode values ('' / 0 for create mode)
-    final editId = widget.editEvent?.dbId?.toString() ?? '';
-    final existingSchedulingMode = widget.editEvent?.existingSchedulingMode ?? '';
-    final editStatus = widget.editEvent?.status.toString() ?? '';
+    // Edit-mode values ('' for create/duplicate mode)
+    final editId = (!widget.isDuplicate) ? (widget.editEvent?.dbId?.toString() ?? '') : '';
+    final existingSchedulingMode = (!widget.isDuplicate) ? (widget.editEvent?.existingSchedulingMode ?? '') : '';
+    final editStatus = (!widget.isDuplicate) ? (widget.editEvent?.status.toString() ?? '') : '';
 
     // ── Flow 1: Single Session ─────────────────────────────────────────────
     if (_schedulingTypeKey == 1) {
@@ -918,17 +921,18 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     ref.watch(themeModeProvider);
     final colors = AppColors.current;
     final dropdownState = ref.watch(eventAddEditProvider);
-    final isEditMode = widget.editEvent != null;
+    final isEditMode = widget.editEvent != null && !widget.isDuplicate;
+    final isDuplicateMode = widget.editEvent != null && widget.isDuplicate;
 
-    // Pre-fill once dropdowns are ready in edit mode
-    if (isEditMode && dropdownState.newEventDropdowns != null && !_hasPrefilledEdit) {
+    // Pre-fill once dropdowns are ready in edit or duplicate mode
+    if ((isEditMode || isDuplicateMode) && dropdownState.newEventDropdowns != null && !_hasPrefilledEdit) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _prefillFromEvent(dropdownState.newEventDropdowns!);
       });
     }
 
     final subHeader = SubHeader(
-      title: isEditMode ? 'Edit Event' : 'New Event',
+      title: isDuplicateMode ? 'Duplicate Event' : isEditMode ? 'Edit Event' : 'New Event',
       leftIcon: Icons.close,
       leftLabel: 'Close',
       onLeftTap: () => context.pop(),

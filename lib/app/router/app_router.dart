@@ -279,6 +279,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       return AddEditEventPage(
                         editEvent: extra?['event'] as ClubEvent?,
                         origin: (extra?['from'] as String?) ?? 'home',
+                        isDuplicate: (extra?['duplicate'] as bool?) ?? false,
                       );
                     },
                   ),

@@ -117,7 +117,10 @@ class EventDetailsTabPage extends ConsumerWidget {
                 width: double.infinity,
                 height: 48,
                 child: OutlinedButton.icon(
-                  onPressed: () => context.push('${AppRoutes.eventEdit(eventId)}?duplicate=true'),
+                  onPressed: () => context.push(
+                    AppRoutes.eventEdit(eventId),
+                    extra: {'event': state.rawEvent, 'duplicate': true},
+                  ),
                   icon: Icon(Icons.copy_outlined, size: 18, color: colors.textSecondary),
                   label: Text(
                     'Duplicate Event',
