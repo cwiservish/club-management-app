@@ -809,6 +809,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
 
         final request = NewEventSaveRequest(
           teamUuid: activeTeam.uuid,
+          id: editId,
+          existingSchedulingMode: existingSchedulingMode,
+          status: editStatus,
           schedulingMode: _schedulingTypeKey,
           eventType: 0,
           title: title,
