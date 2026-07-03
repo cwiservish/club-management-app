@@ -28,16 +28,16 @@ String _parseString(dynamic val) {
 
 class EventAvailabilityRequest {
   final String teamUuid;
-  final String eventUuid;
+  final int id; // numeric session ID (from ClubEvent.dbId)
 
   EventAvailabilityRequest({
     required this.teamUuid,
-    required this.eventUuid,
+    required this.id,
   });
 
   Map<String, dynamic> toJson() => {
     'team_uuid': teamUuid,
-    'event_uuid': eventUuid,
+    'id': id,
   };
 }
 
@@ -125,10 +125,10 @@ class AvailabilityEventDetail {
     }
     return AvailabilityEventDetail(
       id: _parseInt(json['id']),
-      teamEventId: _parseInt(json['team_event_id'] ?? json['id']),
+      teamEventId: _parseInt(json['team_event_session_id'] ?? json['team_event_id'] ?? json['id']),
       uuid: _parseString(json['uuid']),
-      teamEventUuid: _parseString(json['team_event_uuid'] ?? json['uuid']),
-      eventName: _parseString(json['event_name']),
+      teamEventUuid: _parseString(json['team_event_session_uuid'] ?? json['team_event_uuid'] ?? json['uuid']),
+      eventName: _parseString(json['display_name'] ?? json['event_name']),
     );
   }
 }
@@ -291,7 +291,9 @@ class AvailabilityPlayer {
       otherPositions: _parseString(json['other_positions']),
       canUpdate: _parseBool(json['can_update']),
       isMyPlayer: _parseBool(json['is_my_player']),
-      teamEventAttendeeId: json['team_event_attendee_id'] != null ? _parseInt(json['team_event_attendee_id']) : null,
+      teamEventAttendeeId: json['team_event_session_attendee_id'] != null
+          ? _parseInt(json['team_event_session_attendee_id'])
+          : (json['team_event_attendee_id'] != null ? _parseInt(json['team_event_attendee_id']) : null),
       attendance: json['attendance'] != null ? _parseInt(json['attendance']) : null,
       notes: _parseString(json['notes']),
     );
@@ -300,29 +302,26 @@ class AvailabilityPlayer {
 
 class EventAttendeeSaveRequest {
   final String teamUuid;
-  final int teamEventId;
+  final int teamEventSessionId;
   final String attendeeType;
-  final String customerId;
-  final int playerId;
+  final int attendeeId;
   final String notes;
   final int? attendance;
 
   EventAttendeeSaveRequest({
     required this.teamUuid,
-    required this.teamEventId,
+    required this.teamEventSessionId,
     this.attendeeType = 'player',
-    this.customerId = '',
-    required this.playerId,
+    required this.attendeeId,
     required this.notes,
     this.attendance,
   });
 
   Map<String, dynamic> toJson() => {
     'team_uuid': teamUuid,
-    'team_event_id': teamEventId,
+    'team_event_session_id': teamEventSessionId,
     'attendee_type': attendeeType,
-    'customer_id': customerId,
-    'player_id': playerId,
+    'attendee_id': attendeeId,
     'notes': notes,
     if (attendance != null) 'attendance': attendance,
   };

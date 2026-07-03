@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/club_event.dart';
+import '../../../core/enums/event_type.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
 import '../../../core/common_providers/event_refresh_provider.dart';
 import '../models/event_detail_model.dart';
@@ -115,7 +116,9 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
         userRsvp = 'no';
       }
 
-      final dateStr = _fmtDate(foundEvent.dateTime);
+      final dateStr = (foundEvent.dateLabel != null && foundEvent.dateLabel!.isNotEmpty)
+          ? foundEvent.dateLabel!
+          : _fmtDate(foundEvent.dateTime);
       final timeRangeStr = (foundEvent.timeLabel != null && foundEvent.timeLabel!.isNotEmpty)
           ? foundEvent.timeLabel!
           : '${_fmtTime(foundEvent.dateTime)} - ${_fmtTime(foundEvent.endTime)}';
@@ -132,9 +135,15 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
         latitude: foundEvent.latitude,
         longitude: foundEvent.longitude,
         uniform: foundEvent.uniformColor ?? '',
-        homeAway: 'Home',
+        uniformTopColor: foundEvent.uniformTopColor,
+        uniformBottomColor: foundEvent.uniformBottomColor,
+        uniformSocksColor: foundEvent.uniformSocksColor,
+        isGame: foundEvent.type == EventType.game,
+        homeAway: _homeAwayLabel(foundEvent.homeAwayKey),
         opponent: foundEvent.opponent ?? '',
-        arrivalTime: foundEvent.arrivalTime ?? '',
+        arrivalTime: (foundEvent.arrivalTime != null && foundEvent.arrivalTime!.isNotEmpty)
+            ? foundEvent.arrivalTime!
+            : _arrivalLabel(foundEvent.arrivalEarly),
         myRsvp: userRsvp,
       );
 
@@ -154,6 +163,20 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
       players: activeTeam != null ? [] : service.getEventPlayers(eventId),
       isLoading: activeTeam != null,
     );
+  }
+
+  String _homeAwayLabel(int key) {
+    switch (key) {
+      case 1: return 'Home';
+      case 2: return 'Away';
+      case 3: return 'Neutral';
+      default: return '-';
+    }
+  }
+
+  String _arrivalLabel(int minutes) {
+    if (minutes == 0) return 'No arrival time set';
+    return '$minutes min early';
   }
 
   String _fmtTime(DateTime t) {
@@ -184,10 +207,11 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
     }
     try {
       final service = ref.read(eventDetailServiceProvider);
+      final sessionId = _teamEventId ?? int.tryParse(eventId) ?? 0;
       final response = await service.fetchEventAvailability(
         EventAvailabilityRequest(
           teamUuid: teamUuid,
-          eventUuid: eventId,
+          id: sessionId,
         ),
       );
 
@@ -302,10 +326,9 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
       final response = await service.saveEventAttendee(
         EventAttendeeSaveRequest(
           teamUuid: activeTeam.uuid,
-          teamEventId: eventDbId,
+          teamEventSessionId: eventDbId,
           attendeeType: target.attendeeType,
-          customerId: target.customerId.toString(),
-          playerId: target.playerId ?? 0,
+          attendeeId: target.customerId,
           notes: target.notes,
           attendance: attendanceValue,
         ),
@@ -348,11 +371,7 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
       return (success: false, message: 'Player not found');
     }
 
-    final int targetPlayerId = player.playerId ?? player.id;
     final int eventDbId = _teamEventId ?? int.tryParse(eventId) ?? 0;
-
-    final String finalCustomerId = '';
-    final int finalPlayerId = targetPlayerId;
 
     // Map status to attendance integer: going=1, maybe=2, no=0
     int attendanceValue = 0;
@@ -372,9 +391,9 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
       final response = await service.saveEventAttendee(
         EventAttendeeSaveRequest(
           teamUuid: activeTeam.uuid,
-          teamEventId: eventDbId,
-          customerId: finalCustomerId,
-          playerId: finalPlayerId,
+          teamEventSessionId: eventDbId,
+          attendeeType: 'player',
+          attendeeId: player.playerId ?? player.id,
           notes: player.note,
           attendance: attendanceValue,
         ),
@@ -424,20 +443,16 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
       return (success: false, message: 'Player not found');
     }
 
-    final int targetPlayerId = player.playerId ?? player.id;
     final int eventDbId = _teamEventId ?? int.tryParse(eventId) ?? 0;
-
-    final String finalCustomerId = '';
-    final int finalPlayerId = targetPlayerId;
 
     try {
       final service = ref.read(eventDetailServiceProvider);
       final response = await service.saveEventAttendee(
         EventAttendeeSaveRequest(
           teamUuid: activeTeam.uuid,
-          teamEventId: eventDbId,
-          customerId: finalCustomerId,
-          playerId: finalPlayerId,
+          teamEventSessionId: eventDbId,
+          attendeeType: 'player',
+          attendeeId: player.playerId ?? player.id,
           notes: note,
         ),
       );

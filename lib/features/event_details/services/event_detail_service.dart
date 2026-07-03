@@ -186,13 +186,13 @@ class EventDetailService {
     final body = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventAvailability}');
+    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventSessionAvailability}');
     debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(body));
     debugPrint('════════════════════════════════════════════════════════════════');
 
     final response = await _apiClient.post(
-      ApiEndpoints.eventAvailability,
+      ApiEndpoints.eventSessionAvailability,
       body: body,
     );
 
@@ -203,7 +203,7 @@ class EventDetailService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST ${ApiEndpoints.eventAvailability}');
+    debugPrint('[API Response] POST ${ApiEndpoints.eventSessionAvailability}');
     debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
     debugPrint('════════════════════════════════════════════════════════════════');
@@ -216,13 +216,13 @@ class EventDetailService {
     final body = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventAttendeeSave}');
+    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventSessionAttendeeSave}');
     debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(body));
     debugPrint('════════════════════════════════════════════════════════════════');
 
     final response = await _apiClient.post(
-      ApiEndpoints.eventAttendeeSave,
+      ApiEndpoints.eventSessionAttendeeSave,
       body: body,
     );
 
@@ -233,7 +233,7 @@ class EventDetailService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST ${ApiEndpoints.eventAttendeeSave}');
+    debugPrint('[API Response] POST ${ApiEndpoints.eventSessionAttendeeSave}');
     debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
     debugPrint('════════════════════════════════════════════════════════════════');

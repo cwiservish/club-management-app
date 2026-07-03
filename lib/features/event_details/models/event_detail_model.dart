@@ -30,10 +30,14 @@ class EventDetailModel {
   final String? latitude;
   final String? longitude;
   final String uniform;
-  final String homeAway;
+  final String uniformTopColor;    // hex string, empty = no color
+  final String uniformBottomColor;
+  final String uniformSocksColor;
+  final bool isGame;               // true for game/scrimmage — controls home/away + opponent visibility
+  final String homeAway;           // "Home" | "Away" | "Neutral" | "-"
   final String opponent;
-  final String arrivalTime;
-  final String myRsvp;      // 'going' | 'maybe' | 'no'
+  final String arrivalTime;        // human-readable label
+  final String myRsvp;             // 'going' | 'maybe' | 'no'
 
   const EventDetailModel({
     required this.id,
@@ -45,6 +49,10 @@ class EventDetailModel {
     this.latitude,
     this.longitude,
     required this.uniform,
+    this.uniformTopColor = '',
+    this.uniformBottomColor = '',
+    this.uniformSocksColor = '',
+    this.isGame = false,
     required this.homeAway,
     required this.opponent,
     required this.arrivalTime,
@@ -53,19 +61,23 @@ class EventDetailModel {
 
   EventDetailModel copyWith({String? myRsvp}) {
     return EventDetailModel(
-      id:              id,
-      name:            name,
-      date:            date,
-      timeRange:       timeRange,
-      locationName:    locationName,
-      locationAddress: locationAddress,
-      latitude:        latitude,
-      longitude:       longitude,
-      uniform:         uniform,
-      homeAway:        homeAway,
-      opponent:        opponent,
-      arrivalTime:     arrivalTime,
-      myRsvp:          myRsvp ?? this.myRsvp,
+      id:                  id,
+      name:                name,
+      date:                date,
+      timeRange:           timeRange,
+      locationName:        locationName,
+      locationAddress:     locationAddress,
+      latitude:            latitude,
+      longitude:           longitude,
+      uniform:             uniform,
+      uniformTopColor:     uniformTopColor,
+      uniformBottomColor:  uniformBottomColor,
+      uniformSocksColor:   uniformSocksColor,
+      isGame:              isGame,
+      homeAway:            homeAway,
+      opponent:            opponent,
+      arrivalTime:         arrivalTime,
+      myRsvp:              myRsvp ?? this.myRsvp,
     );
   }
 }

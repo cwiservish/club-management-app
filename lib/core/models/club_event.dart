@@ -89,7 +89,7 @@ class ClubEvent {
     this.dbId,
     this.timezone,
     this.notificationEnabled = true,
-    this.arrivalEarly = 15,
+    this.arrivalEarly = 0,
     this.scheduleGameId,
     this.latitude,
     this.longitude,

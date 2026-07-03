@@ -474,7 +474,7 @@ class _ImportSchedulePageState extends ConsumerState<ImportSchedulePage> {
         const SizedBox(height: 16),
         _buildMapField('Opponent', _mapOpponent, false, (v) => setState(() => _mapOpponent = v!)),
         const SizedBox(height: 16),
-        _buildMapField('Home / Away', _mapHomeAway, false, (v) => setState(() => _mapHomeAway = v!)),
+        _buildMapField('Home / Away / Neutral', _mapHomeAway, false, (v) => setState(() => _mapHomeAway = v!)),
         const SizedBox(height: 16),
         _buildMapField('Location', _mapLocation, false, (v) => setState(() => _mapLocation = v!)),
         const SizedBox(height: 16),

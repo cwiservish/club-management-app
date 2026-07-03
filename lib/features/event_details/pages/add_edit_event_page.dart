@@ -12,6 +12,7 @@ import '../providers/event_add_edit_provider.dart';
 import '../models/new_event_dropdown_options_model.dart';
 import '../models/new_event_save_request_model.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
+import '../../../core/common_providers/event_refresh_provider.dart';
 import '../../../core/models/club_event.dart';
 
 // ─── Models ──────────────────────────────────────────────────────────────────
@@ -67,7 +68,10 @@ class AddEditEventPage extends ConsumerStatefulWidget {
   /// Non-null → edit mode; all fields pre-filled from this event.
   final ClubEvent? editEvent;
 
-  const AddEditEventPage({super.key, this.editEvent});
+  /// Where the user came from — 'home' or 'schedule'. Used for post-save navigation.
+  final String origin;
+
+  const AddEditEventPage({super.key, this.editEvent, this.origin = 'home'});
 
   @override
   ConsumerState<AddEditEventPage> createState() => _AddEditEventPageState();
@@ -670,6 +674,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
   void _handleSaveResult(bool success) {
     if (!mounted) return;
     if (success) {
+      ref.read(eventRefreshSignalProvider.notifier).signal();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Event saved - families will be notified'),
@@ -677,7 +682,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      context.go(AppRoutes.home);
+      final destination = widget.origin == 'schedule' ? AppRoutes.schedule : AppRoutes.home;
+      context.go(destination);
     } else {
       _showErrorDialog(
         ref.read(eventAddEditProvider).newEventSaveError ?? 'Failed to create event',

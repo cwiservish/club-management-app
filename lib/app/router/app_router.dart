@@ -274,9 +274,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: AppRoutes.eventDetailEdit,
-                    builder: (context, state) => AddEditEventPage(
-                      editEvent: state.extra as ClubEvent?,
-                    ),
+                    builder: (context, state) {
+                      final extra = state.extra as Map?;
+                      return AddEditEventPage(
+                        editEvent: extra?['event'] as ClubEvent?,
+                        origin: (extra?['from'] as String?) ?? 'home',
+                      );
+                    },
                   ),
                 ],
               ),
