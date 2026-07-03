@@ -445,7 +445,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       // Scheduling / event type
       _schedulingTypeKey = e.schedulingMode;
       _eventTypeKey = e.eventTypeKey;
-      _homeAwayKey = e.homeAwayKey;
+      _homeAwayKey = e.homeAwayKey > 0 ? e.homeAwayKey : 1;
       _arrivalTimeKey = e.arrivalEarly;
 
       // Date & time (dateTime already parsed by home/schedule service)

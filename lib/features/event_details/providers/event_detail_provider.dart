@@ -107,48 +107,7 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
 
     final EventDetailModel eventDetail;
     if (foundEvent != null) {
-      String userRsvp = '';
-      if (foundEvent.rsvpYes.contains('me')) {
-        userRsvp = 'going';
-      } else if (foundEvent.rsvpMaybe.contains('me')) {
-        userRsvp = 'maybe';
-      } else if (foundEvent.rsvpNo.contains('me')) {
-        userRsvp = 'no';
-      }
-
-      final dateStr = (foundEvent.dateLabel != null && foundEvent.dateLabel!.isNotEmpty)
-          ? foundEvent.dateLabel!
-          : _fmtDate(foundEvent.dateTime);
-      final timeRangeStr = (foundEvent.timeLabel != null && foundEvent.timeLabel!.isNotEmpty)
-          ? foundEvent.timeLabel!
-          : '${_fmtTime(foundEvent.dateTime)} - ${_fmtTime(foundEvent.endTime)}';
-
-      eventDetail = EventDetailModel(
-        id: foundEvent.id,
-        name: foundEvent.title,
-        date: dateStr,
-        timeRange: timeRangeStr,
-        locationName: foundEvent.location,
-        locationAddress: (foundEvent.locationDetails != null && foundEvent.locationDetails!.isNotEmpty)
-            ? foundEvent.locationDetails!
-            : foundEvent.subtitle,
-        latitude: foundEvent.latitude,
-        longitude: foundEvent.longitude,
-        uniform: foundEvent.uniformColor ?? '',
-        uniformTopColor: foundEvent.uniformTopColor,
-        uniformBottomColor: foundEvent.uniformBottomColor,
-        uniformSocksColor: foundEvent.uniformSocksColor,
-        isGame: foundEvent.type == EventType.game,
-        homeAway: (foundEvent.homeAwayLabel != null && foundEvent.homeAwayLabel!.isNotEmpty)
-            ? foundEvent.homeAwayLabel!
-            : _homeAwayLabel(foundEvent.homeAwayKey),
-        opponent: foundEvent.opponent ?? '',
-        arrivalTime: (foundEvent.arrivalTime != null && foundEvent.arrivalTime!.isNotEmpty)
-            ? foundEvent.arrivalTime!
-            : _arrivalLabel(foundEvent.arrivalEarly),
-        myRsvp: userRsvp,
-      );
-
+      eventDetail = _buildEventDetail(foundEvent);
       _teamEventId = foundEvent.dbId;
     } else {
       eventDetail = service.getEventDetail(eventId);
@@ -164,6 +123,46 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
       rawEvent: foundEvent,
       players: activeTeam != null ? [] : service.getEventPlayers(eventId),
       isLoading: activeTeam != null,
+    );
+  }
+
+  EventDetailModel _buildEventDetail(ClubEvent event) {
+    String userRsvp = '';
+    if (event.rsvpYes.contains('me')) userRsvp = 'going';
+    else if (event.rsvpMaybe.contains('me')) userRsvp = 'maybe';
+    else if (event.rsvpNo.contains('me')) userRsvp = 'no';
+
+    final dateStr = (event.dateLabel != null && event.dateLabel!.isNotEmpty)
+        ? event.dateLabel!
+        : _fmtDate(event.dateTime);
+    final timeRangeStr = (event.timeLabel != null && event.timeLabel!.isNotEmpty)
+        ? event.timeLabel!
+        : '${_fmtTime(event.dateTime)} - ${_fmtTime(event.endTime)}';
+
+    return EventDetailModel(
+      id: event.id,
+      name: event.title,
+      date: dateStr,
+      timeRange: timeRangeStr,
+      locationName: event.location,
+      locationAddress: (event.locationDetails != null && event.locationDetails!.isNotEmpty)
+          ? event.locationDetails!
+          : event.subtitle,
+      latitude: event.latitude,
+      longitude: event.longitude,
+      uniform: event.uniformColor ?? '',
+      uniformTopColor: event.uniformTopColor,
+      uniformBottomColor: event.uniformBottomColor,
+      uniformSocksColor: event.uniformSocksColor,
+      isGame: event.type == EventType.game,
+      homeAway: (event.homeAwayLabel != null && event.homeAwayLabel!.isNotEmpty)
+          ? event.homeAwayLabel!
+          : _homeAwayLabel(event.homeAwayKey),
+      opponent: event.opponent ?? '',
+      arrivalTime: (event.arrivalTime != null && event.arrivalTime!.isNotEmpty)
+          ? event.arrivalTime!
+          : _arrivalLabel(event.arrivalEarly),
+      myRsvp: userRsvp,
     );
   }
 
@@ -292,13 +291,10 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
   /// from the fresh snapshot so counts stay consistent with the home page.
   void syncRawEvent(ClubEvent? event) {
     if (event == null) return;
-    String userRsvp = '';
-    if (event.rsvpYes.contains('me')) userRsvp = 'going';
-    else if (event.rsvpMaybe.contains('me')) userRsvp = 'maybe';
-    else if (event.rsvpNo.contains('me')) userRsvp = 'no';
+    _teamEventId = event.dbId;
     state = state.copyWith(
       rawEvent: event,
-      event: state.event.copyWith(myRsvp: userRsvp),
+      event: _buildEventDetail(event),
     );
   }
 
