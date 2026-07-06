@@ -5,6 +5,8 @@ import '../../../app/router/app_routes.dart';
 import '../../../core/models/club_event.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
+import '../models/league_detail_models.dart';
+import '../providers/league_detail_provider.dart';
 import '../widgets/schedule_tag_pill.dart';
 
 class LeagueInsideEventsPage extends ConsumerWidget {
@@ -18,6 +20,89 @@ class LeagueInsideEventsPage extends ConsumerWidget {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     return '${months[dt.month]} ${dt.day}';
+  }
+
+  Widget _buildGameList(BuildContext context, WidgetRef ref) {
+    final dbId = event.dbId;
+    if (dbId == null) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: Text(
+            'No games yet',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFF4E5663),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final args = LeagueDetailArgs(
+      eventDbId: dbId,
+      schedulingMode: event.schedulingMode,
+    );
+    final state = ref.watch(leagueDetailProvider(args));
+
+    return state.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 32),
+          child: CircularProgressIndicator(strokeWidth: 2.5),
+        ),
+      ),
+      error: (_, __) => Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Failed to load games',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xFF4E5663),
+                ),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => ref.invalidate(leagueDetailProvider(args)),
+                child: const Text(
+                  'Retry',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF008CFF),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      data: (result) => result.childSessions.isEmpty
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Text(
+                  'No games yet',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF4E5663),
+                  ),
+                ),
+              ),
+            )
+          : const SizedBox.shrink(), // game rows will be added when child_sessions is populated
+    );
   }
 
   @override
@@ -125,21 +210,8 @@ class LeagueInsideEventsPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
 
-                    // ── Game list (empty for now) ────────────────────────────
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Text(
-                          'No games yet',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xFF4E5663),
-                          ),
-                        ),
-                      ),
-                    ),
+                    // ── Game list ────────────────────────────────────────────
+                    _buildGameList(context, ref),
 
                     const SizedBox(height: 12),
 

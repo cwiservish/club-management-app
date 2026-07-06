@@ -32,6 +32,7 @@ abstract final class ApiEndpoints {
   static const String eventSessionAttendeeSave = '/teams/event/session-attendee/save';
   static const String eventDropdownOptions = '/teams/event/dropdownoptions';
   static const String newEventDropdownOptions = '/teams/event/session/dropdownoptions';
+  static const String eventDetail = '/teams/event/detail';
   static const String eventSave = '/teams/event/save';
   static const String eventRemove = '/teams/event/remove';
   static const String customerNotificationsList = '/customer/notification/list';
