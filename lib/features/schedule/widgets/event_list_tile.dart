@@ -9,6 +9,7 @@ import '../models/schedule_models.dart';
 import '../providers/schedule_provider.dart';
 import '../../home/widgets/rsvp_player_selection_sheet.dart';
 import 'my_rsvp_dialog.dart';
+import 'schedule_tag_pill.dart';
 
 class ScheduleEventCard extends ConsumerWidget {
   final ClubEvent event;
@@ -34,6 +35,11 @@ class ScheduleEventCard extends ConsumerWidget {
       }[weekday] ??
       '';
 
+  String _shortMonth(int month) => const [
+        '', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+        'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+      ][month];
+
   String _fmtTime(DateTime t) {
     final h = t.hour > 12 ? t.hour - 12 : (t.hour == 0 ? 12 : t.hour);
     final m = t.minute.toString().padLeft(2, '0');
@@ -53,10 +59,8 @@ class ScheduleEventCard extends ConsumerWidget {
         builder: (_) => MyRsvpDialog(event: latestEvent),
       );
 
-      // Dialog returns a non-null status only when player selection is needed.
       if (chosenStatus == null || !context.mounted) return;
 
-      // Show player selection sheet.
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -81,6 +85,7 @@ class ScheduleEventCard extends ConsumerWidget {
         ),
       );
     }
+
     return GestureDetector(
       onTap: () => context.push('${AppRoutes.eventDetails(latestEvent.id)}?from=schedule', extra: latestEvent),
       child: Container(
@@ -88,9 +93,9 @@ class ScheduleEventCard extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 18),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: SizedBox(
-            height: 85,
+          child: IntrinsicHeight(
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Date column
                 _Col(
@@ -100,15 +105,25 @@ class ScheduleEventCard extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '${event.dateTime.day}',
-                        style: AppTextStyles.dateNumber.copyWith(
+                        _shortMonth(event.dateTime.month),
+                        style: AppTextStyles.overline.copyWith(
+                          fontSize: 12,
                           color: AppColors.current.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${event.dateTime.day}',
+                        style: AppTextStyles.dateNumber.copyWith(
+                          fontSize: 24,
+                          color: AppColors.current.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
                       Text(
                         _shortDay(event.dateTime.weekday),
-                        style: AppTextStyles.dateDay.copyWith(
+                        style: AppTextStyles.overline.copyWith(
+                          fontSize: 12,
                           color: AppColors.current.textPrimary,
                         ),
                       ),
@@ -126,14 +141,23 @@ class ScheduleEventCard extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Time
                         Row(
                           children: [
+                            Icon(
+                              Icons.access_time_filled,
+                              size: 15,
+                              color: AppColors.current.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                (event.timeLabel != null && event.timeLabel!.isNotEmpty)
-                                    ? event.timeLabel!
-                                    : '${_fmtTime(event.dateTime)} - ${_fmtTime(event.endTime)}',
-                                style: AppTextStyles.body16.copyWith(
+                                (latestEvent.startTimeLabel != null && latestEvent.startTimeLabel!.isNotEmpty)
+                                    ? latestEvent.startTimeLabel!
+                                    : _fmtTime(latestEvent.dateTime),
+                                style: AppTextStyles.body13.copyWith(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
                                   color: AppColors.current.textPrimary,
                                 ),
                               ),
@@ -146,45 +170,71 @@ class ScheduleEventCard extends ConsumerWidget {
                                   color: Colors.green.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
-                                    color:Colors.green.withValues(alpha: 0.3),
+                                    color: Colors.green.withValues(alpha: 0.3),
                                     width: 1,
                                   ),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        color: Colors.green,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-
-                                  ],
+                                child: Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.green,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
                               ),
                             ],
                           ],
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 5),
+                        // Title
                         Text(
-                          event.title,
+                          latestEvent.title,
                           style: AppTextStyles.body14.copyWith(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
                             color: AppColors.current.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          event.location,
-                          style: AppTextStyles.body13.copyWith(
-                            color: AppColors.current.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        // Home/Away + league tag
+                        Row(
+                          children: [
+                            if (latestEvent.homeAwayLabel != null && latestEvent.homeAwayLabel!.isNotEmpty) ...[
+                              Text(
+                                latestEvent.homeAwayLabel!,
+                                style: AppTextStyles.body13.copyWith(
+                                  color: AppColors.current.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            const ScheduleTagPill(text: 'Summer Rec League'),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        // Location
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 13,
+                              color: AppColors.current.textSecondary,
+                            ),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                latestEvent.location,
+                                style: AppTextStyles.body13.copyWith(
+                                  color: AppColors.current.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

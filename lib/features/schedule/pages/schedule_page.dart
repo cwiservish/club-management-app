@@ -5,7 +5,7 @@ import '../../../core/common_providers/theme_provider.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../providers/schedule_provider.dart';
 import '../widgets/schedule_empty_state.dart';
-import '../widgets/schedule_event_card.dart';
+import '../widgets/event_list_tile.dart';
 import '../widgets/schedule_section_header.dart';
 
 // ─── Schedule Screen ──────────────────────────────────────────────────────────

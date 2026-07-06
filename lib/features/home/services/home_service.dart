@@ -225,6 +225,7 @@ class HomeService {
 
       final timeTbd = _parseBool(json['time_tbd']);
       final timeLabel = json['time_label']?.toString();
+      final startTimeLabel = json['start_time_label']?.toString();
       final dateLabel = json['date_label']?.toString();
       final locationDetails = json['location_details']?.toString();
       final uniformColor = json['uniform_color']?.toString();
@@ -280,6 +281,7 @@ class HomeService {
         rsvpNo: rsvpNo,
         timeTbd: timeTbd,
         timeLabel: timeLabel,
+        startTimeLabel: startTimeLabel,
         dateLabel: dateLabel,
         locationDetails: locationDetails,
         uniformColor: uniformColor,

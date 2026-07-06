@@ -141,6 +141,7 @@ class ScheduleEvent {
   final String startTime;
   final String endTime;
   final String timeLabel;
+  final String startTimeLabel;
   final String timezone;
   final bool timeTbd;
   final int duration;
@@ -194,6 +195,7 @@ class ScheduleEvent {
     required this.startTime,
     required this.endTime,
     required this.timeLabel,
+    required this.startTimeLabel,
     required this.timezone,
     required this.timeTbd,
     required this.duration,
@@ -248,6 +250,7 @@ class ScheduleEvent {
         startTime: '',
         endTime: '',
         timeLabel: '',
+        startTimeLabel: '',
         timezone: '',
         timeTbd: false,
         duration: 0,
@@ -311,6 +314,7 @@ class ScheduleEvent {
       startTime: _parseString(json['start_time']),
       endTime: _parseString(json['end_time']),
       timeLabel: _parseString(json['time_label']),
+      startTimeLabel: _parseString(json['start_time_label']),
       timezone: _parseString(json['timezone']),
       timeTbd: _parseBool(json['time_tbd']),
       duration: _parseInt(json['duration']),
@@ -462,6 +466,7 @@ class ScheduleEvent {
       rsvpNo: rsvpNo,
       timeTbd: timeTbd,
       timeLabel: timeLabel.isNotEmpty ? timeLabel : null,
+      startTimeLabel: startTimeLabel.isNotEmpty ? startTimeLabel : null,
       dateLabel: dateLabel.isNotEmpty ? dateLabel : null,
       locationDetails: locationDetails.isNotEmpty ? locationDetails : null,
       uniformColor: uniformColor.isNotEmpty ? uniformColor : null,

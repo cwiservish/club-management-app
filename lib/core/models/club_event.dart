@@ -35,6 +35,7 @@ class ClubEvent {
 
   final bool timeTbd;
   final String? timeLabel;
+  final String? startTimeLabel;
   final String? dateLabel;
   final String? homeAwayLabel;
   final String? locationDetails;
@@ -82,6 +83,7 @@ class ClubEvent {
     this.titleRaw = '',
     this.timeTbd = false,
     this.timeLabel,
+    this.startTimeLabel,
     this.dateLabel,
     this.homeAwayLabel,
     this.locationDetails,
@@ -130,6 +132,7 @@ class ClubEvent {
     String? titleRaw,
     bool? timeTbd,
     String? timeLabel,
+    String? startTimeLabel,
     String? dateLabel,
     String? homeAwayLabel,
     String? locationDetails,
@@ -177,6 +180,7 @@ class ClubEvent {
       titleRaw: titleRaw ?? this.titleRaw,
       timeTbd: timeTbd ?? this.timeTbd,
       timeLabel: timeLabel ?? this.timeLabel,
+      startTimeLabel: startTimeLabel ?? this.startTimeLabel,
       dateLabel: dateLabel ?? this.dateLabel,
       homeAwayLabel: homeAwayLabel ?? this.homeAwayLabel,
       locationDetails: locationDetails ?? this.locationDetails,
