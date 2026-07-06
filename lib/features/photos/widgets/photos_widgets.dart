@@ -13,30 +13,23 @@ import '../providers/photos_provider.dart';
 
 class PhotosGrid extends StatelessWidget {
   final List<PhotoItem> photos;
-  final VoidCallback onUploadTap;
 
-  const PhotosGrid({super.key, required this.photos, required this.onUploadTap});
+  const PhotosGrid({super.key, required this.photos});
 
   @override
   Widget build(BuildContext context) {
-    // photos + 1 upload tile
-    final itemCount = photos.length + 1;
-
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
         childAspectRatio: 1.0,
       ),
-      itemCount: itemCount,
-      itemBuilder: (_, i) {
-        if (i < photos.length) {
-          return PhotoTile(photo: photos[i]);
-        }
-        return PhotoUploadTile(onTap: onUploadTap);
-      },
+      itemCount: photos.length,
+      itemBuilder: (_, i) => PhotoTile(photo: photos[i]),
     );
   }
 }
@@ -108,8 +101,13 @@ class PhotoTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.current.gray100),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
           Positioned.fill(
@@ -121,7 +119,7 @@ class PhotoTile extends ConsumerWidget {
                 );
               },
               child: Container(
-                color: AppColors.current.gray100,
+                color: Colors.white,
                 child: Image.network(
                   photo.imageUrl,
                   fit: BoxFit.cover,

@@ -8,6 +8,7 @@ import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
 import '../providers/photos_provider.dart';
 import '../widgets/photos_widgets.dart';
+import '../../files/widgets/files_widgets.dart';
 
 class PhotosPage extends ConsumerWidget {
   const PhotosPage({super.key});
@@ -117,7 +118,7 @@ class PhotosPage extends ConsumerWidget {
     final photosState = ref.watch(photosProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.current.surface,
+      backgroundColor: AppColors.current.card,
       body: SafeArea(
         top: false,
         child: Stack(
@@ -146,56 +147,48 @@ class PhotosPage extends ConsumerWidget {
                       : RefreshIndicator(
                           onRefresh: () => ref.read(photosProvider.notifier).refresh(),
                           color: AppColors.current.primary,
-                          child: photosState.photos.isEmpty
-                              ? Stack(
-                                  children: [
-                                    ListView(), // Allows pull-to-refresh even when empty
-                                    Center(
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(19),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                FilesUploadButton(
+                                  onTap: () => _showImageSourceBottomSheet(context, ref),
+                                  title: 'Upload Photo',
+                                  subtitle: 'JPG, PNG up to 10MB',
+                                ),
+                                const SizedBox(height: 24),
+                                const FilesSectionLabel(title: 'Recent Photos'),
+                                const SizedBox(height: 12),
+                                if (photosState.photos.isEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 40),
+                                    child: Center(
                                       child: Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
                                           Icon(
                                             Icons.photo_outlined,
-                                            size: 64,
+                                            size: 48,
                                             color: AppColors.current.gray400,
                                           ),
-                                          const SizedBox(height: 16),
+                                          const SizedBox(height: 12),
                                           Text(
-                                            'No photos yet',
-                                            style: AppTextStyles.heading16.copyWith(
-                                              color: AppColors.current.textPrimary,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            'Upload a photo to get started.',
-                                            style: AppTextStyles.body14.copyWith(
+                                            'No photos found',
+                                            style: AppTextStyles.body15.copyWith(
                                               color: AppColors.current.textSecondary,
                                             ),
-                                          ),
-                                          const SizedBox(height: 24),
-                                          ElevatedButton.icon(
-                                            onPressed: () => _showImageSourceBottomSheet(context, ref),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppColors.current.primary,
-                                              foregroundColor: Colors.white,
-                                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            icon: const Icon(Icons.upload),
-                                            label: const Text('Upload Photo'),
                                           ),
                                         ],
                                       ),
                                     ),
-                                  ],
-                                )
-                              : PhotosGrid(
-                                  photos: photosState.photos,
-                                  onUploadTap: () => _showImageSourceBottomSheet(context, ref),
-                                ),
+                                  )
+                                else
+                                  PhotosGrid(photos: photosState.photos),
+                              ],
+                            ),
+                          ),
                         ),
                 ),
               ],

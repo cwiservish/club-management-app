@@ -11,7 +11,15 @@ import '../models/file_item.dart';
 
 class FilesUploadButton extends StatelessWidget {
   final VoidCallback onTap;
-  const FilesUploadButton({super.key, required this.onTap});
+  final String title;
+  final String subtitle;
+
+  const FilesUploadButton({
+    super.key,
+    required this.onTap,
+    this.title = 'Upload New File',
+    this.subtitle = 'PDF, Excel, Word up to 10MB',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +52,7 @@ class FilesUploadButton extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Upload New File',
+              title,
               style: AppTextStyles.body15.copyWith(
                 color: AppColors.current.textPrimary,
                 fontWeight: FontWeight.w600,
@@ -52,7 +60,7 @@ class FilesUploadButton extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              'PDF, Excel, Word up to 10MB',
+              subtitle,
               style: AppTextStyles.heading12.copyWith(
                 color: AppColors.current.textSecondary,
                 fontWeight: FontWeight.w400,
