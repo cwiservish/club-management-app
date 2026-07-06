@@ -37,6 +37,8 @@ class ClubEvent {
   final String? timeLabel;
   final String? startTimeLabel;
   final String? dateLabel;
+  final String? eventDuration;
+  final String? schedulingModeLabel;
   final String? homeAwayLabel;
   final String? locationDetails;
   final String? uniformColor;
@@ -85,6 +87,8 @@ class ClubEvent {
     this.timeLabel,
     this.startTimeLabel,
     this.dateLabel,
+    this.eventDuration,
+    this.schedulingModeLabel,
     this.homeAwayLabel,
     this.locationDetails,
     this.uniformColor,
@@ -134,6 +138,8 @@ class ClubEvent {
     String? timeLabel,
     String? startTimeLabel,
     String? dateLabel,
+    String? eventDuration,
+    String? schedulingModeLabel,
     String? homeAwayLabel,
     String? locationDetails,
     String? uniformColor,
@@ -182,6 +188,8 @@ class ClubEvent {
       timeLabel: timeLabel ?? this.timeLabel,
       startTimeLabel: startTimeLabel ?? this.startTimeLabel,
       dateLabel: dateLabel ?? this.dateLabel,
+      eventDuration: eventDuration ?? this.eventDuration,
+      schedulingModeLabel: schedulingModeLabel ?? this.schedulingModeLabel,
       homeAwayLabel: homeAwayLabel ?? this.homeAwayLabel,
       locationDetails: locationDetails ?? this.locationDetails,
       uniformColor: uniformColor ?? this.uniformColor,

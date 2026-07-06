@@ -6,6 +6,7 @@ import '../../../core/shared_widgets/app_header.dart';
 import '../providers/schedule_provider.dart';
 import '../widgets/schedule_empty_state.dart';
 import '../widgets/event_list_tile.dart';
+import '../widgets/schedule_league_tile.dart';
 import '../widgets/schedule_section_header.dart';
 
 // ─── Schedule Screen ──────────────────────────────────────────────────────────
@@ -88,7 +89,9 @@ class ScheduleScreen extends ConsumerWidget {
             children: [
               ScheduleSectionHeader(title: section.monthName),
               Container(height: 9, color: colors.surface),
-              ...section.events.map((e) => ScheduleEventCard(event: e)),
+              ...section.events.map((e) => e.isFullSchedule
+                  ? ScheduleLeagueTile(event: e)
+                  : ScheduleEventCard(event: e)),
               Container(height: 12, color: colors.surface),
             ],
           );

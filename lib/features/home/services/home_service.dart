@@ -243,7 +243,9 @@ class HomeService {
       final homeAwayKey = _parseInt(json['home_away']);
       final isHome = homeAwayKey == 1;
       final schedulingMode = _parseInt(json['scheduling_mode'] ?? 1);
+      final schedulingModeLabel = json['scheduling_mode_label']?.toString();
       final existingSchedulingMode = _parseInt(json['existing_scheduling_mode'] ?? schedulingMode);
+      final eventDuration = json['event_duration']?.toString();
       final opponentTeamId = _parseInt(json['opponent_team_id']);
       final uniformTopColor = json['uniform_top_color']?.toString() ?? '';
       final uniformBottomColor = json['uniform_bottom_color']?.toString() ?? '';
@@ -298,6 +300,8 @@ class HomeService {
         rsvpTargets: rsvpTargets,
         status: status,
         schedulingMode: schedulingMode,
+        schedulingModeLabel: schedulingModeLabel,
+        eventDuration: eventDuration,
         existingSchedulingMode: existingSchedulingMode,
         eventTypeKey: eventTypeInt,
         homeAwayKey: homeAwayKey,

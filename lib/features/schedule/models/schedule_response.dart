@@ -125,6 +125,7 @@ class ScheduleEvent {
   final int homeAway;
   final String homeAwayLabel;
   final int schedulingMode;
+  final String schedulingModeLabel;
   final int existingSchedulingMode;
   final int opponentTeamId;
   final String uniformTopColor;
@@ -157,6 +158,7 @@ class ScheduleEvent {
   final String opponent;
   final String extraLabel;
   final String notes;
+  final String eventDuration;
   final int status;
   final bool notificationEnabled;
   final AttendanceCounts? attendanceCounts;
@@ -179,6 +181,7 @@ class ScheduleEvent {
     required this.homeAway,
     required this.homeAwayLabel,
     required this.schedulingMode,
+    required this.schedulingModeLabel,
     required this.existingSchedulingMode,
     required this.opponentTeamId,
     required this.uniformTopColor,
@@ -211,6 +214,7 @@ class ScheduleEvent {
     required this.opponent,
     required this.extraLabel,
     required this.notes,
+    required this.eventDuration,
     required this.status,
     required this.notificationEnabled,
     this.attendanceCounts,
@@ -234,6 +238,7 @@ class ScheduleEvent {
         eventType: 0,
         homeAway: 0,
         schedulingMode: 1,
+        schedulingModeLabel: '',
         existingSchedulingMode: 1,
         opponentTeamId: 0,
         uniformTopColor: '',
@@ -266,6 +271,7 @@ class ScheduleEvent {
         opponent: '',
         extraLabel: '',
         notes: '',
+        eventDuration: '',
         status: 0,
         notificationEnabled: false,
         rsvpTargets: [], homeAwayLabel: '',
@@ -292,6 +298,7 @@ class ScheduleEvent {
       titleRaw: _parseString(json['title']),
       eventName: _parseString(json['event_name'] ?? json['title']),
       schedulingMode: _parseInt(json['scheduling_mode'] ?? 1),
+      schedulingModeLabel: _parseString(json['scheduling_mode_label']),
       existingSchedulingMode: _parseInt(json['existing_scheduling_mode'] ?? json['scheduling_mode'] ?? 1),
       opponentTeamId: _parseInt(json['opponent_team_id']),
       uniformTopColor: _parseString(json['uniform_top_color']),
@@ -330,6 +337,7 @@ class ScheduleEvent {
       opponent: _parseString(json['opponent_team_name'] ?? json['opponant'] ?? json['opponent']),
       extraLabel: _parseString(json['extra_label']),
       notes: _parseString(json['notes']),
+      eventDuration: _parseString(json['event_duration']),
       status: _parseInt(json['status']),
       notificationEnabled: _parseBool(json['notification_enabled']),
       attendanceCounts: json['attendance_counts'] != null
@@ -474,6 +482,8 @@ class ScheduleEvent {
       flagColor: flagColor.isNotEmpty ? flagColor : null,
       dbId: id,
       schedulingMode: schedulingMode,
+      schedulingModeLabel: schedulingModeLabel.isNotEmpty ? schedulingModeLabel : null,
+      eventDuration: eventDuration.isNotEmpty ? eventDuration : null,
       existingSchedulingMode: existingSchedulingMode,
       eventTypeKey: eventType,
       homeAwayKey: homeAway,
