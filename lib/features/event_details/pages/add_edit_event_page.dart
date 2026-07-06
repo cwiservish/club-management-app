@@ -104,8 +104,6 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
   // Save template states
   bool _showSaveTemplateForm = false;
   final _templateNameController = TextEditingController();
-  bool _chooseComboAsTemplate = false;
-  String _uniformTemplateName = '';
 
   // Uniform template state
   // API templates come from dropdowns; locally added ones accumulate here
@@ -116,10 +114,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
 
   // Opponent state
   // '' = nothing selected, '__new__' = add new inline open,
-  // '__confirmed_new__' = new opponent confirmed but not yet saved to server,
   // otherwise = selected team ID as string
   String _selectedOpponentId = '';
-  String _confirmedNewOpponentName = '';
   bool _showAddOpponentInline = false;
   bool _saveOpponentForFuture = true;
   final _newOpponentNameController = TextEditingController();
@@ -482,13 +478,15 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
         if (inList) {
           _selectedOpponentId = e.opponentTeamId.toString();
         } else {
-          // Team not in dropdown list — treat as confirmed new opponent
-          _confirmedNewOpponentName = e.opponent ?? '';
-          _selectedOpponentId = '__confirmed_new__';
+          // Team not in dropdown list — pre-fill as new opponent inline
+          _newOpponentNameController.text = e.opponent ?? '';
+          _selectedOpponentId = '__new__';
+          _showAddOpponentInline = true;
         }
       } else if (e.opponent != null && e.opponent!.isNotEmpty) {
-        _confirmedNewOpponentName = e.opponent!;
-        _selectedOpponentId = '__confirmed_new__';
+        _newOpponentNameController.text = e.opponent!;
+        _selectedOpponentId = '__new__';
+        _showAddOpponentInline = true;
       }
 
       // Uniform
@@ -634,8 +632,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       topColor: _colorToHex(_uniformColors[_topColorIndex]),
       bottomColor: _colorToHex(_uniformColors[_bottomColorIndex]),
       socksColor: _colorToHex(_uniformColors[_socksColorIndex]),
-      chooseCombo: _chooseComboAsTemplate,
-      templateName: _uniformTemplateName,
+      chooseCombo: _showSaveTemplateForm && _templateNameController.text.trim().isNotEmpty,
+      templateName: _showSaveTemplateForm ? _templateNameController.text.trim() : '',
     );
   }
 
@@ -699,6 +697,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
   Future<void> _doSave() async {
     if (ref.read(eventAddEditProvider).isSavingNewEvent) return;
 
+    // Uniform template name validation — if toggle is shown, name is required
+    if (_selectedApiTemplate == null && _showSaveTemplateForm && _templateNameController.text.trim().isEmpty) {
+      _showError('Please enter a template name or hide the template form');
+      return;
+    }
+
     // Edit-mode values ('' for create/duplicate mode)
     final editId = (!widget.isDuplicate) ? (widget.editEvent?.dbId?.toString() ?? '') : '';
     final existingSchedulingMode = (!widget.isDuplicate) ? (widget.editEvent?.existingSchedulingMode ?? '') : '';
@@ -726,11 +730,14 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       final isGameOrScrimmage = _eventTypeKey == 1 || _eventTypeKey == 3;
       if (isGameOrScrimmage) {
         // Flow 1: Game or Scrimmage — opponent is required
-        if (_selectedOpponentId == '__confirmed_new__') {
-          // New opponent was confirmed via "Add opponent" button
-          opponentTeamName = _confirmedNewOpponentName;
+        if (_selectedOpponentId == '__new__') {
+          opponentTeamName = _newOpponentNameController.text.trim();
+          if (opponentTeamName.isEmpty) {
+            _showError('Please enter opponent name');
+            return;
+          }
           allowForFutureGames = _saveOpponentForFuture;
-        } else if (_selectedOpponentId.isNotEmpty && _selectedOpponentId != '__new__') {
+        } else if (_selectedOpponentId.isNotEmpty) {
           // Existing team selected from API list — send ID only
           opponentTeamId = _selectedOpponentId;
           allowForFutureGames = false;
@@ -871,10 +878,14 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       String flow4OpponentTeamName = '';
       bool flow4AllowForFutureGames = false;
 
-      if (_selectedOpponentId == '__confirmed_new__') {
-        flow4OpponentTeamName = _confirmedNewOpponentName;
+      if (_selectedOpponentId == '__new__') {
+        flow4OpponentTeamName = _newOpponentNameController.text.trim();
+        if (flow4OpponentTeamName.isEmpty) {
+          _showError('Please enter opponent name');
+          return;
+        }
         flow4AllowForFutureGames = _saveOpponentForFuture;
-      } else if (_selectedOpponentId.isNotEmpty && _selectedOpponentId != '__new__') {
+      } else if (_selectedOpponentId.isNotEmpty) {
         flow4OpponentTeamId = _selectedOpponentId;
         flow4AllowForFutureGames = false;
       } else {
@@ -2075,8 +2086,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
                     onTap: () => setState(() {
                       _selectedUniformMode = t.templateName;
                       _selectedApiTemplate = t;
-                      _chooseComboAsTemplate = false;
-                      _uniformTemplateName = '';
+                      _showSaveTemplateForm = false;
+                      _templateNameController.clear();
                     }),
                   ),
                   const SizedBox(width: 10),
@@ -2091,8 +2102,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
                       _topColorIndex = t.topIndex;
                       _bottomColorIndex = t.bottomIndex;
                       _socksColorIndex = t.socksIndex;
-                      _chooseComboAsTemplate = false;
-                      _uniformTemplateName = '';
+                      _showSaveTemplateForm = false;
+                      _templateNameController.clear();
                     }),
                   ),
                   const SizedBox(width: 10),
@@ -2103,8 +2114,6 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
                   onTap: () => setState(() {
                     _selectedUniformMode = 'New combo';
                     _selectedApiTemplate = null;
-                    _chooseComboAsTemplate = false;
-                    _uniformTemplateName = '';
                   }),
                 ),
               ],
@@ -2176,50 +2185,6 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            Builder(
-              builder: (_) {
-                final canSave = _templateNameController.text.trim().isNotEmpty;
-                return GestureDetector(
-                  onTap: canSave
-                      ? () {
-                          final name = _templateNameController.text.trim();
-                          final newTemplate = UniformTemplate(
-                            name: name,
-                            topIndex: _topColorIndex,
-                            bottomIndex: _bottomColorIndex,
-                            socksIndex: _socksColorIndex,
-                          );
-                          setState(() {
-                            _localTemplates.add(newTemplate);
-                            _selectedUniformMode = name;
-                            _selectedApiTemplate = null;
-                            _chooseComboAsTemplate = true;
-                            _uniformTemplateName = name;
-                            _showSaveTemplateForm = false;
-                            _templateNameController.clear();
-                          });
-                        }
-                      : null,
-                  child: Container(
-                    height: 48,
-                    width: double.infinity,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: canSave ? const Color(0xFF00E5FF) : const Color(0xFFE0E0E0),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      'Save template',
-                      style: AppTextStyles.heading16.copyWith(
-                        color: canSave ? Colors.black : const Color(0xFFAAAAAA),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
           ],
         ],
       ],
@@ -2277,13 +2242,11 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
           items: [
             '',
             ...dropdowns.teams.map((t) => t.id.toString()),
-            if (_selectedOpponentId == '__confirmed_new__') '__confirmed_new__',
             '__new__',
           ],
           itemLabel: (v) {
             if (v == '') return 'Select opponent...';
             if (v == '__new__') return '+ Add a new opponent...';
-            if (v == '__confirmed_new__') return _confirmedNewOpponentName;
             final match = dropdowns.teams.where((t) => t.id.toString() == v).firstOrNull;
             return match?.name ?? v;
           },
@@ -2292,13 +2255,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
               setState(() {
                 _showAddOpponentInline = true;
                 _selectedOpponentId = '__new__';
-                _confirmedNewOpponentName = '';
               });
             } else if (val != null) {
               setState(() {
                 _selectedOpponentId = val;
                 _showAddOpponentInline = false;
-                _confirmedNewOpponentName = '';
+                _newOpponentNameController.clear();
               });
             }
           },
@@ -2392,58 +2354,6 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    final name = _newOpponentNameController.text.trim();
-                    if (name.isNotEmpty) {
-                      setState(() {
-                        _confirmedNewOpponentName = name;
-                        _selectedOpponentId = '__confirmed_new__';
-                        _showAddOpponentInline = false;
-                      });
-                    }
-                  },
-                  child: Container(
-                    height: 44,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00E5FF),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Add opponent',
-                      style: AppTextStyles.heading15.copyWith(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _showAddOpponentInline = false;
-                    _selectedOpponentId = '';
-                    _confirmedNewOpponentName = '';
-                    _newOpponentNameController.clear();
-                  });
-                },
-                child: Text(
-                  'Cancel',
-                  style: AppTextStyles.heading15.copyWith(
-                    color: colors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
