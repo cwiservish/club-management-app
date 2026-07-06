@@ -25,6 +25,7 @@ import '../../features/notification_preferences/pages/notification_preferences_p
 import '../../features/invoice/pages/invoice_page.dart';
 import '../../features/invoice/pages/invoice_form_page.dart';
 import '../../features/schedule/pages/schedule_page.dart';
+import '../../features/schedule/pages/league_inside_events_page.dart';
 import '../../features/event_details/models/event_detail_model.dart';
 import '../../features/event_details/pages/event_detail_page.dart' as ed;
 import '../../features/event_details/pages/add_edit_event_page.dart';
@@ -132,7 +133,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.schedule,
                 builder: (context, state) => const ScheduleScreen(),
                 routes: [
-
+                  GoRoute(
+                    path: AppRoutes.scheduleLeagueDetail,
+                    builder: (context, state) => LeagueInsideEventsPage(
+                      event: state.extra as ClubEvent,
+                    ),
+                  ),
                 ],
               ),
             ],

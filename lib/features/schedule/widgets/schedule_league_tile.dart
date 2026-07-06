@@ -26,7 +26,7 @@ class ScheduleLeagueTile extends StatelessWidget {
         : 'Full schedule';
 
     return GestureDetector(
-      onTap: () => context.push('${AppRoutes.eventDetails(event.id)}?from=schedule', extra: event),
+      onTap: () => context.push('${AppRoutes.schedule}/${AppRoutes.scheduleLeagueDetail}', extra: event),
       child: Container(
         color: AppColors.current.surface,
         padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 18),

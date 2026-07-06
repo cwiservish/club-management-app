@@ -16,6 +16,7 @@ abstract class AppRoutes {
   static const invoicingNew = 'new';
 
   static const schedule = '/schedule';
+  static const scheduleLeagueDetail = 'league/detail';
   static const scheduleEventDetail = 'event/detail';
   static const scheduleEventForm = 'event/edit';
 
