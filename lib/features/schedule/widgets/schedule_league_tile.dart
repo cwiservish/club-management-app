@@ -132,12 +132,12 @@ class ScheduleLeagueTile extends StatelessWidget {
 
                 // Chevron column
                 Container(
-                  width: 40,
+                  width: 60,
                   color: AppColors.current.card,
                   alignment: Alignment.center,
                   child: Icon(
-                    Icons.chevron_right,
-                    size: 20,
+                    Icons.arrow_forward_ios,
+                    size: 22,
                     color: AppColors.current.textSecondary,
                   ),
                 ),
