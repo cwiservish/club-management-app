@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/constants/app_assets.dart';
+import '../../../core/shared_widgets/custom_svg_icon.dart';
 import '../../../core/models/club_event.dart';
 import '../models/schedule_models.dart';
 import '../providers/schedule_provider.dart';
@@ -145,11 +147,12 @@ class ScheduleEventCard extends ConsumerWidget {
                         Row(
                           children: [
                             Icon(
-                              Icons.access_time_filled,
+                              Icons.schedule_rounded,
                               size: 15,
+
                               color: AppColors.current.textSecondary,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 2),
                             Expanded(
                               child: Text(
                                 (latestEvent.startTimeLabel != null && latestEvent.startTimeLabel!.isNotEmpty)
