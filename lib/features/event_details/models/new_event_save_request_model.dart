@@ -9,8 +9,8 @@ class NewEventSaveRequest {
   final int schedulingMode;           // 1=Single Session, 2=Tournament, 3=League
   final dynamic existingSchedulingMode; // "" default
   final int eventType;                // key from API (1=Game, 2=Practice, etc.)
-  final int eventFrom;                // always 0
-  final int eventId;                  // always 0
+  final dynamic eventFrom;            // 0 default; true when adding game from a parent league/tournament
+  final dynamic eventId;              // 0 default; parent ClubEvent.id when adding from league/tournament
   final int scheduleGameId;           // always 0
   final String opponentTeamId;        // "" until teams API populates
   final String opponentTeamName;      // name entered when adding new opponent

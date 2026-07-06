@@ -63,7 +63,26 @@ class AddEditEventPage extends ConsumerStatefulWidget {
   /// True → pre-fill from [editEvent] but save as a brand-new event (no id sent).
   final bool isDuplicate;
 
-  const AddEditEventPage({super.key, this.editEvent, this.origin = 'home', this.isDuplicate = false});
+  /// When set, hides the "What are you adding?" section and locks scheduling type to this value.
+  final int? defaultSchedulingTypeKey;
+
+  /// When set, hides the "Event type" section and locks event type to this value.
+  final int? defaultEventTypeKey;
+
+  /// The parent league/tournament [ClubEvent]. When provided:
+  /// - date picker is restricted to its start/end date range
+  /// - save request sends event_from=1 and event_id=parentEvent.id
+  final ClubEvent? parentEvent;
+
+  const AddEditEventPage({
+    super.key,
+    this.editEvent,
+    this.origin = 'home',
+    this.isDuplicate = false,
+    this.defaultSchedulingTypeKey,
+    this.defaultEventTypeKey,
+    this.parentEvent,
+  });
 
   @override
   ConsumerState<AddEditEventPage> createState() => _AddEditEventPageState();
@@ -368,6 +387,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.defaultSchedulingTypeKey != null) _schedulingTypeKey = widget.defaultSchedulingTypeKey!;
+    if (widget.defaultEventTypeKey != null) _eventTypeKey = widget.defaultEventTypeKey!;
     // Always re-fetch dropdowns on every open so data is fresh
     Future.microtask(() => ref.read(eventAddEditProvider.notifier).fetchNewEventDropdowns());
   }
@@ -507,11 +528,29 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
 
   // Pickers
   Future<void> _pickDate(BuildContext context) async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final parent = widget.parentEvent;
+
+    // Default bounds
+    DateTime firstDate = today;
+    DateTime lastDate = today.add(const Duration(days: 365 * 2));
+
+    // If a parent league/tournament is provided, restrict to its date range
+    if (parent != null) {
+      if (parent.startDate != null) {
+        final parentStart = DateUtils.dateOnly(parent.startDate!);
+        firstDate = parentStart.isAfter(today) ? parentStart : today;
+      }
+      if (parent.endDate != null) {
+        lastDate = DateUtils.dateOnly(parent.endDate!);
+      }
+    }
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      initialDate: _selectedDate ?? firstDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
     if (picked != null) {
       setState(() {
@@ -724,6 +763,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
         status: editStatus,
         schedulingMode: _schedulingTypeKey,
         eventType: _eventTypeKey,
+        eventFrom: widget.parentEvent != null ? true : 0,
+        eventId: widget.parentEvent?.dbId ?? 0,
         title: title,
         sessionDate: _formatSessionDate(_selectedDate!),
         startTime: _formatStartTime24(_startTime),
@@ -786,6 +827,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
           status: editStatus,
           schedulingMode: _schedulingTypeKey,
           eventType: 0,
+          eventFrom: widget.parentEvent != null ? true : 0,
+          eventId: widget.parentEvent?.dbId ?? 0,
           title: title,
           sessionDate: '',
           startTime: '',
@@ -857,6 +900,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
         status: editStatus,
         schedulingMode: 1,
         eventType: 1,
+        eventFrom: widget.parentEvent != null ? true : 0,
+        eventId: widget.parentEvent?.dbId ?? 0,
         title: '',
         sessionDate: _formatSessionDate(_selectedDate!),
         startTime: _formatStartTime24(_startTime),
@@ -1007,29 +1052,31 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Category Header ──
-          Text(
-            'What are you adding?',
-            style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              for (int i = 0; i < dropdowns.schedulingTypes.length; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                _buildCategoryButton(dropdowns.schedulingTypes[i].key, dropdowns.schedulingTypes[i].label),
-              ],
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _getCategorySubtext(),
-            style: AppTextStyles.body14.copyWith(
-              color: colors.textSecondary,
-              height: 1.4,
+          // ── Category Header — hidden when scheduling type is pre-set ──
+          if (widget.defaultSchedulingTypeKey == null) ...[
+            Text(
+              'What are you adding?',
+              style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                for (int i = 0; i < dropdowns.schedulingTypes.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  _buildCategoryButton(dropdowns.schedulingTypes[i].key, dropdowns.schedulingTypes[i].label),
+                ],
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _getCategorySubtext(),
+              style: AppTextStyles.body14.copyWith(
+                color: colors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
 
           // ── Category Specific Form Body ──
           if (_schedulingTypeKey == 1) ...[
@@ -1162,37 +1209,20 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Event Type
-        Text(
-          'Event type',
-          style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 10,
-          children: dropdowns.eventTypes.map((type) => _buildEventTypeChip(type)).toList(),
-        ),
-        // Import Link
-        // GestureDetector(
-        //   onTap: () => context.push(AppRoutes.importSchedule),
-        //   child: Row(
-        //     children: [
-        //       Icon(Icons.file_download_outlined, color: colors.primary, size: 20),
-        //       const SizedBox(width: 6),
-        //       Expanded(
-        //         child: Text(
-        //           'Have a full schedule? Import a calendar (CSV / iCal)',
-        //           style: AppTextStyles.body14.copyWith(
-        //             color: colors.primary,
-        //             fontWeight: FontWeight.w600,
-        //           ),
-        //         ),
-        //       ),
-        //     ],
-        //   ),
-        // ),
-        const SizedBox(height: 20),
+        // Event Type — hidden when event type is pre-set
+        if (widget.defaultEventTypeKey == null) ...[
+          Text(
+            'Event type',
+            style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 10,
+            children: dropdowns.eventTypes.map((type) => _buildEventTypeChip(type)).toList(),
+          ),
+          const SizedBox(height: 20),
+        ],
 
         // Title or Opponent Field
         if (_eventTypeKey == 1 || _eventTypeKey == 3) ...[
