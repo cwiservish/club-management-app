@@ -50,7 +50,6 @@ class ScheduleLeagueTile extends StatelessWidget {
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: dateTextColor,
-                          height: 1.0,
                         ),
                       ),
                       Text(
@@ -59,7 +58,6 @@ class ScheduleLeagueTile extends StatelessWidget {
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: dateTextColor,
-                          height: 1.0,
                         ),
                       ),
                       Text(
@@ -68,7 +66,6 @@ class ScheduleLeagueTile extends StatelessWidget {
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: dateTextColor,
-                          height: 1.0,
                         ),
                       ),
                     ],
@@ -90,8 +87,8 @@ class ScheduleLeagueTile extends StatelessWidget {
                         Text(
                           event.title,
                           style: AppTextStyles.body14.copyWith(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.current.textPrimary,
                           ),
                           maxLines: 1,

@@ -156,8 +156,8 @@ class ScheduleEventCard extends ConsumerWidget {
                                     ? latestEvent.startTimeLabel!
                                     : _fmtTime(latestEvent.dateTime),
                                 style: AppTextStyles.body13.copyWith(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
                                   color: AppColors.current.textPrimary,
                                 ),
                               ),
@@ -191,8 +191,8 @@ class ScheduleEventCard extends ConsumerWidget {
                         Text(
                           latestEvent.title,
                           style: AppTextStyles.body14.copyWith(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.current.textPrimary,
                           ),
                           maxLines: 1,
