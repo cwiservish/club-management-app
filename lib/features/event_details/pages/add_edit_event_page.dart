@@ -317,6 +317,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
   @override
   void _showStartTimeOverlay() {
     _removeTimePickerOverlay();
+    _clampStartTimeToNowIfToday(); // ensure wheel opens at a valid time
 
     final renderBox = _startTimeFieldKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
@@ -343,7 +344,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
                 onTap: () {},
                 child: _buildCustomTimePickerCard(
                   onTimeChanged: () {
-                    setState(() {});
+                    setState(() => _clampStartTimeToNowIfToday());
                     _timePickerOverlay?.markNeedsBuild();
                   },
                 ),
@@ -480,6 +481,30 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     return 'Ends at $displayHour:$displayMinuteStr $amPm';
   }
 
+  // ── Time helpers ─────────────────────────────────────────────────────────────
+
+  bool _isToday() {
+    if (_selectedDate == null) return false;
+    return DateUtils.dateOnly(_selectedDate!) == DateUtils.dateOnly(DateTime.now());
+  }
+
+  /// Clamps _startTime to now+1 min if today is selected. Pure mutation — call inside setState.
+  void _clampStartTimeToNowIfToday() {
+    if (!_isToday()) return;
+    final now = DateTime.now();
+    final minAllowed = DateTime(now.year, now.month, now.day, now.hour, now.minute + 1);
+    final selected = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+    if (selected.isBefore(minAllowed)) {
+      _startTime = TimeOfDay(hour: minAllowed.hour, minute: minAllowed.minute);
+    }
+  }
+
   // Pickers
   Future<void> _pickDate(BuildContext context) async {
     final picked = await showDatePicker(
@@ -491,6 +516,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
+        _clampStartTimeToNowIfToday();
       });
     }
   }
