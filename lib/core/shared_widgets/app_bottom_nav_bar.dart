@@ -53,13 +53,13 @@ class AppBottomNavBar extends StatelessWidget {
                 child: GestureDetector(
                   onTap: () => onTap(i),
                   child: Container(
-                    height: 93,
+                    height: 72,
                     color: background,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CustomSvgIcon(assetPath: item.$1, color: color, size: 24),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 4),
                         Text(
                           item.$2,
                           style: TextStyle(
