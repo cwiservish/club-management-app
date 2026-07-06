@@ -300,6 +300,9 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _jerseyController = TextEditingController();
+  final _firstNameFocus = FocusNode();
+  final _lastNameFocus = FocusNode();
+  final _jerseyFocus = FocusNode();
 
   List<PlayerPositionModel> _positions = [];
   PlayerPositionModel? _selectedPosition;
@@ -323,6 +326,9 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _jerseyController.dispose();
+    _firstNameFocus.dispose();
+    _lastNameFocus.dispose();
+    _jerseyFocus.dispose();
     super.dispose();
   }
 
@@ -380,46 +386,57 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to pick image: $e'),
-          backgroundColor: AppColors.current.error,
-        ),
-      );
+      _showError('Failed to pick image: $e');
     }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.current.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(
+          'Error',
+          style: AppTextStyles.heading16.copyWith(color: AppColors.current.textPrimary),
+        ),
+        content: Text(
+          message,
+          style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'OK',
+              style: AppTextStyles.body14.copyWith(
+                color: AppColors.current.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _savePlayer() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_pickedImageBytes == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Profile image is required'),
-          backgroundColor: AppColors.current.error,
-        ),
-      );
+      _showError('Profile image is required');
       return;
     }
 
     if (_selectedPosition == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please select a player position'),
-          backgroundColor: AppColors.current.error,
-        ),
-      );
+      _showError('Please select a player position');
       return;
     }
 
     final teamUuid = widget.activeTeam?.uuid;
     if (teamUuid == null || teamUuid.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No active team selected'),
-          backgroundColor: AppColors.current.error,
-        ),
-      );
+      _showError('No active team selected');
       return;
     }
 
@@ -461,22 +478,12 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message != null && message.isNotEmpty ? message : 'Failed to save player'),
-              backgroundColor: AppColors.current.error,
-            ),
-          );
+          _showError(message != null && message.isNotEmpty ? message : 'Failed to save player');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: AppColors.current.error,
-          ),
-        );
+        _showError(e.toString());
       }
     } finally {
       if (mounted) {
@@ -593,6 +600,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                           label: 'FIRST NAME',
                           placeholder: 'e.g. Preston',
                           controller: _firstNameController,
+                          focusNode: _firstNameFocus,
                           validator: (val) =>
                               val == null || val.trim().isEmpty ? 'First name is required' : null,
                         ),
@@ -601,6 +609,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                           label: 'LAST NAME',
                           placeholder: 'e.g. Cole',
                           controller: _lastNameController,
+                          focusNode: _lastNameFocus,
                           validator: (val) =>
                               val == null || val.trim().isEmpty ? 'Last name is required' : null,
                         ),
@@ -609,6 +618,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                           label: 'JERSEY NUMBER',
                           placeholder: 'e.g. 8',
                           controller: _jerseyController,
+                          focusNode: _jerseyFocus,
                           keyboardType: TextInputType.number,
                           validator: (val) =>
                               val == null || val.trim().isEmpty ? 'Jersey number is required' : null,
@@ -633,9 +643,13 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
     required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    FocusNode? focusNode,
   }) {
     final colors = AppColors.current;
-    return Padding(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => focusNode?.requestFocus(),
+      child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,6 +665,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
           const SizedBox(height: 4),
           TextFormField(
             controller: controller,
+            focusNode: focusNode,
             keyboardType: keyboardType,
             validator: validator,
             style: AppTextStyles.body16.copyWith(
@@ -673,6 +688,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
           ),
         ],
       ),
+    ),
     );
   }
 
