@@ -328,8 +328,6 @@ class RosterService {
     final requestBody = {
       'team_uuid': teamUuid,
       'player_uuid': playerUuid,
-      if (page != null) 'page': page,
-      if (limit != null) 'limit': limit,
     };
 
     // Print Request JSON in logs

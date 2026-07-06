@@ -20,7 +20,7 @@ abstract final class ApiEndpoints {
   static const String teamPlayersList = '/team/player/list';
   static const String teamStaffList = '/team/staff/list';
   static const String playerProfile = '/team/player/profile';
-  static const String playerAttendanceHistory = '/team/player/attendance_history';
+  static const String playerAttendanceHistory = '/teams/event/session-attendee/history';
   static const String assignParent = '/players/parents/assign';
   static const String playerPositions = '/team/player/positions';
   static const String playerSave = '/team/player/save';

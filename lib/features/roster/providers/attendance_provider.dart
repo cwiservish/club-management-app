@@ -95,12 +95,11 @@ class AttendanceHistoryNotifier extends Notifier<AttendanceHistoryState> {
         throw Exception(response.message.isNotEmpty ? response.message : 'Failed to load attendance history');
       }
 
-      final grid = response.data!.grid;
-      final newRecords = grid.map((event) {
-        final opponent = event.opponent;
-        final eventType = (opponent != null && opponent.isNotEmpty)
-            ? '${event.eventName} • $opponent'
-            : event.eventName;
+      final items = response.data!.items;
+      final newRecords = items.map((event) {
+        final eventLabel = event.displayName.isNotEmpty
+            ? event.displayName
+            : (event.opponentTeamName.isNotEmpty ? event.opponentTeamName : event.eventName);
 
         AttendanceStatus status;
         switch (event.attendance) {
@@ -120,17 +119,13 @@ class AttendanceHistoryNotifier extends Notifier<AttendanceHistoryState> {
         return AttendanceRecord(
           id: event.uuid.isNotEmpty ? event.uuid : event.id.toString(),
           date: event.dateLabel,
-          eventType: eventType,
+          eventType: eventLabel,
           status: status,
         );
       }).toList();
 
       final allRecords = isRefresh ? newRecords : [...state.records, ...newRecords];
-      final total = response.data!.total;
-      
-      // We have more if the total records count on the server exceeds the number of records we have loaded
-      // AND we actually received some records in the current page (to avoid infinite loops on misaligned totals)
-      final hasMore = allRecords.length < total && newRecords.isNotEmpty;
+      final hasMore = !response.data!.pagination.isLastPage && newRecords.isNotEmpty;
 
       state = state.copyWith(
         records: allRecords,
