@@ -405,8 +405,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       // Notes
       _notesController.text = e.notes ?? '';
 
-      // Tournament/League
-      _knowsSchedule = e.isFullSchedule;
+      // Tournament/League — always default to placeholder on edit
+      _knowsSchedule = false;
       _startDate = e.startDate;
       _endDate = e.endDate;
 
