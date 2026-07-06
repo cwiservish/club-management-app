@@ -3,14 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../models/event_detail_model.dart';
-
-Color? _hexToColor(String hex) {
-  if (hex.isEmpty) return null;
-  final clean = hex.replaceAll('#', '');
-  final value = int.tryParse(clean, radix: 16);
-  if (value == null) return null;
-  return Color(0xFF000000 | value);
-}
+import '../../models/uniform_color.dart';
 
 class LogisticsSection extends StatelessWidget {
   final EventDetailModel event;
@@ -82,17 +75,13 @@ class LogisticsSection extends StatelessWidget {
               borderBottom: true,
             ),
           ),
-          _LogisticsRow(
-            icon: Icons.checkroom_outlined,
-            label: 'Uniform (Top / Bottom / Socks)',
-            value: '',
-            valueWidget: _UniformColorDots(
-              topHex: event.uniformTopColor,
-              bottomHex: event.uniformBottomColor,
-              socksHex: event.uniformSocksColor,
+          if (event.uniformTopColor.isNotEmpty || event.uniformBottomColor.isNotEmpty || event.uniformSocksColor.isNotEmpty)
+            _LogisticsRow(
+              icon: Icons.checkroom_outlined,
+              label: 'Uniform',
+              value: '${uniformColorName(event.uniformTopColor)} / ${uniformColorName(event.uniformBottomColor)} / ${uniformColorName(event.uniformSocksColor)}',
+              borderBottom: event.isGame,
             ),
-            borderBottom: event.isGame,
-          ),
           if (event.isGame) ...[
             _LogisticsRow(
               icon: Icons.swap_horiz,
@@ -125,7 +114,6 @@ class _LogisticsRow extends StatelessWidget {
   final Color? iconColor;
   final String label;
   final String value;
-  final Widget? valueWidget; // overrides value text when provided
   final String? subtitle;
   final bool showArrow;
   final bool borderBottom;
@@ -136,7 +124,6 @@ class _LogisticsRow extends StatelessWidget {
     this.iconColor,
     required this.label,
     required this.value,
-    this.valueWidget,
     this.subtitle,
     this.showArrow = false,
     this.borderBottom = true,
@@ -176,13 +163,10 @@ class _LogisticsRow extends StatelessWidget {
                   style: AppTextStyles.label12.copyWith(color: colors.textSecondary),
                 ),
                 const SizedBox(height: 2),
-                if (valueWidget != null)
-                  valueWidget!
-                else
-                  Text(
-                    value,
-                    style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
-                  ),
+                Text(
+                  value,
+                  style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
+                ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 1),
                   Text(
@@ -201,60 +185,3 @@ class _LogisticsRow extends StatelessWidget {
   }
 }
 
-// ─── Uniform Color Dots ───────────────────────────────────────────────────────
-
-class _UniformColorDots extends StatelessWidget {
-  final String topHex;
-  final String bottomHex;
-  final String socksHex;
-
-  const _UniformColorDots({
-    required this.topHex,
-    required this.bottomHex,
-    required this.socksHex,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.current;
-    return Row(
-      children: [
-        _dot(topHex, colors),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Text('/', style: AppTextStyles.body14.copyWith(color: colors.textSecondary)),
-        ),
-        _dot(bottomHex, colors),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Text('/', style: AppTextStyles.body14.copyWith(color: colors.textSecondary)),
-        ),
-        _dot(socksHex, colors),
-      ],
-    );
-  }
-
-  Widget _dot(String hex, AppColors colors) {
-    final color = _hexToColor(hex);
-    final isEmpty = color == null;
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isEmpty ? Colors.transparent : color,
-        border: Border.all(
-          color: isEmpty
-              ? colors.textSecondary.withValues(alpha: 0.4)
-              : (color == const Color(0xFFFFFFFF)
-                  ? Colors.grey.shade400
-                  : Colors.transparent),
-          width: 1.5,
-        ),
-      ),
-      child: isEmpty
-          ? Icon(Icons.block, size: 12, color: colors.textSecondary.withValues(alpha: 0.4))
-          : null,
-    );
-  }
-}

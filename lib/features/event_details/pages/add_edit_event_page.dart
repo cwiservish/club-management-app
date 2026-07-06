@@ -10,24 +10,13 @@ import '../../../core/shared_widgets/sub_header.dart';
 import '../services/event_detail_service.dart';
 import '../providers/event_add_edit_provider.dart';
 import '../models/new_event_dropdown_options_model.dart';
+import '../models/uniform_color.dart';
 import '../models/new_event_save_request_model.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
 import '../../../core/common_providers/event_refresh_provider.dart';
 import '../../../core/models/club_event.dart';
 
 // ─── Models ──────────────────────────────────────────────────────────────────
-
-class UniformColor {
-  final String name;
-  final Color color;
-  final bool isNone;
-
-  const UniformColor({
-    required this.name,
-    required this.color,
-    this.isNone = false,
-  });
-}
 
 class UniformTemplate {
   final String name;
@@ -140,41 +129,6 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
   int _bottomColorIndex = 0;
   int _socksColorIndex = 0;
 
-  // Uniform color palette matching the 4x7 grid in design
-  final List<UniformColor> _uniformColors = const [
-    // Row 1
-    UniformColor(name: 'No color set', color: Colors.transparent, isNone: true),
-    UniformColor(name: 'White', color: Color(0xFFFFFFFF)),
-    UniformColor(name: 'Cream', color: Color(0xFFF5EFEB)),
-    UniformColor(name: 'Light Gray', color: Color(0xFFCFD8DC)),
-    UniformColor(name: 'Slate Gray', color: Color(0xFF90A4AE)),
-    UniformColor(name: 'Dark Gray', color: Color(0xFF37474F)),
-    UniformColor(name: 'Black', color: Color(0xFF212121)),
-    // Row 2
-    UniformColor(name: 'Sky Blue', color: Color(0xFF90CAF9)),
-    UniformColor(name: 'Blue', color: Color(0xFF1E88E5)),
-    UniformColor(name: 'Navy Blue', color: Color(0xFF1A237E)),
-    UniformColor(name: 'Teal', color: Color(0xFF00796B)),
-    UniformColor(name: 'Red', color: Color(0xFFE53935)),
-    UniformColor(name: 'Crimson', color: Color(0xFFC62828)),
-    UniformColor(name: 'Wine', color: Color(0xFF8D0B3C)),
-    // Row 3
-    UniformColor(name: 'Maroon', color: Color(0xFF4A148C)),
-    UniformColor(name: 'Pink', color: Color(0xFFF48FB1)),
-    UniformColor(name: 'Magenta', color: Color(0xFFD81B60)),
-    UniformColor(name: 'Purple', color: Color(0xFF512DA8)),
-    UniformColor(name: 'Lime', color: Color(0xFF7CB342)),
-    UniformColor(name: 'Green', color: Color(0xFF2E7D32)),
-    UniformColor(name: 'Dark Green', color: Color(0xFF1B5E20)),
-    // Row 4
-    UniformColor(name: 'Yellow', color: Color(0xFFFFEB3B)),
-    UniformColor(name: 'Gold', color: Color(0xFFFFC107)),
-    UniformColor(name: 'Olive', color: Color(0xFF8D8D1A)),
-    UniformColor(name: 'Orange', color: Color(0xFFF57C00)),
-    UniformColor(name: 'Rust', color: Color(0xFFD84315)),
-    UniformColor(name: 'Chocolate', color: Color(0xFF4E342E)),
-    UniformColor(name: 'Tan', color: Color(0xFFD7CCC8)),
-  ];
 
   // ─── Location Overlay ────────────────────────────────────────────────────────
 
@@ -417,22 +371,6 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     Future.microtask(() => ref.read(eventAddEditProvider.notifier).fetchNewEventDropdowns());
   }
 
-  /// Maps a hex color string to the nearest index in [_uniformColors].
-  /// Returns 0 (No color set) if no match found or hex is empty.
-  int _hexToColorIndex(String hex) {
-    if (hex.isEmpty) return 0;
-    final normalized = hex.toUpperCase().replaceAll('#', '');
-    for (int i = 0; i < _uniformColors.length; i++) {
-      final c = _uniformColors[i];
-      if (c.isNone) continue;
-      final r = (c.color.r * 255).round().toRadixString(16).padLeft(2, '0');
-      final g = (c.color.g * 255).round().toRadixString(16).padLeft(2, '0');
-      final b = (c.color.b * 255).round().toRadixString(16).padLeft(2, '0');
-      if ('$r$g$b'.toUpperCase() == normalized) return i;
-    }
-    return 0;
-  }
-
   /// Pre-fills all form fields from [widget.editEvent] after dropdowns have loaded.
   /// Called once from [build] when dropdowns are available and edit mode is active.
   void _prefillFromEvent(NewEventDropdownOptions dropdowns) {
@@ -499,15 +437,15 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
           _selectedUniformMode = template.templateName;
         } else {
           // Template not in list — fall back to hex colors
-          _topColorIndex = _hexToColorIndex(e.uniformTopColor);
-          _bottomColorIndex = _hexToColorIndex(e.uniformBottomColor);
-          _socksColorIndex = _hexToColorIndex(e.uniformSocksColor);
+          _topColorIndex = hexToColorIndex(e.uniformTopColor);
+          _bottomColorIndex = hexToColorIndex(e.uniformBottomColor);
+          _socksColorIndex = hexToColorIndex(e.uniformSocksColor);
           _selectedUniformMode = 'New combo';
         }
       } else if (e.uniformTopColor.isNotEmpty || e.uniformBottomColor.isNotEmpty || e.uniformSocksColor.isNotEmpty) {
-        _topColorIndex = _hexToColorIndex(e.uniformTopColor);
-        _bottomColorIndex = _hexToColorIndex(e.uniformBottomColor);
-        _socksColorIndex = _hexToColorIndex(e.uniformSocksColor);
+        _topColorIndex = hexToColorIndex(e.uniformTopColor);
+        _bottomColorIndex = hexToColorIndex(e.uniformBottomColor);
+        _socksColorIndex = hexToColorIndex(e.uniformSocksColor);
         _selectedUniformMode = 'New combo';
       }
     });
@@ -591,14 +529,6 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
-  String _colorToHex(UniformColor c) {
-    if (c.isNone) return '';
-    final r = c.color.red.toRadixString(16).padLeft(2, '0');
-    final g = c.color.green.toRadixString(16).padLeft(2, '0');
-    final b = c.color.blue.toRadixString(16).padLeft(2, '0');
-    return '#$r$g$b'.toUpperCase();
-  }
-
   String _formatSessionDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
@@ -629,9 +559,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     }
     return (
       templateId: '',
-      topColor: _colorToHex(_uniformColors[_topColorIndex]),
-      bottomColor: _colorToHex(_uniformColors[_bottomColorIndex]),
-      socksColor: _colorToHex(_uniformColors[_socksColorIndex]),
+      topColor: uniformColorToHex(kUniformColors[_topColorIndex]),
+      bottomColor: uniformColorToHex(kUniformColors[_bottomColorIndex]),
+      socksColor: uniformColorToHex(kUniformColors[_socksColorIndex]),
       chooseCombo: _showSaveTemplateForm && _templateNameController.text.trim().isNotEmpty,
       templateName: _showSaveTemplateForm ? _templateNameController.text.trim() : '',
     );
@@ -1963,7 +1893,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     required ValueChanged<int> onColorSelected,
   }) {
     final colors = AppColors.current;
-    final selectedColorName = _uniformColors[selectedIndex].name;
+    final selectedColorName = kUniformColors[selectedIndex].name;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1979,8 +1909,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: List.generate(_uniformColors.length, (index) {
-            final item = _uniformColors[index];
+          children: List.generate(kUniformColors.length, (index) {
+            final item = kUniformColors[index];
             final isSelected = selectedIndex == index;
 
             return GestureDetector(
@@ -2021,9 +1951,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
   Widget _buildUniformSectionHeader() {
     final colors = AppColors.current;
     
-    final topColor = _uniformColors[_topColorIndex].color;
-    final bottomColor = _uniformColors[_bottomColorIndex].color;
-    final socksColor = _uniformColors[_socksColorIndex].color;
+    final topColor = kUniformColors[_topColorIndex].color;
+    final bottomColor = kUniformColors[_bottomColorIndex].color;
+    final socksColor = kUniformColors[_socksColorIndex].color;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -19,6 +19,14 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeModeProvider);
+    ref.listen<HomeState>(homeProvider, (previous, next) {
+      if (next.errorMessage != null &&
+          next.errorMessage != previous?.errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.errorMessage!)),
+        );
+      }
+    });
     final homeState = ref.watch(homeProvider);
     final viewModels = homeState.viewModels;
     final isLoading = homeState.isLoading;
