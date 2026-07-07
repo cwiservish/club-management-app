@@ -16,8 +16,12 @@ import 'schedule_tag_pill.dart';
 class ScheduleEventCard extends ConsumerWidget {
   final ClubEvent event;
   final RsvpStatus? rsvpStatus;
+  /// If provided, overrides the default navigation to event details.
+  final VoidCallback? onTap;
+  final bool showRsvp;
+  final double horizontalPadding;
 
-  const ScheduleEventCard({super.key, required this.event, this.rsvpStatus});
+  const ScheduleEventCard({super.key, required this.event, this.rsvpStatus, this.onTap, this.showRsvp = true, this.horizontalPadding = 18});
 
   RsvpStatus _deriveStatus(ClubEvent e) {
     if (e.rsvpYes.contains('me')) return RsvpStatus.accepted;
@@ -89,10 +93,10 @@ class ScheduleEventCard extends ConsumerWidget {
     }
 
     return GestureDetector(
-      onTap: () => context.push('${AppRoutes.eventDetails(latestEvent.id)}?from=schedule', extra: latestEvent),
+      onTap: onTap ?? () => context.push('${AppRoutes.eventDetails(latestEvent.id)}?from=schedule', extra: latestEvent),
       child: Container(
         color: AppColors.current.surface,
-        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 18),
+        padding: EdgeInsets.symmetric(vertical: 9, horizontal: horizontalPadding),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: IntrinsicHeight(
@@ -243,17 +247,19 @@ class ScheduleEventCard extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Container(width: 1, color: AppColors.current.surface),
+                if (showRsvp) ...[
+                  Container(width: 1, color: AppColors.current.surface),
 
-                // RSVP column
-                GestureDetector(
-                  onTap: handleRsvpTap,
-                  child: _Col(
-                    width: 60,
-                    color: AppColors.current.card,
-                    child: _RsvpBox(status: status),
+                  // RSVP column
+                  GestureDetector(
+                    onTap: handleRsvpTap,
+                    child: _Col(
+                      width: 60,
+                      color: AppColors.current.card,
+                      child: _RsvpBox(status: status),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

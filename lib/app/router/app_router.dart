@@ -295,6 +295,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         editEvent: extra?['event'] as ClubEvent?,
                         origin: (extra?['from'] as String?) ?? 'home',
                         isDuplicate: (extra?['duplicate'] as bool?) ?? false,
+                        defaultSchedulingTypeKey: extra?['defaultSchedulingTypeKey'] as int?,
                       );
                     },
                   ),

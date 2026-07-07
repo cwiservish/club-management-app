@@ -1,3 +1,5 @@
+import '../../../core/models/club_event.dart';
+
 class LeagueDetailArgs {
   final int eventDbId;
   final int schedulingMode;
@@ -18,7 +20,7 @@ class LeagueDetailArgs {
 }
 
 class LeagueDetailResult {
-  final List<Map<String, dynamic>> childSessions;
+  final List<ClubEvent> childSessions;
 
   const LeagueDetailResult({required this.childSessions});
 }

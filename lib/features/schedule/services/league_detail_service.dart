@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../models/league_detail_models.dart';
+import '../models/schedule_response.dart';
 
 class LeagueDetailService {
   const LeagueDetailService(this._apiClient);
@@ -24,7 +25,10 @@ class LeagueDetailService {
 
     final data = response.data as Map<String, dynamic>;
     final rawSessions = data['child_sessions'] as List? ?? [];
-    final childSessions = rawSessions.whereType<Map<String, dynamic>>().toList();
+    final childSessions = rawSessions
+        .whereType<Map<String, dynamic>>()
+        .map((json) => ScheduleEvent.fromJson(json).toDomain())
+        .toList();
 
     return LeagueDetailResult(childSessions: childSessions);
   }

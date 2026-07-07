@@ -7,6 +7,7 @@ import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
 import '../models/league_detail_models.dart';
 import '../providers/league_detail_provider.dart';
+import '../widgets/event_list_tile.dart';
 import '../widgets/schedule_tag_pill.dart';
 
 class LeagueEventsListingPage extends ConsumerStatefulWidget {
@@ -47,6 +48,18 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     return '${months[dt.month]} ${dt.day}';
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    if (_args != null) {
+      setState(() => _refreshing = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.invalidate(leagueDetailProvider(_args!));
+        if (mounted) setState(() => _refreshing = false);
+      });
+    }
   }
 
   Future<void> _refresh() async {
@@ -122,7 +135,17 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
                 ),
               ),
             )
-          : const SizedBox.shrink(), // game rows will be added when child_sessions is populated
+          : Column(
+              children: result.childSessions.map((childEvent) => ScheduleEventCard(
+                event: childEvent,
+                showRsvp: false,
+                horizontalPadding: 0,
+                onTap: () => context.push(
+                  AppRoutes.eventEdit(childEvent.dbId?.toString() ?? childEvent.id),
+                  extra: {'event': childEvent, 'from': 'schedule', 'defaultSchedulingTypeKey': 1},
+                ),
+              )).toList(),
+            ),
     );
   }
 
