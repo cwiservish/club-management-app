@@ -15,6 +15,7 @@ import '../models/new_event_save_request_model.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
 import '../../../core/common_providers/event_refresh_provider.dart';
 import '../../../core/models/club_event.dart';
+import '../widgets/event_edit_danger_card.dart';
 
 // ─── Models ──────────────────────────────────────────────────────────────────
 
@@ -98,6 +99,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
 
   // Event type key from API (2=Practice default)
   int _eventTypeKey = 2;
+
+  // Cancel Event toggle — status 2 = cancelled, 1 = active
+  bool _isCancelled = false;
 
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
@@ -404,6 +408,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     final e = widget.editEvent!;
     setState(() {
       _hasPrefilledEdit = true;
+      _isCancelled = !widget.isDuplicate && e.status == 2;
 
       // Scheduling / event type
       _schedulingTypeKey = e.schedulingMode;
@@ -671,6 +676,58 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     );
   }
 
+  Future<void> _handleDeleteEvent() async {
+    final colors = AppColors.current;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.background,
+        title: Text('Delete Event', style: AppTextStyles.heading18.copyWith(color: colors.textPrimary)),
+        content: Text(
+          'Are you sure you want to permanently delete this event?',
+          style: AppTextStyles.body16.copyWith(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.error,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    final success = await ref.read(eventAddEditProvider.notifier).deleteEvent(
+      widget.editEvent?.dbId,
+      schedulingMode: widget.editEvent?.schedulingMode ?? 1,
+    );
+
+    if (!mounted) return;
+    if (success) {
+      ref.read(eventRefreshSignalProvider.notifier).signal();
+      final destination = widget.origin == 'schedule' ? AppRoutes.schedule : AppRoutes.home;
+      context.go(destination);
+    } else {
+      final errMsg = ref.read(eventAddEditProvider).saveError;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errMsg?.isNotEmpty == true ? errMsg! : 'Failed to delete event'),
+          backgroundColor: colors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   void _handleSaveResult(bool success) {
     if (!mounted) return;
     if (success) {
@@ -705,7 +762,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     // Edit-mode values ('' for create/duplicate mode)
     final editId = (!widget.isDuplicate) ? (widget.editEvent?.dbId?.toString() ?? '') : '';
     final existingSchedulingMode = (!widget.isDuplicate) ? (widget.editEvent?.existingSchedulingMode ?? '') : '';
-    final editStatus = (!widget.isDuplicate) ? (widget.editEvent?.status.toString() ?? '') : '';
+    final editStatus = (!widget.isDuplicate && widget.editEvent != null) ? (_isCancelled ? 2 : 1) : '';
 
     // ── Flow 1: Single Session ─────────────────────────────────────────────
     if (_schedulingTypeKey == 1) {
@@ -1029,6 +1086,16 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
                   ),
                   const SizedBox(height: 12),
                   _buildFormContainer(dropdowns),
+                  if (isEditMode && !isDuplicateMode) ...[
+                    const SizedBox(height: 16),
+                    EventEditDangerCard(
+                      isEdit: true,
+                      isCancelled: _isCancelled,
+                      onCancelledChanged: (v) => setState(() => _isCancelled = v),
+                      onDelete: _handleDeleteEvent,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ],
               ),
             ),

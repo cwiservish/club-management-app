@@ -61,88 +61,40 @@ https://www.figma.com/make/d1kr0jsnxg9hbQfsuMBHAw/Club-Management-App
 
 SIMPLE TASK PROMPT POST PROCESSING PROMPT
 
-{
-"success": true,
-"message": "",
-"data": {
-"player": {
-"player_id": 1179,
-"uuid": "a63a415b-f211-46d6-843b-41fb377cf21d",
-"name": "jarish jackson"
-},
-"team": {
-"team_id": 547,
-"uuid": "6848b97e-60de-4bfa-8c2a-786fe0c73219",
-"name": "New club Team 2"
-},
-"grid": [
-{
-"id": 19,
-"team_event_session_id": 19,
-"uuid": "0da4f1cc-dc04-49cd-ae41-daf63b636c9b",
-"team_event_session_uuid": "0da4f1cc-dc04-49cd-ae41-daf63b636c9b",
-"event_from": 0,
-"event_id": 0,
-"event_type": 1,
-"schedule_game_id": 0,
-"event_name": "",
-"name": "Test 22",
-"display_name": "Test 22",
-"event_date": "2026-07-06",
-"session_date": "2026-07-06",
-"date_label": "Jul 6",
-"start_time": "15:06:00",
-"end_time": null,
-"time_label": "3:06 PM",
-"location": "Gillis van Ledenberchstraat",
-"location_details": "",
-"team": "Test 22",
-"opponent_team_id": 4,
-"opponent_team_name": "Test 22",
-"team_event_session_attendee_id": 6,
-"attendance": 2,
-"attendance_notes": "test"
-}
-],
-"items": [
-{
-"id": 19,
-"team_event_session_id": 19,
-"uuid": "0da4f1cc-dc04-49cd-ae41-daf63b636c9b",
-"team_event_session_uuid": "0da4f1cc-dc04-49cd-ae41-daf63b636c9b",
-"event_from": 0,
-"event_id": 0,
-"event_type": 1,
-"schedule_game_id": 0,
-"event_name": "",
-"name": "Test 22",
-"display_name": "Test 22",
-"event_date": "2026-07-06",
-"session_date": "2026-07-06",
-"date_label": "Jul 6",
-"start_time": "15:06:00",
-"end_time": null,
-"time_label": "3:06 PM",
-"location": "Gillis van Ledenberchstraat",
-"location_details": "",
-"team": "Test 22",
-"opponent_team_id": 4,
-"opponent_team_name": "Test 22",
-"team_event_session_attendee_id": 6,
-"attendance": 2,
-"attendance_notes": "test"
-}
-],
-"total": 1,
-"pagination": {
-"total": 1,
-"per_page": 50,
-"current_page": 1,
-"last_page": 1,
-"is_last_page": true
-}
-}
-}
+
+Resolve the above issue as a senior engineer and strategic problem solver but do ask questions if needed.
+
+Before performing the task:
+
+1. First, deeply understand the problem.
+
+2. Immediately ask clarifying questions based on your understanding:
+    - Identify missing information, ambiguities, or unclear goals.
+
+3. Then explain what you think needs to be done.
+    - Break down your intended approach step-by-step.
+
+Do NOT jump to the final answer before completing the above.
+
+While analyzing:
+- Infer missing details intelligently and clearly ask questions.
+- If this involves code/systems, identify and consider all related files, dependencies, and flows — not just the given snippet.
+- Before writing any code, scan the existing codebase to understand the project structure, naming conventions, folder patterns, and how similar things are already done.
+
+After questions are answered (or if proceeding with assumptions), then:
+- Execute the solution step-by-step.
+- Provide a clean, practical, production-ready result.
+- Highlight risks, edge cases, and side effects.
+
+Response format:
+PHASE 1: Understanding
+PHASE 2: Questions
+PHASE 3: Plan / Approach
+--- WAIT FOR RESPONSE OR PROCEED WITH ASSUMPTIONS ---
+PHASE 4: Execution
+PHASE 5: Risks / Edge Cases
+
+Be precise, practical, and non-generic.
 
 
 

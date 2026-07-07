@@ -1,15 +1,18 @@
 class EventDeleteRequest {
   final String teamUuid;
   final dynamic id; // dynamic to safely handle both String and int IDs
+  final int schedulingMode;
 
   EventDeleteRequest({
     required this.teamUuid,
     required this.id,
+    required this.schedulingMode,
   });
 
   Map<String, dynamic> toJson() => {
     'team_uuid': teamUuid,
     'id': id,
+    'scheduling_mode': schedulingMode,
   };
 }
 

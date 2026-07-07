@@ -232,7 +232,7 @@ class EventEditNotifier extends Notifier<EventEditState> {
   }
 
   /// Deletes the event permanently.
-  Future<bool> deleteEvent(dynamic id) async {
+  Future<bool> deleteEvent(dynamic id, {int schedulingMode = 1}) async {
     final activeTeam = ref.read(selectedTeamProvider);
     if (activeTeam == null) {
       state = state.copyWith(saveError: 'No active team selected');
@@ -248,6 +248,7 @@ class EventEditNotifier extends Notifier<EventEditState> {
     final request = EventDeleteRequest(
       teamUuid: activeTeam.uuid,
       id: id,
+      schedulingMode: schedulingMode,
     );
 
     try {
