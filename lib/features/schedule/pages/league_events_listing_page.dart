@@ -148,6 +148,11 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
             SubHeader(
               title: event.schedulingModeLabel ?? 'League Schedule',
               leftLabel: 'Schedule',
+              rightText: 'Edit',
+              onRightTap: () => context.push(
+                AppRoutes.eventEdit(event.dbId?.toString() ?? ''),
+                extra: {'event': event, 'from': 'schedule'},
+              ),
             ),
             Expanded(
               child: RefreshIndicator(
