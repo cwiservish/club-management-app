@@ -1209,6 +1209,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
   }
 
   Widget _buildBottomButton() {
+    return const SizedBox.shrink();
+    // ignore: dead_code
     final colors = AppColors.current;
     final isSaving = ref.watch(eventAddEditProvider).isSavingNewEvent;
     String buttonText = 'Save';
