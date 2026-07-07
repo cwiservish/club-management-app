@@ -122,7 +122,8 @@ class FilesNotifier extends Notifier<FilesState> {
   Future<bool> deleteFile(int id) async {
     state = state.copyWith(errorMessage: null);
     try {
-      final response = await ref.read(filesServiceProvider).removeFile(id);
+      final teamUuid = ref.read(selectedTeamProvider)?.uuid ?? '';
+      final response = await ref.read(filesServiceProvider).removeFile(id, teamUuid);
       if (response.success) {
         state = state.copyWith(
           files: state.files.where((f) => f.id != id.toString()).toList(),

@@ -101,7 +101,7 @@ class PhotosService {
   }
 
   /// Deletes / removes a photo by ID.
-  Future<PhotoRemoveResponse> removePhoto(int id) async {
+  Future<PhotoRemoveResponse> removePhoto(int id, String teamUuid) async {
     const endpoint = ApiEndpoints.photoRemove;
 
     // Log the request parameters
@@ -109,10 +109,12 @@ class PhotosService {
     debugPrint('[API Request] Multipart POST ${ApiEndpoints.baseUrl}$endpoint');
     debugPrint('[Form Fields]:');
     debugPrint('  id: $id');
+    debugPrint('  team_uuid: $teamUuid');
     debugPrint('════════════════════════════════════════════════════════════════');
 
     final formData = FormData.fromMap({
       'id': id.toString(),
+      'team_uuid': teamUuid,
     });
 
     final response = await _apiClient.post(

@@ -122,7 +122,8 @@ class PhotosNotifier extends Notifier<PhotosState> {
   Future<bool> deletePhoto(int id) async {
     state = state.copyWith(errorMessage: null);
     try {
-      final response = await ref.read(photosServiceProvider).removePhoto(id);
+      final teamUuid = ref.read(selectedTeamProvider)?.uuid ?? '';
+      final response = await ref.read(photosServiceProvider).removePhoto(id, teamUuid);
       if (response.success) {
         state = state.copyWith(
           photos: state.photos.where((p) => p.id != id).toList(),

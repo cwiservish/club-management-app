@@ -122,7 +122,7 @@ class FilesService {
   }
 
   /// Removes / deletes a document by ID.
-  Future<FileRemoveResponse> removeFile(int id) async {
+  Future<FileRemoveResponse> removeFile(int id, String teamUuid) async {
     const endpoint = ApiEndpoints.filesRemove;
 
     // Log the request parameters
@@ -130,11 +130,13 @@ class FilesService {
     debugPrint('[API Request] Multipart POST ${ApiEndpoints.baseUrl}$endpoint');
     debugPrint('[Form Fields]:');
     debugPrint('  id: $id');
+    debugPrint('  team_uuid: $teamUuid');
     debugPrint('════════════════════════════════════════════════════════════════');
 
     try {
       final formData = FormData.fromMap({
         'id': id.toString(),
+        'team_uuid': teamUuid,
       });
 
       final response = await _apiClient.post(

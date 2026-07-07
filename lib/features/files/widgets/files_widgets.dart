@@ -39,18 +39,6 @@ class FilesUploadButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.current.primaryLight,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Icon(Icons.add, size: 26, color: AppColors.current.primary),
-              ),
-            ),
-            const SizedBox(height: 8),
             Text(
               title,
               style: AppTextStyles.body15.copyWith(
