@@ -105,7 +105,7 @@ class ScheduleEventCard extends ConsumerWidget {
               children: [
                 // Date column
                 _Col(
-                  width: 67,
+                  width: 74,
                   color: AppColors.current.card,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -254,7 +254,7 @@ class ScheduleEventCard extends ConsumerWidget {
                   GestureDetector(
                     onTap: handleRsvpTap,
                     child: _Col(
-                      width: 60,
+                      width: 74,
                       color: AppColors.current.card,
                       child: _RsvpBox(status: status),
                     ),

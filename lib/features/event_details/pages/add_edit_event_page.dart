@@ -1009,6 +1009,16 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       leftIcon: Icons.close,
       leftLabel: 'Close',
       onLeftTap: () => context.pop(),
+      rightWidget: dropdownState.isSavingNewEvent
+          ? const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          : null,
       rightText: 'Save',
       onRightTap: (dropdownState.isLoadingNewEventDropdowns || dropdownState.isSavingNewEvent) ? null : _onSave,
     );
