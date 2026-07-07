@@ -74,6 +74,9 @@ class AddEditEventPage extends ConsumerStatefulWidget {
   /// - save request sends event_from=1 and event_id=parentEvent.id
   final ClubEvent? parentEvent;
 
+  /// Optional page title override. Defaults to 'New Event' in create mode.
+  final String? title;
+
   const AddEditEventPage({
     super.key,
     this.editEvent,
@@ -82,6 +85,7 @@ class AddEditEventPage extends ConsumerStatefulWidget {
     this.defaultSchedulingTypeKey,
     this.defaultEventTypeKey,
     this.parentEvent,
+    this.title,
   });
 
   @override
@@ -944,7 +948,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     }
 
     final subHeader = SubHeader(
-      title: isDuplicateMode ? 'Duplicate Event' : isEditMode ? 'Edit Event' : 'New Event',
+      title: isDuplicateMode ? 'Duplicate Event' : isEditMode ? 'Edit Event' : (widget.title ?? 'New Event'),
       leftIcon: Icons.close,
       leftLabel: 'Close',
       onLeftTap: () => context.pop(),
@@ -1019,7 +1023,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
                   Padding(
                     padding: const EdgeInsets.only(left: 10),
                     child: Text(
-                      'New Event',
+                      isDuplicateMode ? 'Duplicate Event' : isEditMode ? 'Edit Event' : (widget.title ?? 'New Event'),
                       style: AppTextStyles.heading22.copyWith(color: colors.textPrimary, fontWeight: FontWeight.bold),
                     ),
                   ),

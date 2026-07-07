@@ -249,6 +249,7 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
                             'defaultSchedulingTypeKey': 1,
                             'defaultEventTypeKey': 1,
                             'parentEvent': event,
+                            'title': 'Add Game',
                           },
                         ),
                         child: Container(

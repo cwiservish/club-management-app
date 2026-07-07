@@ -112,6 +112,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             defaultSchedulingTypeKey: extra?['defaultSchedulingTypeKey'] as int?,
             defaultEventTypeKey: extra?['defaultEventTypeKey'] as int?,
             parentEvent: extra?['parentEvent'] as ClubEvent?,
+            title: extra?['title'] as String?,
           );
         },
       ),
