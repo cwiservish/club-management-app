@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/club_event.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
@@ -11,9 +13,9 @@ import '../widgets/event_list_tile.dart';
 import '../widgets/schedule_tag_pill.dart';
 
 class LeagueEventsListingPage extends ConsumerStatefulWidget {
-  final ClubEvent event;
+  final ClubEvent? event;
 
-  const LeagueEventsListingPage({super.key, required this.event});
+  const LeagueEventsListingPage({super.key, this.event});
 
   @override
   ConsumerState<LeagueEventsListingPage> createState() => _LeagueEventsListingPageState();
@@ -23,15 +25,17 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
 
   LeagueDetailArgs? _args;
   bool _refreshing = true;
+  ClubEvent? _event;
 
   @override
   void initState() {
     super.initState();
-    final dbId = widget.event.dbId;
+    if (widget.event != null) _event = widget.event;
+    final dbId = _event?.dbId;
     if (dbId != null) {
       _args = LeagueDetailArgs(
         eventDbId: dbId,
-        schedulingMode: widget.event.schedulingMode,
+        schedulingMode: _event!.schedulingMode,
       );
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.invalidate(leagueDetailProvider(_args!));
@@ -40,6 +44,14 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
     } else {
       _refreshing = false;
     }
+  }
+
+  @override
+  void didUpdateWidget(LeagueEventsListingPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only update _event when a real (non-null) event is provided.
+    // On theme-change rebuilds GoRouter passes null extra → keep existing _event.
+    if (widget.event != null) _event = widget.event;
   }
 
   String _fmtDate(DateTime dt) {
@@ -94,26 +106,16 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Failed to load games',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xFF4E5663),
-                ),
+                style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary),
               ),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: () => ref.invalidate(leagueDetailProvider(_args!)),
-                child: const Text(
+                child: Text(
                   'Retry',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF008CFF),
-                  ),
+                  style: AppTextStyles.body14.copyWith(color: AppColors.current.primary, fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -121,17 +123,12 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
         ),
       ),
       data: (result) => result.childSessions.isEmpty
-          ? const Center(
+          ? Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Text(
                   'No games yet',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xFF4E5663),
-                  ),
+                  style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary),
                 ),
               ),
             )
@@ -151,7 +148,8 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
 
   @override
   Widget build(BuildContext context) {
-    final event = widget.event;
+    final event = _event;
+    if (event == null) return const SizedBox.shrink();
     final startStr = event.startDate != null ? _fmtDate(event.startDate!) : '';
     final endStr   = event.endDate != null
         ? '${_fmtDate(event.endDate!)}, ${event.endDate!.year}'
@@ -162,8 +160,10 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
       if (event.location.isNotEmpty) event.location,
     ].join(' · ');
 
+    final colors = AppColors.current;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFFFF),
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -193,12 +193,7 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
                           Expanded(
                             child: Text(
                               event.title,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF20242A),
-                              ),
+                              style: AppTextStyles.heading20.copyWith(color: colors.textPrimary, fontWeight: FontWeight.w700),
                             ),
                           ),
                           if (event.schedulingModeLabel != null) ...[
@@ -217,21 +212,12 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Icon(
-                              Icons.calendar_today_outlined,
-                              size: 14,
-                              color: Color(0xFF4E5663),
-                            ),
+                            Icon(Icons.calendar_today_outlined, size: 14, color: colors.textSecondary),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 dateLine,
-                                style: const TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xFF4E5663),
-                                ),
+                                style: AppTextStyles.body14.copyWith(color: colors.textSecondary),
                               ),
                             ),
                           ],
@@ -239,27 +225,16 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
                       const SizedBox(height: 8),
 
                       // ── Description ──────────────────────────────────────────
-                      const Text(
+                      Text(
                         'The whole league schedule lives here. Each game also shows on your main schedule, and final scores post as games finish. (Official standings are kept by your league, not in the app.)',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xFF4E5663),
-                          height: 1.45,
-                        ),
+                        style: AppTextStyles.body13.copyWith(color: colors.textSecondary, height: 1.45),
                       ),
                       const SizedBox(height: 20),
 
                       // ── Section header ───────────────────────────────────────
                       Text(
                         '${(event.schedulingModeLabel ?? 'League').toUpperCase()} SCHEDULE',
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF4E5663),
-                        ),
+                        style: AppTextStyles.heading14.copyWith(color: colors.textSecondary),
                       ),
                       const SizedBox(height: 8),
 
@@ -288,14 +263,9 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
                             color: const Color(0xFF00E5FF),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Text(
+                          child: Text(
                             '+ Add a game',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
+                            style: AppTextStyles.heading16.copyWith(color: Colors.black),
                           ),
                         ),
                       ),

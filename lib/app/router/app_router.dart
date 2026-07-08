@@ -145,7 +145,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: AppRoutes.scheduleLeagueDetail,
                     builder: (context, state) => LeagueEventsListingPage(
-                      event: state.extra as ClubEvent,
+                      event: state.extra as ClubEvent?,
                     ),
                   ),
                 ],
