@@ -163,7 +163,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: AppRoutes.rosterDetail,
                     builder: (context, state) => RosterDetailPage(
-                      memberId: (state.extra as RosterMember).id,
+                      memberId: (state.extra as RosterMember?)?.id,
                     ),
                     routes: [
                       GoRoute(

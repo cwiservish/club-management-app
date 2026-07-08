@@ -18,12 +18,34 @@ import '../widgets/roster_detail_widgets.dart';
 // Roster Detail Page (Player Profile)
 // ══════════════════════════════════════════════════════════════════════════════
 
-class RosterDetailPage extends ConsumerWidget {
-  final String memberId;
-  const RosterDetailPage({super.key, required this.memberId});
+class RosterDetailPage extends ConsumerStatefulWidget {
+  final String? memberId;
+  const RosterDetailPage({super.key, this.memberId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RosterDetailPage> createState() => _RosterDetailPageState();
+}
+
+class _RosterDetailPageState extends ConsumerState<RosterDetailPage> {
+  String? _memberId;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.memberId?.isNotEmpty == true) _memberId = widget.memberId;
+  }
+
+  @override
+  void didUpdateWidget(RosterDetailPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.memberId?.isNotEmpty == true) _memberId = widget.memberId;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final memberId = _memberId;
+    if (memberId == null) return const SizedBox.shrink();
+
     ref.watch(themeModeProvider);
 
     // Fetch the local fallback roster member immediately to populate name/initials
@@ -100,7 +122,7 @@ class RosterDetailPage extends ConsumerWidget {
               ),
             Expanded(
               child: profileState.errorMessage != null && profileState.profile == null
-                  ? _buildErrorView(context, ref, profileState.errorMessage!)
+                  ? _buildErrorView(context, profileState.errorMessage!)
                   : RefreshIndicator(
                       color: AppColors.current.primary,
                       onRefresh: () => ref.read(playerProfileProvider(memberId).notifier).refresh(),
@@ -140,7 +162,7 @@ class RosterDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorView(BuildContext context, WidgetRef ref, String error) {
+  Widget _buildErrorView(BuildContext context, String error) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -179,7 +201,7 @@ class RosterDetailPage extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onPressed: () => ref.read(playerProfileProvider(memberId).notifier).refresh(),
+              onPressed: () => ref.read(playerProfileProvider(_memberId!).notifier).refresh(),
               child: const Text('Try Again'),
             ),
           ],
@@ -215,7 +237,7 @@ class RosterDetailPage extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => RosterAddFamilySheet(memberId: memberId),
+      builder: (_) => RosterAddFamilySheet(memberId: _memberId!),
     );
   }
 }
