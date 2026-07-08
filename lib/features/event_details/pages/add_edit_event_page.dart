@@ -143,7 +143,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
   // Custom Time Picker overlay
   final GlobalKey _startTimeFieldKey = GlobalKey();
   OverlayEntry? _timePickerOverlay;
-  int _homeAwayKey = 1; // 1=Home, 2=Away, 3=Neutral (from API)
+  int _homeAwayKey = 0; // 0=not set, 1=Home, 2=Away, 3=Neutral (from API)
   int _arrivalTimeKey = 0; // 0=No set arrival time (from API)
 
   // Tournament/League specific state
@@ -413,7 +413,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       // Scheduling / event type
       _schedulingTypeKey = e.schedulingMode;
       _eventTypeKey = e.eventTypeKey;
-      _homeAwayKey = e.homeAwayKey > 0 ? e.homeAwayKey : 1;
+      _homeAwayKey = e.homeAwayKey > 0
+          ? e.homeAwayKey
+          : (dropdowns.homeAwayOptions.isNotEmpty ? 1 : 0);
       _arrivalTimeKey = e.arrivalEarly;
 
       // Date & time (dateTime already parsed by home/schedule service)
@@ -1004,6 +1006,16 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       });
     }
 
+    // Create mode: default homeAwayKey to 1 (Home) once options load, but only if options exist
+    if (!isEditMode && !isDuplicateMode && dropdownState.newEventDropdowns != null && _homeAwayKey == 0) {
+      final opts = dropdownState.newEventDropdowns!.homeAwayOptions;
+      if (opts.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _homeAwayKey == 0) setState(() => _homeAwayKey = 1);
+        });
+      }
+    }
+
     final subHeader = SubHeader(
       title: isDuplicateMode ? 'Duplicate Event' : isEditMode ? 'Edit Event' : (widget.title ?? 'New Event'),
       leftIcon: Icons.close,
@@ -1409,25 +1421,27 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
         ),
         if (_eventTypeKey == 1 || _eventTypeKey == 3) ...[
           const SizedBox(height: 20),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Home or away',
-                style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  for (int i = 0; i < dropdowns.homeAwayOptions.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 12),
-                    _buildHomeOrAwayButton(dropdowns.homeAwayOptions[i]),
+          if (dropdowns.homeAwayOptions.isNotEmpty) ...[
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Home or away',
+                  style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    for (int i = 0; i < dropdowns.homeAwayOptions.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 12),
+                      _buildHomeOrAwayButton(dropdowns.homeAwayOptions[i]),
+                    ],
                   ],
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1676,26 +1690,28 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
           ),
           const SizedBox(height: 20),
 
-          // Home or Away Selector
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Home or away',
-                style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  for (int i = 0; i < dropdowns.homeAwayOptions.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 12),
-                    _buildHomeOrAwayButton(dropdowns.homeAwayOptions[i]),
+          if (dropdowns.homeAwayOptions.isNotEmpty) ...[
+            // Home or Away Selector
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Home or away',
+                  style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    for (int i = 0; i < dropdowns.homeAwayOptions.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 12),
+                      _buildHomeOrAwayButton(dropdowns.homeAwayOptions[i]),
+                    ],
                   ],
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
 
           // Arrive how early
           Column(
