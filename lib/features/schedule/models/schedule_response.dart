@@ -504,6 +504,7 @@ class ScheduleEvent {
       rsvpTargets: domainTargets,
       status: status,
       scheduleGameId: scheduleGameId,
+      eventName: eventName.isNotEmpty ? eventName : null,
     );
   }
 }

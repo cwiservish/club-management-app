@@ -54,6 +54,7 @@ class ClubEvent {
   final bool requiresPlayerSelection;
   final List<ClubEventRsvpTarget> rsvpTargets;
   final int status;
+  final String? eventName;
 
   const ClubEvent({
     required this.id,
@@ -104,6 +105,7 @@ class ClubEvent {
     this.requiresPlayerSelection = false,
     this.rsvpTargets = const [],
     this.status = 1,
+    this.eventName,
   });
 
   ClubEvent copyWith({
@@ -155,6 +157,7 @@ class ClubEvent {
     bool? requiresPlayerSelection,
     List<ClubEventRsvpTarget>? rsvpTargets,
     int? status,
+    String? eventName,
   }) {
     return ClubEvent(
       id: id ?? this.id,
@@ -205,6 +208,7 @@ class ClubEvent {
       requiresPlayerSelection: requiresPlayerSelection ?? this.requiresPlayerSelection,
       rsvpTargets: rsvpTargets ?? this.rsvpTargets,
       status: status ?? this.status,
+      eventName: eventName ?? this.eventName,
     );
   }
 

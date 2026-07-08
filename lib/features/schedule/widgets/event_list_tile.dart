@@ -218,7 +218,8 @@ class ScheduleEventCard extends ConsumerWidget {
                               ),
                               const SizedBox(width: 8),
                             ],
-                            const ScheduleTagPill(text: 'Summer Rec League'),
+                            if (latestEvent.eventName?.isNotEmpty == true)
+                              ScheduleTagPill(text: latestEvent.eventName!),
                           ],
                         ),
                         const SizedBox(height: 2),

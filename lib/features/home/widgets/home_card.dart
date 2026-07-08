@@ -8,6 +8,7 @@ import '../providers/home_provider.dart';
 import 'rsvp_player_selection_sheet.dart';
 import 'rsvp_row.dart';
 import 'map_section.dart';
+import '../../schedule/widgets/schedule_tag_pill.dart';
 
 // ─── Home Card ────────────────────────────────────────────────────────────────
 
@@ -109,10 +110,34 @@ class HomeCard extends ConsumerWidget {
                             style: AppTextStyles.heading18.copyWith(color: AppColors.current.textPrimary, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 10), // Spacing between time and event name
                         Text(viewModel.type,
-                            style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary)),
+                            style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary, fontWeight: FontWeight.bold)),
+                        if (viewModel.homeAwayLabel != null || viewModel.eventName != null) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              if (viewModel.homeAwayLabel != null)
+                                Text(viewModel.homeAwayLabel!,
+                                    style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary)),
+                              if (viewModel.homeAwayLabel != null && viewModel.eventName != null)
+                                const SizedBox(width: 8),
+                              if (viewModel.eventName != null)
+                                ScheduleTagPill(text: viewModel.eventName!),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 2),
-                        Text(viewModel.location,
-                            style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary)),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on_outlined, size: 13, color: AppColors.current.textSecondary),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(viewModel.location,
+                                  style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis),
+                            ),
+                          ],
+                        ),
 
                         const SizedBox(height: 14),
 

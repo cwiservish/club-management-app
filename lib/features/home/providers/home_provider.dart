@@ -101,6 +101,8 @@ class HomeState {
         requiresPlayerSelection: event.requiresPlayerSelection,
         rsvpTargets:  event.rsvpTargets,
         scheduleGameId: event.scheduleGameId,
+        homeAwayLabel: event.homeAwayLabel?.isNotEmpty == true ? event.homeAwayLabel : null,
+        eventName: event.eventName?.isNotEmpty == true ? event.eventName : null,
       );
     }).toList();
   }
