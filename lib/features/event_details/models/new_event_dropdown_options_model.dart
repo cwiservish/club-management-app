@@ -159,8 +159,8 @@ class NewEventDropdownOptions {
         .map((e) => NewEventType.fromJson(e))
         .toList();
 
-    // home_away_options
-    final homeAwayOptions = (json['home_away_options'] as List? ?? [])
+    // home_away_options — backend may return "" instead of [] when empty
+    final homeAwayOptions = (json['home_away_options'] is List ? json['home_away_options'] as List : [])
         .whereType<Map<String, dynamic>>()
         .map((e) => NewEventHomeAwayOption.fromJson(e))
         .toList();
