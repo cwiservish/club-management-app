@@ -1187,7 +1187,13 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     final isSelected = _schedulingTypeKey == key;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _schedulingTypeKey = key),
+        onTap: () => setState(() {
+          _schedulingTypeKey = key;
+          // Single Session → default to Practice if no event type set
+          if (key == 1 && _eventTypeKey == 0) _eventTypeKey = 2;
+          // Tournament / League → reset event type to 0 (not applicable)
+          if (key == 2 || key == 3) _eventTypeKey = 0;
+        }),
         child: Container(
           height: 44,
           alignment: Alignment.center,
