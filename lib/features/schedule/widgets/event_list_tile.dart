@@ -99,7 +99,9 @@ class ScheduleEventCard extends ConsumerWidget {
         padding: EdgeInsets.symmetric(vertical: 9, horizontal: horizontalPadding),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: IntrinsicHeight(
+          child: Column(
+            children: [
+            IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -264,6 +266,23 @@ class ScheduleEventCard extends ConsumerWidget {
               ],
             ),
           ),
+          if (latestEvent.status == 2)
+            Container(
+              width: double.infinity,
+              color: AppColors.current.error,
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Text(
+                'Cancelled',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body13.copyWith(
+                  height: 0,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
         ),
       ),
     );
