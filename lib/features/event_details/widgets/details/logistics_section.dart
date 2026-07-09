@@ -79,8 +79,13 @@ class LogisticsSection extends StatelessWidget {
             _LogisticsRow(
               icon: Icons.checkroom_outlined,
               label: 'Uniform',
-              value: '${uniformColorName(event.uniformTopColor)} / ${uniformColorName(event.uniformBottomColor)} / ${uniformColorName(event.uniformSocksColor)}',
+              value: '',
               borderBottom: event.isGame,
+              valueWidget: _UniformColorRow(
+                topHex: event.uniformTopColor,
+                bottomHex: event.uniformBottomColor,
+                socksHex: event.uniformSocksColor,
+              ),
             ),
           if (event.isGame) ...[
             _LogisticsRow(
@@ -117,6 +122,7 @@ class _LogisticsRow extends StatelessWidget {
   final String? subtitle;
   final bool showArrow;
   final bool borderBottom;
+  final Widget? valueWidget;
 
   const _LogisticsRow({
     required this.icon,
@@ -127,6 +133,7 @@ class _LogisticsRow extends StatelessWidget {
     this.subtitle,
     this.showArrow = false,
     this.borderBottom = true,
+    this.valueWidget,
   });
 
   @override
@@ -163,7 +170,7 @@ class _LogisticsRow extends StatelessWidget {
                   style: AppTextStyles.label12.copyWith(color: colors.textSecondary),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                valueWidget ?? Text(
                   value,
                   style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
                 ),
@@ -183,5 +190,104 @@ class _LogisticsRow extends StatelessWidget {
       ),
     );
   }
+}
+
+class _UniformColorRow extends StatelessWidget {
+  final String topHex;
+  final String bottomHex;
+  final String socksHex;
+
+  const _UniformColorRow({
+    required this.topHex,
+    required this.bottomHex,
+    required this.socksHex,
+  });
+
+  Widget _colorChip(String hex, BuildContext context) {
+    final color = hexToColor(hex);
+    final colors = AppColors.current;
+
+    final Widget dot = color == null
+        ? SizedBox(
+            width: 14,
+            height: 14,
+            child: CustomPaint(
+              painter: _SlashCirclePainter(borderColor: colors.border.withValues(alpha: 0.5)),
+            ),
+          )
+        : Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: colors.border.withValues(alpha: 0.5), width: 1),
+            ),
+          );
+
+    final name = color == null ? 'None' : uniformColorName(hex);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        dot,
+        const SizedBox(width: 4),
+        Text(name, style: AppTextStyles.heading15.copyWith(color: colors.textPrimary)),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hexes = [topHex, bottomHex, socksHex];
+    final chips = hexes.map((h) => _colorChip(h, context)).toList();
+
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (int i = 0; i < chips.length; i++) ...[
+          chips[i],
+          if (i < chips.length - 1)
+            Text(' / ', style: AppTextStyles.heading15.copyWith(color: AppColors.current.textSecondary)),
+        ],
+      ],
+    );
+  }
+}
+
+class _SlashCirclePainter extends CustomPainter {
+  final Color borderColor;
+  const _SlashCirclePainter({required this.borderColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final circlePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final slashPaint = Paint()
+      ..color = const Color(0xFFE53935)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    canvas.drawCircle(center, radius, circlePaint);
+    canvas.drawCircle(center, radius, borderPaint);
+    canvas.drawLine(
+      Offset(size.width * 0.25, size.height * 0.75),
+      Offset(size.width * 0.75, size.height * 0.25),
+      slashPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
