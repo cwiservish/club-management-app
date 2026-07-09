@@ -26,6 +26,7 @@ class EventDetailsTabPage extends ConsumerWidget {
     final colors = AppColors.current;
     final activeTeam = ref.watch(selectedTeamProvider);
     final isCoach = activeTeam?.isCoach ?? false;
+    final isCancelled = (state.rawEvent?.status ?? initialEvent?.status ?? 1) == 2;
 
     // Only block the UI on the very first load when there is no data to show yet
     if (state.isLoading && state.rawEvent == null) {
@@ -105,12 +106,13 @@ class EventDetailsTabPage extends ConsumerWidget {
               goingCount: state.goingCount,
               maybeCount: state.maybeCount,
               noCount: state.noCount,
+              enabled: !isCancelled,
             ),
             const SizedBox(height: 16),
             LogisticsSection(
               event: state.event,
             ),
-            if (isCoach) ...[
+            if (isCoach && !isCancelled) ...[
               const SizedBox(height: 20),
               // ── Duplicate Event button ─────────────────────────────────────
               SizedBox(

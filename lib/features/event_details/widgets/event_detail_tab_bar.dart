@@ -5,6 +5,7 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/common_providers/theme_provider.dart';
+import '../../../core/models/club_event.dart';
 import '../models/event_detail_model.dart';
 
 // ─── Tab Bar ──────────────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@ class EventDetailTabBar extends ConsumerWidget {
   final EventDetailTab activeTab;
   final String from;
   final VoidCallback? onEditTap;
+  final ClubEvent? initialEvent;
 
   const EventDetailTabBar({
     super.key,
@@ -21,13 +23,19 @@ class EventDetailTabBar extends ConsumerWidget {
     required this.activeTab,
     this.from = 'home',
     this.onEditTap,
+    this.initialEvent,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeModeProvider);
     final colors = AppColors.current;
-    final tabExtra = onEditTap != null ? {'onEditTap': onEditTap} : null;
+    final tabExtra = (onEditTap != null || initialEvent != null)
+        ? {
+            if (initialEvent != null) 'event': initialEvent,
+            if (onEditTap != null) 'onEditTap': onEditTap,
+          }
+        : null;
 
     return Container(
       color: colors.background,

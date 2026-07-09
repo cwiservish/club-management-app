@@ -18,6 +18,7 @@ class EventAvailabilityTabPage extends ConsumerWidget {
     final state    = ref.watch(eventDetailProvider(EventDetailArgs(eventId, initialEvent)));
     final notifier = ref.read(eventDetailProvider(EventDetailArgs(eventId, initialEvent)).notifier);
     final colors   = AppColors.current;
+    final isCancelled = (state.rawEvent?.status ?? initialEvent?.status ?? 1) == 2;
 
     void showNote(EventPlayerModel p) {
       final canEditNote = p.canUpdate;
@@ -132,27 +133,27 @@ class EventAvailabilityTabPage extends ConsumerWidget {
              PlayerGroup(
               title:       'GOING',
               players:     state.goingPlayers,
-              onNoteTap:   showNote,
-              onStatusTap: showStatusPicker,
+              onNoteTap:   isCancelled ? null : showNote,
+              onStatusTap: isCancelled ? null : showStatusPicker,
             ),
             PlayerGroup(
               title:       'MAYBE',
               players:     state.maybePlayers,
-              onNoteTap:   showNote,
-              onStatusTap: showStatusPicker,
+              onNoteTap:   isCancelled ? null : showNote,
+              onStatusTap: isCancelled ? null : showStatusPicker,
             ),
             PlayerGroup(
               title:       'NOT GOING',
               players:     state.noPlayers,
-              onNoteTap:   showNote,
-              onStatusTap: showStatusPicker,
+              onNoteTap:   isCancelled ? null : showNote,
+              onStatusTap: isCancelled ? null : showStatusPicker,
             ),
             PlayerGroup(
               title:          "HAVEN'T REPLIED",
               players:        state.unrepliedPlayers,
               showMessageAll: false,
-              onNoteTap:      showNote,
-              onStatusTap:    showStatusPicker,
+              onNoteTap:      isCancelled ? null : showNote,
+              onStatusTap:    isCancelled ? null : showStatusPicker,
             ),
             const SizedBox(height: 40),
           ],

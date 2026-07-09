@@ -8,6 +8,7 @@ class RsvpSection extends StatelessWidget {
   final int goingCount;
   final int maybeCount;
   final int noCount;
+  final bool enabled;
 
   const RsvpSection({
     super.key,
@@ -16,6 +17,7 @@ class RsvpSection extends StatelessWidget {
     this.goingCount = 0,
     this.maybeCount = 0,
     this.noCount = 0,
+    this.enabled = true,
   });
 
   @override
@@ -54,6 +56,7 @@ class RsvpSection extends StatelessWidget {
                     selected: selected,
                     activeColor: AppColors.current.rsvpGoing,
                     onTap: onSelect,
+                    enabled: enabled,
                   ),
                   VerticalDivider(width: 1, color: colors.border.withValues(alpha: 0.5)),
                   _RsvpButton(
@@ -63,6 +66,7 @@ class RsvpSection extends StatelessWidget {
                     selected: selected,
                     activeColor: AppColors.current.rsvpMaybe,
                     onTap: onSelect,
+                    enabled: enabled,
                   ),
                   VerticalDivider(width: 1, color: colors.border.withValues(alpha: 0.5)),
                   _RsvpButton(
@@ -72,6 +76,7 @@ class RsvpSection extends StatelessWidget {
                     selected: selected,
                     activeColor: AppColors.current.rsvpNo,
                     onTap: onSelect,
+                    enabled: enabled,
                   ),
                 ],
               ),
@@ -90,6 +95,7 @@ class _RsvpButton extends StatelessWidget {
   final String selected;
   final Color activeColor;
   final ValueChanged<String> onTap;
+  final bool enabled;
 
   const _RsvpButton({
     required this.label,
@@ -98,6 +104,7 @@ class _RsvpButton extends StatelessWidget {
     required this.selected,
     required this.activeColor,
     required this.onTap,
+    this.enabled = true,
   });
 
   @override
@@ -107,7 +114,7 @@ class _RsvpButton extends StatelessWidget {
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => onTap(value),
+        onTap: enabled ? () => onTap(value) : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           alignment: Alignment.center,

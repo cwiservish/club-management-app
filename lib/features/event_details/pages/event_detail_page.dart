@@ -69,7 +69,7 @@ class _EventDetailPageState extends ConsumerState<EventDetailPage> {
                   ? (widget.onEditTap ?? () => context.push(AppRoutes.eventEdit(widget.eventId), extra: {'event': widget.initialEvent, 'from': widget.from}))
                   : null,
             ),
-            EventDetailTabBar(eventId: widget.eventId, activeTab: widget.activeTab, from: widget.from, onEditTap: widget.onEditTap),
+            EventDetailTabBar(eventId: widget.eventId, activeTab: widget.activeTab, from: widget.from, onEditTap: widget.onEditTap, initialEvent: widget.initialEvent),
             Expanded(
               child: switch (widget.activeTab) {
                 EventDetailTab.details      => EventDetailsTabPage(eventId: widget.eventId, initialEvent: widget.initialEvent),

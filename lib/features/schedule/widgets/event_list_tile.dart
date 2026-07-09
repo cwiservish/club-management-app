@@ -255,7 +255,7 @@ class ScheduleEventCard extends ConsumerWidget {
 
                   // RSVP column
                   GestureDetector(
-                    onTap: handleRsvpTap,
+                    onTap: latestEvent.status == 2 ? () {} : handleRsvpTap,
                     child: _Col(
                       width: 74,
                       color: AppColors.current.card,
