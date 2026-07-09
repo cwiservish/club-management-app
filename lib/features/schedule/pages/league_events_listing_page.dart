@@ -145,8 +145,6 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
                       extra: {
                         'event': childEvent,
                         'from': 'schedule',
-                        'defaultSchedulingTypeKey': 1,
-                        'defaultEventTypeKey': 1,
                         'parentEvent': _event,
                         'title': 'Edit Game',
                       },

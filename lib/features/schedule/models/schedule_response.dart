@@ -164,6 +164,8 @@ class ScheduleEvent {
   final AttendanceCounts? attendanceCounts;
   final MyRsvp? myRsvp;
   final List<RsvpTarget> rsvpTargets;
+  final int eventFrom;
+  final int eventId;
 
   const ScheduleEvent({
     required this.id,
@@ -220,6 +222,8 @@ class ScheduleEvent {
     this.attendanceCounts,
     this.myRsvp,
     required this.rsvpTargets,
+    this.eventFrom = 0,
+    this.eventId = 0,
   });
 
   factory ScheduleEvent.fromJson(Map<String, dynamic>? json) {
@@ -345,6 +349,8 @@ class ScheduleEvent {
           : null,
       myRsvp: json['my_rsvp'] != null ? MyRsvp.fromJson(json['my_rsvp'] as Map<String, dynamic>?) : null,
       rsvpTargets: parsedTargets,
+      eventFrom: _parseInt(json['event_from']),
+      eventId: _parseInt(json['event_id']),
     );
   }
 
@@ -505,6 +511,8 @@ class ScheduleEvent {
       status: status,
       scheduleGameId: scheduleGameId,
       eventName: eventName.isNotEmpty ? eventName : null,
+      eventFrom: eventFrom,
+      eventId: eventId,
     );
   }
 }

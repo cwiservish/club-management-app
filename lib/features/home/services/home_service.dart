@@ -239,6 +239,8 @@ class HomeService {
       final latitude = json['latitude']?.toString() ?? '';
       final longitude = json['longitude']?.toString() ?? '';
       final scheduleGameId = _parseInt(json['schedule_game_id']) > 0 ? _parseInt(json['schedule_game_id']) : null;
+      final eventFrom = _parseInt(json['event_from']);
+      final eventId = _parseInt(json['event_id']);
       final status = _parseInt(json['status'] ?? 1);
       final homeAwayKey = _parseInt(json['home_away']);
       final isHome = homeAwayKey == 1;
@@ -299,6 +301,8 @@ class HomeService {
         requiresPlayerSelection: requiresPlayerSelection,
         rsvpTargets: rsvpTargets,
         status: status,
+        eventFrom: eventFrom,
+        eventId: eventId,
         schedulingMode: schedulingMode,
         schedulingModeLabel: schedulingModeLabel,
         eventDuration: eventDuration,

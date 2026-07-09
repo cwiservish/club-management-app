@@ -392,6 +392,14 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
 
   bool _hasPrefilledEdit = false;
 
+  /// True when editing an existing child game (event_from 1 or 2 = linked to a parent league/tournament).
+  /// Used to auto-hide scheduling type and event type sections — values are derived from the event itself.
+  bool get _isChildGameEdit {
+    if (widget.isDuplicate || widget.editEvent == null) return false;
+    final ef = widget.editEvent!.eventFrom;
+    return ef == 1 || ef == 2;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -826,8 +834,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
         status: editStatus,
         schedulingMode: _schedulingTypeKey,
         eventType: _eventTypeKey,
-        eventFrom: widget.parentEvent != null ? 2 : 0,
-        eventId: widget.parentEvent?.dbId ?? 0,
+        eventFrom: widget.parentEvent != null ? 2 : (widget.editEvent?.eventFrom ?? 0),
+        eventId: widget.parentEvent?.dbId ?? (widget.editEvent?.eventId ?? 0),
+        scheduleGameId: widget.editEvent?.scheduleGameId ?? 0,
         title: title,
         sessionDate: _formatSessionDate(_selectedDate!),
         startTime: _formatStartTime24(_startTime),
@@ -890,8 +899,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
           status: editStatus,
           schedulingMode: _schedulingTypeKey,
           eventType: 0,
-          eventFrom: widget.parentEvent != null ? 2 : 0,
+          eventFrom: widget.parentEvent != null ? 2 : (_isChildGameEdit ? 2 : 0),
           eventId: widget.parentEvent?.dbId ?? 0,
+          scheduleGameId: widget.editEvent?.scheduleGameId ?? 0,
           title: title,
           sessionDate: '',
           startTime: '',
@@ -963,8 +973,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
         status: editStatus,
         schedulingMode: 1,
         eventType: 1,
-        eventFrom: widget.parentEvent != null ? 2 : 0,
-        eventId: widget.parentEvent?.dbId ?? 0,
+        eventFrom: widget.parentEvent != null ? 2 : (widget.editEvent?.eventFrom ?? 0),
+        eventId: widget.parentEvent?.dbId ?? (widget.editEvent?.eventId ?? 0),
+        scheduleGameId: widget.editEvent?.scheduleGameId ?? 0,
         title: '',
         sessionDate: _formatSessionDate(_selectedDate!),
         startTime: _formatStartTime24(_startTime),
@@ -1145,8 +1156,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Category Header — hidden when scheduling type is pre-set ──
-          if (widget.defaultSchedulingTypeKey == null) ...[
+          // ── Category Header — hidden when scheduling type is pre-set or editing a child game ──
+          if (widget.defaultSchedulingTypeKey == null && !_isChildGameEdit) ...[
             Text(
               'What are you adding?',
               style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
@@ -1310,8 +1321,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Event Type — hidden when event type is pre-set
-        if (widget.defaultEventTypeKey == null) ...[
+        // Event Type — hidden when event type is pre-set or editing a child game
+        if (widget.defaultEventTypeKey == null && !_isChildGameEdit) ...[
           Text(
             'Event type',
             style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),

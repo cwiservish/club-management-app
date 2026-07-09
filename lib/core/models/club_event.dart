@@ -55,6 +55,8 @@ class ClubEvent {
   final List<ClubEventRsvpTarget> rsvpTargets;
   final int status;
   final String? eventName;
+  final int eventFrom;
+  final int eventId;
 
   const ClubEvent({
     required this.id,
@@ -106,6 +108,8 @@ class ClubEvent {
     this.rsvpTargets = const [],
     this.status = 1,
     this.eventName,
+    this.eventFrom = 0,
+    this.eventId = 0,
   });
 
   ClubEvent copyWith({
@@ -158,6 +162,8 @@ class ClubEvent {
     List<ClubEventRsvpTarget>? rsvpTargets,
     int? status,
     String? eventName,
+    int? eventFrom,
+    int? eventId,
   }) {
     return ClubEvent(
       id: id ?? this.id,
@@ -209,6 +215,8 @@ class ClubEvent {
       rsvpTargets: rsvpTargets ?? this.rsvpTargets,
       status: status ?? this.status,
       eventName: eventName ?? this.eventName,
+      eventFrom: eventFrom ?? this.eventFrom,
+      eventId: eventId ?? this.eventId,
     );
   }
 
