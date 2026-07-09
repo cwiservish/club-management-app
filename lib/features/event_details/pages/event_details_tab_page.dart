@@ -112,7 +112,7 @@ class EventDetailsTabPage extends ConsumerWidget {
             LogisticsSection(
               event: state.event,
             ),
-            if (isCoach && !isCancelled) ...[
+            if (isCoach) ...[
               const SizedBox(height: 20),
               // ── Duplicate Event button ─────────────────────────────────────
               SizedBox(

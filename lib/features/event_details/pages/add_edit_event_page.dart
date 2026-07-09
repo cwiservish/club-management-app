@@ -400,6 +400,14 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     return ef == 1 || ef == 2;
   }
 
+  /// True when duplicating a child game (event_from 1 or 2).
+  /// Same hiding behaviour as _isChildGameEdit and the Add Game button.
+  bool get _isChildDuplicate {
+    if (!widget.isDuplicate || widget.editEvent == null) return false;
+    final ef = widget.editEvent!.eventFrom;
+    return ef == 1 || ef == 2;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -772,7 +780,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     // Edit-mode values ('' for create/duplicate mode)
     final editId = (!widget.isDuplicate) ? (widget.editEvent?.dbId?.toString() ?? '') : '';
     final existingSchedulingMode = (!widget.isDuplicate) ? (widget.editEvent?.existingSchedulingMode ?? '') : '';
-    final editStatus = (!widget.isDuplicate && widget.editEvent != null) ? (_isCancelled ? 2 : 1) : '';
+    final editStatus = widget.isDuplicate ? 1 : (widget.editEvent != null ? (_isCancelled ? 2 : 1) : '');
 
     // ── Flow 1: Single Session ─────────────────────────────────────────────
     if (_schedulingTypeKey == 1) {
@@ -1157,7 +1165,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Category Header — hidden when scheduling type is pre-set or editing a child game ──
-          if (widget.defaultSchedulingTypeKey == null && !_isChildGameEdit) ...[
+          if (widget.defaultSchedulingTypeKey == null && !_isChildGameEdit && !_isChildDuplicate) ...[
             Text(
               'What are you adding?',
               style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
@@ -1322,7 +1330,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Event Type — hidden when event type is pre-set or editing a child game
-        if (widget.defaultEventTypeKey == null && !_isChildGameEdit) ...[
+        if (widget.defaultEventTypeKey == null && !_isChildGameEdit && !_isChildDuplicate) ...[
           Text(
             'Event type',
             style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
