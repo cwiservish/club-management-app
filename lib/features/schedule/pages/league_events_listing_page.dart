@@ -136,6 +136,23 @@ class _LeagueEventsListingPageState extends ConsumerState<LeagueEventsListingPag
               children: result.childSessions.map((childEvent) => ScheduleEventCard(
                 event: childEvent,
                 horizontalPadding: 0,
+                onTap: () => context.push(
+                  '${AppRoutes.eventDetails(childEvent.id)}?from=schedule',
+                  extra: {
+                    'event': childEvent,
+                    'onEditTap': () => context.push(
+                      AppRoutes.eventEdit(childEvent.id),
+                      extra: {
+                        'event': childEvent,
+                        'from': 'schedule',
+                        'defaultSchedulingTypeKey': 1,
+                        'defaultEventTypeKey': 1,
+                        'parentEvent': _event,
+                        'title': 'Edit Game',
+                      },
+                    ),
+                  },
+                ),
               )).toList(),
             ),
     );

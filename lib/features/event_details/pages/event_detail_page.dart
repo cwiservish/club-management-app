@@ -22,6 +22,7 @@ class EventDetailPage extends ConsumerStatefulWidget {
   final EventDetailTab activeTab;
   final String from;
   final ClubEvent? initialEvent;
+  final VoidCallback? onEditTap;
 
   const EventDetailPage({
     super.key,
@@ -29,6 +30,7 @@ class EventDetailPage extends ConsumerStatefulWidget {
     required this.activeTab,
     this.from = 'home',
     this.initialEvent,
+    this.onEditTap,
   });
 
   @override
@@ -63,9 +65,11 @@ class _EventDetailPageState extends ConsumerState<EventDetailPage> {
             SubHeader(
               title:      'Event Details',
               rightText:  isCoach ? 'Edit' : null,
-              onRightTap: isCoach ? () => context.push(AppRoutes.eventEdit(widget.eventId), extra: {'event': widget.initialEvent, 'from': widget.from}) : null,
+              onRightTap: isCoach
+                  ? (widget.onEditTap ?? () => context.push(AppRoutes.eventEdit(widget.eventId), extra: {'event': widget.initialEvent, 'from': widget.from}))
+                  : null,
             ),
-            EventDetailTabBar(eventId: widget.eventId, activeTab: widget.activeTab, from: widget.from),
+            EventDetailTabBar(eventId: widget.eventId, activeTab: widget.activeTab, from: widget.from, onEditTap: widget.onEditTap),
             Expanded(
               child: switch (widget.activeTab) {
                 EventDetailTab.details      => EventDetailsTabPage(eventId: widget.eventId, initialEvent: widget.initialEvent),

@@ -13,18 +13,21 @@ class EventDetailTabBar extends ConsumerWidget {
   final String eventId;
   final EventDetailTab activeTab;
   final String from;
+  final VoidCallback? onEditTap;
 
   const EventDetailTabBar({
     super.key,
     required this.eventId,
     required this.activeTab,
     this.from = 'home',
+    this.onEditTap,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeModeProvider);
     final colors = AppColors.current;
+    final tabExtra = onEditTap != null ? {'onEditTap': onEditTap} : null;
 
     return Container(
       color: colors.background,
@@ -33,13 +36,13 @@ class EventDetailTabBar extends ConsumerWidget {
           EventDetailTabItem(
             label:    'Details',
             isActive: activeTab == EventDetailTab.details,
-            onTap:    () => context.replace('${AppRoutes.eventDetails(eventId)}?from=$from'),
+            onTap:    () => context.replace('${AppRoutes.eventDetails(eventId)}?from=$from', extra: tabExtra),
             colors:   colors,
           ),
           EventDetailTabItem(
             label:    'Availability',
             isActive: activeTab == EventDetailTab.availability,
-            onTap:    () => context.replace('${AppRoutes.eventAvailability(eventId)}?from=$from'),
+            onTap:    () => context.replace('${AppRoutes.eventAvailability(eventId)}?from=$from', extra: tabExtra),
             colors:   colors,
           ),
         ],

@@ -267,25 +267,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: AppRoutes.eventDetailDetails,
-                    pageBuilder: (context, state) => NoTransitionPage(
-                      child: ed.EventDetailPage(
-                        eventId: state.pathParameters['eventId']!,
-                        activeTab: EventDetailTab.details,
-                        from: state.uri.queryParameters['from'] ?? 'home',
-                        initialEvent: state.extra is ClubEvent ? state.extra as ClubEvent : null,
-                      ),
-                    ),
+                    pageBuilder: (context, state) {
+                      final extra = state.extra;
+                      final initialEvent = extra is ClubEvent ? extra : (extra is Map ? extra['event'] as ClubEvent? : null);
+                      final onEditTap = extra is Map ? extra['onEditTap'] as VoidCallback? : null;
+                      return NoTransitionPage(
+                        child: ed.EventDetailPage(
+                          eventId: state.pathParameters['eventId']!,
+                          activeTab: EventDetailTab.details,
+                          from: state.uri.queryParameters['from'] ?? 'home',
+                          initialEvent: initialEvent,
+                          onEditTap: onEditTap,
+                        ),
+                      );
+                    },
                   ),
                   GoRoute(
                     path: AppRoutes.eventDetailAvailability,
-                    pageBuilder: (context, state) => NoTransitionPage(
-                      child: ed.EventDetailPage(
-                        eventId: state.pathParameters['eventId']!,
-                        activeTab: EventDetailTab.availability,
-                        from: state.uri.queryParameters['from'] ?? 'home',
-                        initialEvent: state.extra is ClubEvent ? state.extra as ClubEvent : null,
-                      ),
-                    ),
+                    pageBuilder: (context, state) {
+                      final extra = state.extra;
+                      final initialEvent = extra is ClubEvent ? extra : (extra is Map ? extra['event'] as ClubEvent? : null);
+                      final onEditTap = extra is Map ? extra['onEditTap'] as VoidCallback? : null;
+                      return NoTransitionPage(
+                        child: ed.EventDetailPage(
+                          eventId: state.pathParameters['eventId']!,
+                          activeTab: EventDetailTab.availability,
+                          from: state.uri.queryParameters['from'] ?? 'home',
+                          initialEvent: initialEvent,
+                          onEditTap: onEditTap,
+                        ),
+                      );
+                    },
                   ),
                   GoRoute(
                     path: AppRoutes.eventDetailEdit,
@@ -296,6 +308,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         origin: (extra?['from'] as String?) ?? 'home',
                         isDuplicate: (extra?['duplicate'] as bool?) ?? false,
                         defaultSchedulingTypeKey: extra?['defaultSchedulingTypeKey'] as int?,
+                        defaultEventTypeKey: extra?['defaultEventTypeKey'] as int?,
+                        parentEvent: extra?['parentEvent'] as ClubEvent?,
+                        title: extra?['title'] as String?,
                       );
                     },
                   ),
