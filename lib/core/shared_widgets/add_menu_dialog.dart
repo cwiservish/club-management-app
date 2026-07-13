@@ -315,14 +315,27 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
   XFile? _pickedImage;
   Uint8List? _pickedImageBytes;
 
+  void _closeDropdownOnFocus() {
+    if (_isDropdownOpen &&
+        (_firstNameFocus.hasFocus || _lastNameFocus.hasFocus || _jerseyFocus.hasFocus)) {
+      setState(() => _isDropdownOpen = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _fetchPositions();
+    _firstNameFocus.addListener(_closeDropdownOnFocus);
+    _lastNameFocus.addListener(_closeDropdownOnFocus);
+    _jerseyFocus.addListener(_closeDropdownOnFocus);
   }
 
   @override
   void dispose() {
+    _firstNameFocus.removeListener(_closeDropdownOnFocus);
+    _lastNameFocus.removeListener(_closeDropdownOnFocus);
+    _jerseyFocus.removeListener(_closeDropdownOnFocus);
     _firstNameController.dispose();
     _lastNameController.dispose();
     _jerseyController.dispose();
@@ -423,11 +436,6 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
 
   Future<void> _savePlayer() async {
     if (!_formKey.currentState!.validate()) return;
-
-    if (_pickedImageBytes == null) {
-      _showError('Profile image is required');
-      return;
-    }
 
     if (_selectedPosition == null) {
       _showError('Please select a player position');
@@ -565,7 +573,10 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                 children: [
                   Center(
                     child: GestureDetector(
-                      onTap: _pickImage,
+                      onTap: () {
+                        if (_isDropdownOpen) setState(() => _isDropdownOpen = false);
+                        _pickImage();
+                      },
                       child: Container(
                         width: 100,
                         height: 100,
@@ -708,6 +719,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
               onTap: _isLoadingPositions
                   ? null
                   : () {
+                      FocusScope.of(context).unfocus();
                       setState(() {
                         _isDropdownOpen = !_isDropdownOpen;
                       });
