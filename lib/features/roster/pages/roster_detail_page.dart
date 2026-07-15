@@ -65,7 +65,7 @@ class _RosterDetailPageState extends ConsumerState<RosterDetailPage> {
 
     // Dynamically build contact list from API parents list, falling back to local mock data
     final List<RosterDetailContact> contacts = [];
-    if (parents.isNotEmpty) {
+    if (profileState.profile != null) {
       for (final p in parents) {
         final initials = p.name.isNotEmpty
             ? p.name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').join().toUpperCase()
@@ -81,8 +81,10 @@ class _RosterDetailPageState extends ConsumerState<RosterDetailPage> {
         ));
       }
     } else {
-      // Fallback
-      contacts.addAll(buildRosterDetailContacts(member));
+      // Fallback only if local member actually has parent info
+      if (member.parentName != null && member.parentName!.trim().isNotEmpty) {
+        contacts.addAll(buildRosterDetailContacts(member));
+      }
     }
 
     final isEditable = profile?.isEditable ?? true;
@@ -149,6 +151,7 @@ class _RosterDetailPageState extends ConsumerState<RosterDetailPage> {
                               contacts: contacts,
                               onContactTap: (c) => _showContactDialog(context, c),
                               onAddFamilyTap: () => _showAddFamilySheet(context),
+                              isLoading: profileState.isLoading,
                             ),
                             const SizedBox(height: 32),
                           ],

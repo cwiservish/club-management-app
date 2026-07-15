@@ -7,7 +7,7 @@ void main() {
     test('PlayerAttendanceEvent parses full JSON safely', () {
       final json = {
         'id': 12,
-        'team_event_id': 34,
+        'team_event_session_id': 34,
         'uuid': 'evt-uuid-123',
         'schedule_game_id': 56,
         'event_name': 'Championship Game',
@@ -18,7 +18,7 @@ void main() {
         'time_label': '4:00 PM',
         'location': 'Main Field',
         'location_details': 'Field 3',
-        'opponant': 'Thunder FC', // Test handling backend typo
+        'opponent_team_name': 'Thunder FC',
         'extra_label': 'Important Game',
         'team_event_attendee_id': 99,
         'attendance': 1,
@@ -27,11 +27,11 @@ void main() {
 
       final event = PlayerAttendanceEvent.fromJson(json);
       expect(event.id, 12);
-      expect(event.teamEventId, 34);
+      expect(event.teamEventSessionId, 34);
       expect(event.uuid, 'evt-uuid-123');
       expect(event.scheduleGameId, 56);
       expect(event.eventName, 'Championship Game');
-      expect(event.opponent, 'Thunder FC');
+      expect(event.opponentTeamName, 'Thunder FC');
       expect(event.attendance, 1);
       expect(event.attendanceNotes, 'Arriving early');
     });
@@ -39,7 +39,7 @@ void main() {
     test('PlayerAttendanceEvent handles standard opponent spelling', () {
       final json = {
         'id': 12,
-        'team_event_id': 34,
+        'team_event_session_id': 34,
         'uuid': 'evt-uuid-123',
         'event_name': 'Championship Game',
         'event_date': '2026-05-30',
@@ -49,22 +49,22 @@ void main() {
         'time_label': '4:00 PM',
         'location': 'Main Field',
         'location_details': 'Field 3',
-        'opponent': 'Thunder FC', // Standard spelling
+        'opponent_team_name': 'Thunder FC',
         'attendance_notes': '',
       };
 
       final event = PlayerAttendanceEvent.fromJson(json);
-      expect(event.opponent, 'Thunder FC');
+      expect(event.opponentTeamName, 'Thunder FC');
     });
 
     test('PlayerAttendanceEvent parses missing and null fields defensively', () {
       final json = <String, dynamic>{};
       final event = PlayerAttendanceEvent.fromJson(json);
       expect(event.id, 0);
-      expect(event.teamEventId, 0);
+      expect(event.teamEventSessionId, 0);
       expect(event.uuid, '');
       expect(event.eventName, '');
-      expect(event.opponent, isNull);
+      expect(event.opponentTeamName, '');
       expect(event.attendance, isNull);
       expect(event.attendanceNotes, '');
     });
@@ -74,10 +74,10 @@ void main() {
         'success': true,
         'message': 'Success',
         'data': {
-          'grid': [
+          'items': [
             {
               'id': 12,
-              'team_event_id': 34,
+              'team_event_session_id': 34,
               'uuid': 'evt-uuid-123',
               'event_name': 'Practice',
               'event_date': '2026-05-30',
@@ -100,9 +100,9 @@ void main() {
       expect(response.message, 'Success');
       expect(response.data, isNotNull);
       expect(response.data!.total, 1);
-      expect(response.data!.grid, isNotEmpty);
-      expect(response.data!.grid[0].eventName, 'Practice');
-      expect(response.data!.grid[0].attendance, 2);
+      expect(response.data!.items, isNotEmpty);
+      expect(response.data!.items[0].eventName, 'Practice');
+      expect(response.data!.items[0].attendance, 2);
     });
 
     test('PlayerAttendanceHistoryResponse handles invalid or missing data defensively', () {

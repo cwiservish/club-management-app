@@ -253,12 +253,14 @@ class RosterFamilyContactsSection extends StatelessWidget {
   final List<RosterDetailContact> contacts;
   final ValueChanged<RosterDetailContact> onContactTap;
   final VoidCallback onAddFamilyTap;
+  final bool isLoading;
 
   const RosterFamilyContactsSection({
     super.key,
     required this.contacts,
     required this.onContactTap,
     required this.onAddFamilyTap,
+    this.isLoading = false,
   });
 
   @override
@@ -299,6 +301,19 @@ class RosterFamilyContactsSection extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
+                if (contacts.isEmpty && !isLoading)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'No member available',
+                      style: AppTextStyles.body14.copyWith(
+                        color: AppColors.current.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ...contacts.map((c) => RosterContactRow(
                       contact: c,
                       isLast: contacts.last == c,
