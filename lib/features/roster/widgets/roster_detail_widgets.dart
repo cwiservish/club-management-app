@@ -13,6 +13,8 @@ import '../models/player_profile_models.dart';
 import '../providers/player_profile_provider.dart';
 import '../../messages/pages/talkjs_chat_page.dart';
 import '../../messages/providers/chat_state_provider.dart';
+import '../providers/roster_provider.dart';
+import '../models/player_positions_models.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Profile Section
@@ -682,7 +684,7 @@ class RosterDialogOption extends StatelessWidget {
 // Edit Player Sheet
 // ══════════════════════════════════════════════════════════════════════════════
 
-class RosterEditPlayerSheet extends StatefulWidget {
+class RosterEditPlayerSheet extends ConsumerStatefulWidget {
   final RosterMember member;
   final PlayerModel? playerProfile;
   final bool isEditable;
@@ -694,16 +696,19 @@ class RosterEditPlayerSheet extends StatefulWidget {
   });
 
   @override
-  State<RosterEditPlayerSheet> createState() => _RosterEditPlayerSheetState();
+  ConsumerState<RosterEditPlayerSheet> createState() => _RosterEditPlayerSheetState();
 }
 
-class _RosterEditPlayerSheetState extends State<RosterEditPlayerSheet> {
+class _RosterEditPlayerSheetState extends ConsumerState<RosterEditPlayerSheet> {
   late final TextEditingController _firstNameCtrl;
   late final TextEditingController _lastNameCtrl;
   late final TextEditingController _jerseyCtrl;
-  late String _position;
+  PlayerPositionModel? _selectedPosition;
 
-  static const _positions = ['Forward', 'Midfielder', 'Defender', 'Goalkeeper'];
+  List<PlayerPositionModel> _positions = [];
+  bool _isLoadingPositions = false;
+  String? _positionsError;
+  bool _isDropdownOpen = false;
 
   @override
   void initState() {
@@ -720,9 +725,15 @@ class _RosterEditPlayerSheetState extends State<RosterEditPlayerSheet> {
           ? profile.jerseyNo 
           : (widget.member.jerseyNumber?.toString() ?? ''),
     );
-    _position = (profile != null && profile.primaryPosition.isNotEmpty)
+    final initialPosName = (profile != null && profile.primaryPosition.isNotEmpty)
         ? _formatPosition(profile.primaryPosition)
-        : (widget.member.positionFull.isNotEmpty ? widget.member.positionFull : _positions.first);
+        : (widget.member.positionFull.isNotEmpty ? widget.member.positionFull : '');
+
+    if (initialPosName.isNotEmpty) {
+      _selectedPosition = PlayerPositionModel(value: 0, key: 0, label: initialPosName);
+    }
+
+    Future.microtask(() => _fetchPositions());
   }
 
   @override
@@ -733,9 +744,225 @@ class _RosterEditPlayerSheetState extends State<RosterEditPlayerSheet> {
     super.dispose();
   }
 
+  Future<void> _fetchPositions() async {
+    final activeTeam = ref.read(selectedTeamProvider);
+    final teamUuid = activeTeam?.uuid;
+    if (teamUuid == null || teamUuid.isEmpty) {
+      setState(() {
+        _positionsError = 'No active team selected';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingPositions = true;
+      _positionsError = null;
+    });
+
+    try {
+      final rosterService = ref.read(rosterServiceProvider);
+      final response = await rosterService.fetchPlayerPositions(teamUuid);
+      if (response.success) {
+        setState(() {
+          _positions = response.positions;
+          _isLoadingPositions = false;
+
+          if (_selectedPosition != null) {
+            PlayerPositionModel? matched;
+            for (final p in _positions) {
+              if (p.label.toLowerCase() == _selectedPosition!.label.toLowerCase()) {
+                matched = p;
+                break;
+              }
+            }
+            if (matched != null) {
+              _selectedPosition = matched;
+            } else if (_positions.isNotEmpty) {
+              _selectedPosition = _positions.first;
+            }
+          } else if (_positions.isNotEmpty) {
+            _selectedPosition = _positions.first;
+          }
+        });
+      } else {
+        setState(() {
+          _positionsError = response.message.isNotEmpty ? response.message : 'Failed to fetch positions';
+          _isLoadingPositions = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _positionsError = e.toString();
+        _isLoadingPositions = false;
+      });
+    }
+  }
+
+  Widget _buildPositionDropdown() {
+    final colors = AppColors.current;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Tap target row
+        InkWell(
+          onTap: _isLoadingPositions || !widget.isEditable
+              ? null
+              : () {
+                  FocusScope.of(context).unfocus();
+                  setState(() {
+                    _isDropdownOpen = !_isDropdownOpen;
+                  });
+                },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'POSITION',
+                        style: AppTextStyles.overline.copyWith(
+                          color: colors.gray500,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _selectedPosition?.label ?? 'Select position...',
+                        style: AppTextStyles.body16.copyWith(
+                          color: _selectedPosition == null
+                              ? colors.textSecondary.withOpacity(0.5)
+                              : colors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_isLoadingPositions)
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colors.primary,
+                    ),
+                  )
+                else if (widget.isEditable)
+                  AnimatedRotation(
+                    turns: _isDropdownOpen ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+
+        // Positions fetching error
+        if (_positionsError != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    _positionsError!,
+                    style: TextStyle(
+                      color: colors.error,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: _fetchPositions,
+                  child: Text(
+                    'Retry',
+                    style: TextStyle(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Scrollable list directly below
+        if (_isDropdownOpen && _positions.isNotEmpty && widget.isEditable) ...[
+          Divider(height: 1, color: colors.border),
+          Container(
+            constraints: const BoxConstraints(maxHeight: 180),
+            color: colors.background.withOpacity(0.03),
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                itemCount: _positions.length,
+                itemBuilder: (context, index) {
+                  final pos = _positions[index];
+                  final isCurrentSelected = _selectedPosition == pos;
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        _selectedPosition = pos;
+                        _isDropdownOpen = false;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: colors.border.withOpacity(0.3),
+                            width: 0.5,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            pos.label,
+                            style: AppTextStyles.body16.copyWith(
+                              color: isCurrentSelected ? colors.primary : colors.textPrimary,
+                              fontWeight: isCurrentSelected ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
+                          if (isCurrentSelected)
+                            Icon(
+                              Icons.check,
+                              color: colors.primary,
+                              size: 20,
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.current.card,
@@ -806,13 +1033,7 @@ class _RosterEditPlayerSheetState extends State<RosterEditPlayerSheet> {
                           enabled: widget.isEditable,
                         ),
                         const RosterFieldDivider(),
-                        RosterDropdownField(
-                          label: 'Position',
-                          value: _positions.contains(_position) ? _position : _positions.first,
-                          options: _positions,
-                          onChanged: (v) => setState(() => _position = v!),
-                          enabled: widget.isEditable,
-                        ),
+                        _buildPositionDropdown(),
                       ] else if (widget.member.staffTitle != null) ...[
                         RosterFormField(
                           label: 'Title',
