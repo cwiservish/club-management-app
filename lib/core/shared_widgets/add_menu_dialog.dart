@@ -9,6 +9,7 @@ import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../models/team_model.dart';
+import '../models/player_form_config.dart';
 import '../../features/roster/providers/roster_provider.dart';
 import '../../features/roster/models/player_positions_models.dart';
 import '../../features/messages/models/chat_member.dart';
@@ -282,24 +283,26 @@ void _showNewPlayerModal(BuildContext context, {Team? activeTeam}) {
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => _NewPlayerModal(activeTeam: activeTeam),
+    builder: (context) => PlayerFormSheet(
+      config: PlayerFormConfig(teamUuid: activeTeam?.uuid ?? ''),
+    ),
   );
 }
 
-class _NewPlayerModal extends ConsumerStatefulWidget {
-  final Team? activeTeam;
+class PlayerFormSheet extends ConsumerStatefulWidget {
+  final PlayerFormConfig config;
 
-  const _NewPlayerModal({super.key, this.activeTeam});
+  const PlayerFormSheet({super.key, required this.config});
 
   @override
-  ConsumerState<_NewPlayerModal> createState() => _NewPlayerModalState();
+  ConsumerState<PlayerFormSheet> createState() => _PlayerFormSheetState();
 }
 
-class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
+class _PlayerFormSheetState extends ConsumerState<PlayerFormSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _jerseyController = TextEditingController();
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
+  late final TextEditingController _jerseyController;
   final _firstNameFocus = FocusNode();
   final _lastNameFocus = FocusNode();
   final _jerseyFocus = FocusNode();
@@ -325,6 +328,13 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
   @override
   void initState() {
     super.initState();
+    final config = widget.config;
+    _firstNameController = TextEditingController(text: config.initialFirstName);
+    _lastNameController = TextEditingController(text: config.initialLastName);
+    _jerseyController = TextEditingController(text: config.initialJersey);
+    if (config.initialPositionLabel.isNotEmpty) {
+      _selectedPosition = PlayerPositionModel(value: 0, key: 0, label: config.initialPositionLabel);
+    }
     _fetchPositions();
     _firstNameFocus.addListener(_closeDropdownOnFocus);
     _lastNameFocus.addListener(_closeDropdownOnFocus);
@@ -346,11 +356,9 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
   }
 
   Future<void> _fetchPositions() async {
-    final teamUuid = widget.activeTeam?.uuid;
-    if (teamUuid == null || teamUuid.isEmpty) {
-      setState(() {
-        _positionsError = 'No active team selected';
-      });
+    final teamUuid = widget.config.teamUuid;
+    if (teamUuid.isEmpty) {
+      setState(() => _positionsError = 'No active team selected');
       return;
     }
 
@@ -366,10 +374,27 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
         setState(() {
           _positions = response.positions;
           _isLoadingPositions = false;
+          // Match the pre-seeded position label against the fetched list
+          if (_selectedPosition != null) {
+            PlayerPositionModel? matched;
+            for (final p in _positions) {
+              if (p.label.toLowerCase() == _selectedPosition!.label.toLowerCase()) {
+                matched = p;
+                break;
+              }
+            }
+            if (matched != null) {
+              _selectedPosition = matched;
+            } else if (widget.config.isEditMode && _positions.isNotEmpty) {
+              _selectedPosition = _positions.first;
+            }
+          }
         });
       } else {
         setState(() {
-          _positionsError = response.message.isNotEmpty ? response.message : 'Failed to fetch positions';
+          _positionsError = response.message?.isNotEmpty == true
+              ? response.message!
+              : 'Failed to fetch positions';
           _isLoadingPositions = false;
         });
       }
@@ -442,15 +467,13 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
       return;
     }
 
-    final teamUuid = widget.activeTeam?.uuid;
-    if (teamUuid == null || teamUuid.isEmpty) {
+    final teamUuid = widget.config.teamUuid;
+    if (teamUuid.isEmpty) {
       _showError('No active team selected');
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-    });
+    setState(() => _isSaving = true);
 
     String? imageBase64;
     if (_pickedImageBytes != null) {
@@ -468,6 +491,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
         lastName: _lastNameController.text.trim(),
         jersey: _jerseyController.text.trim(),
         primaryPosition: _selectedPosition!.key,
+        playerId: widget.config.playerId,
         imageBase64: imageBase64,
       );
 
@@ -480,8 +504,8 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
               backgroundColor: AppColors.current.success,
             ),
           );
-          // Refresh the roster list automatically
           ref.read(rosterProvider.notifier).refresh();
+          widget.config.onSuccess?.call();
           Navigator.pop(context);
         }
       } else {
@@ -490,20 +514,15 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
         }
       }
     } catch (e) {
-      if (mounted) {
-        _showError(e.toString());
-      }
+      if (mounted) _showError(e.toString());
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final config = widget.config;
     final colors = AppColors.current;
     final viewInsets = MediaQuery.of(context).viewInsets;
     return Container(
@@ -533,7 +552,10 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                 ),
                 Align(
                   alignment: Alignment.center,
-                  child: Text('New Player', style: AppTextStyles.heading16.copyWith(color: colors.textPrimary)),
+                  child: Text(
+                    config.isEditMode ? 'Edit Player' : 'New Player',
+                    style: AppTextStyles.heading16.copyWith(color: colors.textPrimary),
+                  ),
                 ),
                 Align(
                   alignment: Alignment.centerRight,
@@ -547,11 +569,11 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                           ),
                         )
                       : GestureDetector(
-                          onTap: _savePlayer,
+                          onTap: config.isEditable ? _savePlayer : null,
                           child: Text(
                             'Save',
                             style: AppTextStyles.body15.copyWith(
-                              color: colors.primary,
+                              color: config.isEditable ? colors.primary : colors.textSecondary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -590,12 +612,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                           ],
                         ),
                         clipBehavior: Clip.antiAlias,
-                        child: _pickedImageBytes != null
-                            ? Image.memory(
-                                _pickedImageBytes!,
-                                fit: BoxFit.cover,
-                              )
-                            : Icon(Icons.camera_alt, color: colors.textSecondary, size: 32),
+                        child: _buildAvatarContent(colors),
                       ),
                     ),
                   ),
@@ -612,6 +629,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                           placeholder: 'e.g. Preston',
                           controller: _firstNameController,
                           focusNode: _firstNameFocus,
+                          enabled: config.isEditable,
                           validator: (val) =>
                               val == null || val.trim().isEmpty ? 'First name is required' : null,
                         ),
@@ -621,6 +639,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                           placeholder: 'e.g. Cole',
                           controller: _lastNameController,
                           focusNode: _lastNameFocus,
+                          enabled: config.isEditable,
                           validator: (val) =>
                               val == null || val.trim().isEmpty ? 'Last name is required' : null,
                         ),
@@ -630,6 +649,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                           placeholder: 'e.g. 8',
                           controller: _jerseyController,
                           focusNode: _jerseyFocus,
+                          enabled: config.isEditable,
                           keyboardType: TextInputType.number,
                           validator: (val) =>
                               val == null || val.trim().isEmpty ? 'Jersey number is required' : null,
@@ -648,6 +668,39 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
     );
   }
 
+  Widget _buildAvatarContent(AppColors colors) {
+    if (_pickedImageBytes != null) {
+      return Image.memory(_pickedImageBytes!, fit: BoxFit.cover);
+    }
+    final photoUrl = widget.config.existingPhotoUrl;
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      return Image.network(
+        photoUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildInitialsOrIcon(colors),
+      );
+    }
+    return _buildInitialsOrIcon(colors);
+  }
+
+  Widget _buildInitialsOrIcon(AppColors colors) {
+    final initials = widget.config.initials;
+    if (initials.isNotEmpty) {
+      return Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontFamily: AppTextStyles.fontFamily,
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            color: colors.primary,
+          ),
+        ),
+      );
+    }
+    return Icon(Icons.camera_alt, color: colors.textSecondary, size: 32);
+  }
+
   Widget _buildFormField({
     required String label,
     required String placeholder,
@@ -655,58 +708,59 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
     FocusNode? focusNode,
+    bool enabled = true,
   }) {
     final colors = AppColors.current;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => focusNode?.requestFocus(),
       child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: AppTextStyles.label11.copyWith(
-              color: colors.textSecondary,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 4),
-          TextFormField(
-            controller: controller,
-            focusNode: focusNode,
-            keyboardType: keyboardType,
-            validator: validator,
-            style: AppTextStyles.body16.copyWith(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w500,
-            ),
-            decoration: InputDecoration(
-              hintText: placeholder,
-              hintStyle: AppTextStyles.body16.copyWith(
-                color: colors.textSecondary.withValues(alpha: 0.5),
-              ),
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-              errorStyle: TextStyle(
-                color: colors.error,
-                fontSize: 12,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: AppTextStyles.label11.copyWith(
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            TextFormField(
+              controller: controller,
+              focusNode: focusNode,
+              keyboardType: keyboardType,
+              enabled: enabled,
+              validator: validator,
+              style: AppTextStyles.body16.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+              decoration: InputDecoration(
+                hintText: placeholder,
+                hintStyle: AppTextStyles.body16.copyWith(
+                  color: colors.textSecondary.withValues(alpha: 0.5),
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                errorStyle: TextStyle(
+                  color: colors.error,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 
-  Widget _buildDropdownField({
-    required String label,
-  }) {
+  Widget _buildDropdownField({required String label}) {
     final colors = AppColors.current;
+    final isEditable = widget.config.isEditable;
     return FormField<PlayerPositionModel>(
       initialValue: _selectedPosition,
       validator: (val) => val == null ? 'Position is required' : null,
@@ -714,15 +768,12 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Tap target row
             InkWell(
-              onTap: _isLoadingPositions
+              onTap: _isLoadingPositions || !isEditable
                   ? null
                   : () {
                       FocusScope.of(context).unfocus();
-                      setState(() {
-                        _isDropdownOpen = !_isDropdownOpen;
-                      });
+                      setState(() => _isDropdownOpen = !_isDropdownOpen);
                     },
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -762,34 +813,24 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                           color: colors.primary,
                         ),
                       )
-                    else
+                    else if (isEditable)
                       AnimatedRotation(
                         turns: _isDropdownOpen ? 0.5 : 0.0,
                         duration: const Duration(milliseconds: 200),
-                        child: Icon(
-                          Icons.keyboard_arrow_down,
-                          color: colors.textSecondary,
-                        ),
+                        child: Icon(Icons.keyboard_arrow_down, color: colors.textSecondary),
                       ),
                   ],
                 ),
               ),
             ),
-
-            // Error Text (if any)
             if (fieldState.hasError)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Text(
                   fieldState.errorText!,
-                  style: TextStyle(
-                    color: colors.error,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: colors.error, fontSize: 12),
                 ),
               ),
-
-            // Positions fetching error
             if (_positionsError != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -799,10 +840,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                     Expanded(
                       child: Text(
                         _positionsError!,
-                        style: TextStyle(
-                          color: colors.error,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: colors.error, fontSize: 12),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -821,9 +859,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                   ],
                 ),
               ),
-
-            // Scrollable list directly below
-            if (_isDropdownOpen && _positions.isNotEmpty) ...[
+            if (_isDropdownOpen && _positions.isNotEmpty && isEditable) ...[
               Divider(height: 1, color: colors.border),
               Container(
                 constraints: const BoxConstraints(maxHeight: 180),
@@ -866,11 +902,7 @@ class _NewPlayerModalState extends ConsumerState<_NewPlayerModal> {
                                 ),
                               ),
                               if (isSelected)
-                                Icon(
-                                  Icons.check,
-                                  color: colors.primary,
-                                  size: 20,
-                                ),
+                                Icon(Icons.check, color: colors.primary, size: 20),
                             ],
                           ),
                         ),

@@ -8,6 +8,9 @@ import '../../../core/common_providers/theme_provider.dart';
 import '../models/roster_detail_contact.dart';
 import '../models/roster_member.dart';
 import '../models/player_profile_models.dart';
+import '../../../core/models/player_form_config.dart';
+import '../../../core/common_providers/selected_team_provider.dart';
+import '../../../core/shared_widgets/add_menu_dialog.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
 import '../providers/roster_detail_provider.dart';
@@ -216,15 +219,29 @@ class _RosterDetailPageState extends ConsumerState<RosterDetailPage> {
   // ─── Sheet helpers ─────────────────────────────────────────────────────────
 
   void _showEditSheet(BuildContext context, RosterMember member, PlayerModel? playerProfile, bool isEditable) {
+    final activeTeam = ref.read(selectedTeamProvider);
+    final posLabel = (playerProfile != null && playerProfile.primaryPosition.isNotEmpty)
+        ? formatPosition(playerProfile.primaryPosition)
+        : member.positionFull;
+
+    final config = PlayerFormConfig(
+      playerId: member.playerId,
+      teamUuid: activeTeam?.uuid ?? '',
+      initialFirstName: playerProfile?.firstName ?? member.firstName,
+      initialLastName: playerProfile?.lastName ?? member.lastName,
+      initialJersey: playerProfile?.jerseyNo ?? member.jerseyNo,
+      initialPositionLabel: posLabel,
+      existingPhotoUrl: playerProfile?.imageUrl.isNotEmpty == true ? playerProfile!.imageUrl : null,
+      isEditable: isEditable,
+      initials: member.initials,
+      onSuccess: () => ref.invalidate(playerProfileProvider(member.id)),
+    );
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => RosterEditPlayerSheet(
-        member: member,
-        playerProfile: playerProfile,
-        isEditable: isEditable,
-      ),
+      builder: (_) => PlayerFormSheet(config: config),
     );
   }
 

@@ -281,6 +281,7 @@ class RosterService {
     required String lastName,
     required String jersey,
     required int primaryPosition,
+    int? playerId,
     String? imageBase64,
   }) async {
     const endpoint = ApiEndpoints.playerSave;
@@ -288,6 +289,7 @@ class RosterService {
       'team_uuid': teamUuid,
       'players': [
         {
+          if (playerId != null) 'player_id': playerId,
           'first_name': firstName,
           'last_name': lastName,
           'jersey': jersey,
