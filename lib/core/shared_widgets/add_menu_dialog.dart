@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:ui';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -279,6 +280,8 @@ class _NewTeamModal extends StatelessWidget {
 */
 
 void _showNewPlayerModal(BuildContext context, {Team? activeTeam}) {
+
+
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -287,6 +290,8 @@ void _showNewPlayerModal(BuildContext context, {Team? activeTeam}) {
       config: PlayerFormConfig(teamUuid: activeTeam?.uuid ?? ''),
     ),
   );
+
+
 }
 
 class PlayerFormSheet extends ConsumerStatefulWidget {
@@ -522,11 +527,19 @@ class _PlayerFormSheetState extends ConsumerState<PlayerFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+
+
     final config = widget.config;
     final colors = AppColors.current;
     final viewInsets = MediaQuery.of(context).viewInsets;
+
+    log("viewInsets => $viewInsets");
+    log("height => ${MediaQuery.of(context).size.height * 0.8}");
+
+
     return Container(
-      height: MediaQuery.of(context).size.height * 0.9,
+     height: MediaQuery.of(context).size.height * 0.8,
+     // height: 800,
       decoration: BoxDecoration(
         color: colors.card,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -590,7 +603,7 @@ class _PlayerFormSheetState extends ConsumerState<PlayerFormSheet> {
                   left: 20,
                   right: 20,
                   top: 20,
-                  bottom: 20 + viewInsets.bottom,
+
                 ),
                 children: [
                   Center(
