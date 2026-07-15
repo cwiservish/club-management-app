@@ -10,7 +10,7 @@ import '../models/roster_member.dart';
 import '../models/player_profile_models.dart';
 import '../../../core/models/player_form_config.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
-import '../../../core/shared_widgets/add_menu_dialog.dart';
+import '../../../core/shared_widgets/add_edit_player/player_form_sheet.dart';
 import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
 import '../providers/roster_detail_provider.dart';

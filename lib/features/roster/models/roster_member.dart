@@ -26,6 +26,7 @@ class RosterMember {
   final String primaryPosition;
   final String gender;
   final String jerseyNo;
+  final String imageUrl;
 
   const RosterMember({
     required this.id,
@@ -50,6 +51,7 @@ class RosterMember {
     this.primaryPosition = '',
     this.gender = '',
     this.jerseyNo = '',
+    this.imageUrl = '',
   });
 
   String get fullName => '$firstName $lastName'.trim();

@@ -64,8 +64,6 @@ class NotificationPreferencesService {
 
     // Print Request JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}$endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -84,8 +82,6 @@ class NotificationPreferencesService {
 
       // Print Response JSON in logs
       debugPrint('════════════════════════════════════════════════════════════════');
-      debugPrint('[API Response] POST $endpoint');
-      debugPrint('[API Response Body]:');
       debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
       debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -100,7 +96,6 @@ class NotificationPreferencesService {
       });
     } catch (e) {
       debugPrint('════════════════════════════════════════════════════════════════');
-      debugPrint('[API Request Error] POST $endpoint: $e');
       debugPrint('════════════════════════════════════════════════════════════════');
 
       return SaveNotificationResponse(

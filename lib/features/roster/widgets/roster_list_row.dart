@@ -44,13 +44,16 @@ class RosterListRow extends StatelessWidget {
                   ),
                 ],
               ),
-              alignment: Alignment.center,
-              child: Text(
-                member.initials,
-                style: AppTextStyles.heading14.copyWith(
-                  color: AppColors.current.gray400,
-                ),
-              ),
+              clipBehavior: Clip.antiAlias,
+              child: member.imageUrl.isNotEmpty
+                  ? Image.network(
+                      member.imageUrl,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildInitials(),
+                    )
+                  : _buildInitials(),
             ),
             const SizedBox(width: 14),
             // Name + chips
@@ -83,6 +86,20 @@ class RosterListRow extends StatelessWidget {
                 size: 20,
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInitials() {
+    return Container(
+      width: 48,
+      height: 48,
+      alignment: Alignment.center,
+      child: Text(
+        member.initials,
+        style: AppTextStyles.heading14.copyWith(
+          color: AppColors.current.gray400,
         ),
       ),
     );

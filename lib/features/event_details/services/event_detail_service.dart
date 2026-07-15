@@ -53,8 +53,6 @@ class EventDetailService {
     final queryParams = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] GET ${ApiEndpoints.baseUrl}${ApiEndpoints.eventDropdownOptions}');
-    debugPrint('[API Request Query Parameters]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(queryParams));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -64,7 +62,6 @@ class EventDetailService {
     );
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] GET ${ApiEndpoints.eventDropdownOptions}');
     debugPrint('[success]: ${response.success}');
     debugPrint('[message]: ${response.message}');
     debugPrint('[data type]: ${response.data.runtimeType}');
@@ -101,8 +98,6 @@ class EventDetailService {
   Future<EventSaveResponse> saveEvent(EventSaveRequest request) async {
     final body = request.toJson();
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventSave}');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(body));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -118,8 +113,6 @@ class EventDetailService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST ${ApiEndpoints.eventSave}');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -130,8 +123,6 @@ class EventDetailService {
   Future<NewEventSaveResponse> saveNewEvent(NewEventSaveRequest request) async {
     final body = request.toJson();
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventSave}');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(body));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -144,7 +135,6 @@ class EventDetailService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST ${ApiEndpoints.eventSave}');
     debugPrint('[success]: ${response.success}');
     debugPrint('[message]: ${response.message}');
     debugPrint('════════════════════════════════════════════════════════════════');
@@ -156,8 +146,6 @@ class EventDetailService {
   Future<EventDeleteResponse> deleteEvent(EventDeleteRequest request) async {
     final body = request.toJson();
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventRemove}');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(body));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -173,8 +161,6 @@ class EventDetailService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST ${ApiEndpoints.eventRemove}');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -186,8 +172,6 @@ class EventDetailService {
     final body = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventSessionAvailability}');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(body));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -203,8 +187,6 @@ class EventDetailService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST ${ApiEndpoints.eventSessionAvailability}');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -216,8 +198,6 @@ class EventDetailService {
     final body = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.eventSessionAttendeeSave}');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(body));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -233,8 +213,6 @@ class EventDetailService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST ${ApiEndpoints.eventSessionAttendeeSave}');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -249,8 +227,6 @@ class EventDetailService {
     }
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] GET ${ApiEndpoints.baseUrl}${ApiEndpoints.newEventDropdownOptions}');
-    debugPrint('[API Request Query Parameters]: $queryParams');
     debugPrint('════════════════════════════════════════════════════════════════');
 
     final response = await _apiClient.get(
@@ -259,7 +235,6 @@ class EventDetailService {
     );
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] GET ${ApiEndpoints.newEventDropdownOptions}');
     debugPrint('[success]: ${response.success}');
     debugPrint('[message]: ${response.message}');
     debugPrint('════════════════════════════════════════════════════════════════');

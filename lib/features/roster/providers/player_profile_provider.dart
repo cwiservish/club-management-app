@@ -103,6 +103,6 @@ class PlayerProfileNotifier extends Notifier<PlayerProfileState> {
 }
 
 final playerProfileProvider =
-    NotifierProvider.family<PlayerProfileNotifier, PlayerProfileState, String>(
+    NotifierProvider.autoDispose.family<PlayerProfileNotifier, PlayerProfileState, String>(
   PlayerProfileNotifier.new,
 );
