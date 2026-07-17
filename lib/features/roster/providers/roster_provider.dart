@@ -169,8 +169,9 @@ class RosterNotifier extends Notifier<RosterState> {
           phone: '',
           email: '',
           gender: p.gender,
-          attendancePercent: 85, // Mock default attendance percentage
+          attendancePercent: 85,
           avatarColor: _getRandomColor(p.name),
+          imageUrl: p.imageUrl,
         );
       }).toList();
 

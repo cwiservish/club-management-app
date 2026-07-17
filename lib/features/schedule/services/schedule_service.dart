@@ -19,8 +19,6 @@ class ScheduleService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] GET ${ApiEndpoints.baseUrl}$endpoint');
-    debugPrint('[API Request Query Parameters]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(queryParameters));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -37,9 +35,6 @@ class ScheduleService {
       };
 
       debugPrint('════════════════════════════════════════════════════════════════');
-      debugPrint('[API Response] GET $endpoint');
-      debugPrint('[API Response success]: ${response.success}');
-      debugPrint('[API Response Body]:');
       debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
       debugPrint('════════════════════════════════════════════════════════════════');
 

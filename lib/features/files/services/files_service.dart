@@ -17,8 +17,6 @@ class FilesService {
 
     // Print Request JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}$endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -37,8 +35,6 @@ class FilesService {
 
       // Print Response JSON in logs
       debugPrint('════════════════════════════════════════════════════════════════');
-      debugPrint('[API Response] POST $endpoint');
-      debugPrint('[API Response Body]:');
       debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
       debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -51,7 +47,6 @@ class FilesService {
       return FilesListResponse.fromJson(responseDataMap);
     } catch (e) {
       debugPrint('════════════════════════════════════════════════════════════════');
-      debugPrint('[API Request Error] POST $endpoint: $e');
       debugPrint('════════════════════════════════════════════════════════════════');
       return FilesListResponse(
         success: false,
@@ -72,7 +67,6 @@ class FilesService {
 
     // Log the request parameters
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] Multipart POST ${ApiEndpoints.baseUrl}$endpoint');
     debugPrint('[Form Fields]:');
     debugPrint('  team_uuid: $uuid');
     debugPrint('  file: $fileName ($filePath)');
@@ -98,8 +92,6 @@ class FilesService {
 
       // Print Response JSON in logs
       debugPrint('════════════════════════════════════════════════════════════════');
-      debugPrint('[API Response] POST $endpoint');
-      debugPrint('[API Response Body]:');
       debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
       debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -112,7 +104,6 @@ class FilesService {
       return FileSaveResponse.fromJson(responseDataMap);
     } catch (e) {
       debugPrint('════════════════════════════════════════════════════════════════');
-      debugPrint('[API Request Error] POST $endpoint: $e');
       debugPrint('════════════════════════════════════════════════════════════════');
       return FileSaveResponse(
         success: false,
@@ -127,7 +118,6 @@ class FilesService {
 
     // Log the request parameters
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] Multipart POST ${ApiEndpoints.baseUrl}$endpoint');
     debugPrint('[Form Fields]:');
     debugPrint('  id: $id');
     debugPrint('  team_uuid: $teamUuid');
@@ -153,8 +143,6 @@ class FilesService {
 
       // Print Response JSON in logs
       debugPrint('════════════════════════════════════════════════════════════════');
-      debugPrint('[API Response] POST $endpoint');
-      debugPrint('[API Response Body]:');
       debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
       debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -166,7 +154,6 @@ class FilesService {
       return FileRemoveResponse.fromJson(responseDataMap);
     } catch (e) {
       debugPrint('════════════════════════════════════════════════════════════════');
-      debugPrint('[API Request Error] POST $endpoint: $e');
       debugPrint('════════════════════════════════════════════════════════════════');
       return FileRemoveResponse(
         success: false,

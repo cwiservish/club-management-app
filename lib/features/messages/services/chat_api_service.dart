@@ -18,14 +18,11 @@ class ChatApiService {
     const endpoint = '/chat/member/token';
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] GET $endpoint');
     debugPrint('════════════════════════════════════════════════════════════════');
 
     final response = await _apiClient.get(endpoint);
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] GET $endpoint');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -40,8 +37,6 @@ class ChatApiService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST $endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -51,8 +46,6 @@ class ChatApiService {
     );
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST $endpoint');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -79,8 +72,6 @@ class ChatApiService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST $endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -90,8 +81,6 @@ class ChatApiService {
     );
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST $endpoint');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -115,8 +104,6 @@ class ChatApiService {
     final requestBody = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST $endpoint (Search)');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -126,8 +113,6 @@ class ChatApiService {
     );
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST $endpoint (Search)');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -140,8 +125,6 @@ class ChatApiService {
     final requestBody = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST $endpoint (Existing Members)');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -151,8 +134,6 @@ class ChatApiService {
     );
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST $endpoint (Existing Members)');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -165,8 +146,6 @@ class ChatApiService {
     final requestBody = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST $endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -176,8 +155,6 @@ class ChatApiService {
     );
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST $endpoint');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -190,8 +167,6 @@ class ChatApiService {
     final requestBody = request.toJson();
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST $endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -201,8 +176,6 @@ class ChatApiService {
     );
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST $endpoint');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -225,8 +198,6 @@ class ChatApiService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST $endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -236,8 +207,6 @@ class ChatApiService {
     );
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST $endpoint');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 

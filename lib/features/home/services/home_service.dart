@@ -19,8 +19,6 @@ class HomeService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}$endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -31,9 +29,6 @@ class HomeService {
       );
 
       debugPrint('════════════════════════════════════════════════════════════════');
-      debugPrint('[API Response] POST $endpoint');
-      debugPrint('[API Response success]: ${response.success}');
-      debugPrint('[API Response Body length]: ${response.data != null ? response.data.toString().length : 0}');
       debugPrint('════════════════════════════════════════════════════════════════');
 
       if (!response.success || response.data == null) {

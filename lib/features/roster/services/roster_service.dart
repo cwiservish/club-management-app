@@ -29,8 +29,6 @@ class RosterService {
 
     // Print Request JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.teamPlayersList}');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -52,8 +50,6 @@ class RosterService {
 
     // Print Response JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST ${ApiEndpoints.teamPlayersList}');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -70,8 +66,6 @@ class RosterService {
 
     // Print Request JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}${ApiEndpoints.teamStaffList}');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -93,8 +87,6 @@ class RosterService {
 
     // Print Response JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST ${ApiEndpoints.teamStaffList}');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -115,8 +107,6 @@ class RosterService {
 
     // Print Request JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}$endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -138,8 +128,6 @@ class RosterService {
 
     // Print Response JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST $endpoint');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -167,8 +155,6 @@ class RosterService {
 
     // Print Request JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}$endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -191,8 +177,6 @@ class RosterService {
 
       // Print Response JSON in logs
       debugPrint('════════════════════════════════════════════════════════════════');
-      debugPrint('[API Response] POST $endpoint');
-      debugPrint('[API Response Body]:');
       debugPrint(const JsonEncoder.withIndent('  ').convert(rawResponseMap));
       debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -220,7 +204,6 @@ class RosterService {
       if (errorData != null) {
         // Print Error Response JSON in logs if present
         debugPrint('════════════════════════════════════════════════════════════════');
-        debugPrint('[API Response Error Body] POST $endpoint');
         debugPrint(const JsonEncoder.withIndent('  ').convert(errorData));
         debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -236,7 +219,6 @@ class RosterService {
       }
 
       debugPrint('════════════════════════════════════════════════════════════════');
-      debugPrint('[API Request Error] POST $endpoint: $e');
       debugPrint('════════════════════════════════════════════════════════════════');
 
       return AssignParentResponse(
@@ -254,8 +236,6 @@ class RosterService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}$endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -266,8 +246,6 @@ class RosterService {
 
     // Print Response JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST $endpoint');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -281,6 +259,7 @@ class RosterService {
     required String lastName,
     required String jersey,
     required int primaryPosition,
+    int? playerId,
     String? imageBase64,
   }) async {
     const endpoint = ApiEndpoints.playerSave;
@@ -288,6 +267,7 @@ class RosterService {
       'team_uuid': teamUuid,
       'players': [
         {
+          if (playerId != null) 'player_id': playerId,
           'first_name': firstName,
           'last_name': lastName,
           'jersey': jersey,
@@ -298,8 +278,6 @@ class RosterService {
     };
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}$endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -309,8 +287,6 @@ class RosterService {
     );
 
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST $endpoint');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -332,8 +308,6 @@ class RosterService {
 
     // Print Request JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Request] POST ${ApiEndpoints.baseUrl}$endpoint');
-    debugPrint('[API Request Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(requestBody));
     debugPrint('════════════════════════════════════════════════════════════════');
 
@@ -344,8 +318,6 @@ class RosterService {
 
     // Print Response JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');
-    debugPrint('[API Response] POST $endpoint');
-    debugPrint('[API Response Body]:');
     debugPrint(const JsonEncoder.withIndent('  ').convert(response.rawJson));
     debugPrint('════════════════════════════════════════════════════════════════');
 
