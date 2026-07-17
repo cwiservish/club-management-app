@@ -25,22 +25,43 @@ class AppShell extends ConsumerWidget {
     ref.watch(themeModeProvider); // rebuild shell + pages on theme change
     final unreadCount = ref.watch(unreadCountProvider);
 
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: navigationShell.currentIndex,
-        messagesBadgeCount: unreadCount,
-        onTap: (index) {
-          if (index == 0) {
-            ref.read(homeProvider.notifier).refresh();
-          }
-          navigationShell.goBranch(
-            index,
-            // Always go directly to the root of the selected tab's branch.
-            initialLocation: true,
-          );
-        },
-      ),
+    final router = GoRouter.of(context);
+    final routeInfoProvider = router.routeInformationProvider;
+
+    return ListenableBuilder(
+      listenable: routeInfoProvider,
+      builder: (context, _) {
+        final location = routeInfoProvider.value.uri.path;
+        int activeIndex = navigationShell.currentIndex;
+        if (location.startsWith('/messages')) {
+          activeIndex = 3;
+        } else if (location.startsWith('/roster')) {
+          activeIndex = 2;
+        } else if (location.startsWith('/schedule')) {
+          activeIndex = 1;
+        } else if (location.startsWith('/home')) {
+          activeIndex = 0;
+        }
+
+        return Scaffold(
+          body: navigationShell,
+          bottomNavigationBar: AppBottomNavBar(
+            currentIndex: activeIndex,
+            messagesBadgeCount: unreadCount,
+            onTap: (index) {
+              if (index == 0) {
+                ref.read(homeProvider.notifier).refresh();
+              }
+              navigationShell.goBranch(
+                index,
+                // Always go directly to the root of the selected tab's branch.
+                initialLocation: true,
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
+

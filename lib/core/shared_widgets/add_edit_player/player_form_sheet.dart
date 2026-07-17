@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/player_form_config.dart';
@@ -232,8 +233,18 @@ class _PlayerFormSheetState extends ConsumerState<PlayerFormSheet> {
                           controller: _firstNameController,
                           focusNode: _firstNameFocus,
                           enabled: config.isEditable,
-                          validator: (val) =>
-                              val == null || val.trim().isEmpty ? 'First name is required' : null,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9 ]')),
+                          ],
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'First name is required';
+                            }
+                            if (!RegExp(r'^[a-zA-Z0-9 ]+$').hasMatch(val.trim())) {
+                              return 'First name must contain only letters, numbers, and spaces';
+                            }
+                            return null;
+                          },
                         ),
                         Divider(height: 1, color: colors.border),
                         _buildFormField(
@@ -242,8 +253,18 @@ class _PlayerFormSheetState extends ConsumerState<PlayerFormSheet> {
                           controller: _lastNameController,
                           focusNode: _lastNameFocus,
                           enabled: config.isEditable,
-                          validator: (val) =>
-                              val == null || val.trim().isEmpty ? 'Last name is required' : null,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9 ]')),
+                          ],
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'Last name is required';
+                            }
+                            if (!RegExp(r'^[a-zA-Z0-9 ]+$').hasMatch(val.trim())) {
+                              return 'Last name must contain only letters, numbers, and spaces';
+                            }
+                            return null;
+                          },
                         ),
                         Divider(height: 1, color: colors.border),
                         _buildFormField(
@@ -309,6 +330,7 @@ class _PlayerFormSheetState extends ConsumerState<PlayerFormSheet> {
     required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
     FocusNode? focusNode,
     bool enabled = true,
   }) {
@@ -336,6 +358,7 @@ class _PlayerFormSheetState extends ConsumerState<PlayerFormSheet> {
               keyboardType: keyboardType,
               enabled: enabled,
               validator: validator,
+              inputFormatters: inputFormatters,
               style: AppTextStyles.body16.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w500,

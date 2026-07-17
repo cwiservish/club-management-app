@@ -4,10 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
-import '../../../core/constants/app_assets.dart';
-import '../../../core/shared_widgets/custom_svg_icon.dart';
 import '../../../core/models/club_event.dart';
-import '../models/schedule_models.dart';
 import '../providers/schedule_provider.dart';
 import '../../home/widgets/rsvp_player_selection_sheet.dart';
 import 'my_rsvp_dialog.dart';
@@ -209,17 +206,18 @@ class ScheduleEventCard extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         // Home/Away + league tag
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            if (latestEvent.homeAwayLabel != null && latestEvent.homeAwayLabel!.isNotEmpty) ...[
+                            if (latestEvent.homeAwayLabel != null && latestEvent.homeAwayLabel!.isNotEmpty)
                               Text(
                                 latestEvent.homeAwayLabel!,
                                 style: AppTextStyles.body13.copyWith(
                                   color: AppColors.current.textPrimary,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                            ],
                             if (latestEvent.eventName?.isNotEmpty == true)
                               ScheduleTagPill(text: latestEvent.eventName!),
                           ],

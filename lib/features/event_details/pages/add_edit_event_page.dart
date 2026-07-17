@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
@@ -785,10 +786,17 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   Future<void> _doSave() async {
     if (ref.read(eventAddEditProvider).isSavingNewEvent) return;
 
-    // Uniform template name validation — if toggle is shown, name is required
-    if (_selectedApiTemplate == null && _showSaveTemplateForm && _templateNameController.text.trim().isEmpty) {
-      _showError('Please enter a template name or hide the template form');
-      return;
+    // Uniform template name validation — if toggle is shown, name is required and must be alphanumeric
+    if (_selectedApiTemplate == null && _showSaveTemplateForm) {
+      final name = _templateNameController.text.trim();
+      if (name.isEmpty) {
+        _showError('Please enter a template name or hide the template form');
+        return;
+      }
+      if (!RegExp(r'^[a-zA-Z0-9 ]+$').hasMatch(name)) {
+        _showError('Template name must contain only letters, numbers, and spaces');
+        return;
+      }
     }
 
     // Edit-mode values ('' for create/duplicate mode)
@@ -2286,6 +2294,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             const SizedBox(height: 12),
             TextField(
               controller: _templateNameController,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9 ]')),
+              ],
               onChanged: (_) => setState(() {}),
               style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
               cursorColor: colors.primary,
