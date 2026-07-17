@@ -60,7 +60,22 @@ class RosterState {
         playersList.sort((a, b) => a.gender.toLowerCase().compareTo(b.gender.toLowerCase()));
         break;
       case 'Number':
-        playersList.sort((a, b) => a.jerseyNo.toLowerCase().compareTo(b.jerseyNo.toLowerCase()));
+        playersList.sort((a, b) {
+          final aNum = int.tryParse(a.jerseyNo) ?? a.jerseyNumber;
+          final bNum = int.tryParse(b.jerseyNo) ?? b.jerseyNumber;
+          if (aNum != null && bNum != null) {
+            if (aNum != bNum) {
+              return aNum.compareTo(bNum);
+            }
+          } else if (aNum != null) {
+            return -1;
+          } else if (bNum != null) {
+            return 1;
+          }
+          final nameCompare = a.firstName.toLowerCase().compareTo(b.firstName.toLowerCase());
+          if (nameCompare != 0) return nameCompare;
+          return a.lastName.toLowerCase().compareTo(b.lastName.toLowerCase());
+        });
         break;
       case 'First Name':
       default:

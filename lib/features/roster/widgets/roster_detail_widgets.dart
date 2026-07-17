@@ -122,16 +122,17 @@ class RosterProfileSection extends StatelessWidget {
                       RosterJerseyBadge(jerseyNo: displayJersey),
                       const SizedBox(width: 8),
                     ],
-                    if (displayPosition.isNotEmpty || member.staffTitle != null)
+                    if (member.role == MemberRole.player && displayPosition.isNotEmpty) ...[
+                      RosterPositionBadge(position: displayPosition),
+                    ] else if (member.role != MemberRole.player && member.staffTitle != null && member.staffTitle!.isNotEmpty) ...[
                       Text(
-                        member.role == MemberRole.player
-                            ? displayPosition
-                            : (member.staffTitle ?? ''),
+                        member.staffTitle ?? '',
                         style: AppTextStyles.body14.copyWith(
                           color: AppColors.current.textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                    ],
                   ],
                 ),
               ],
@@ -182,6 +183,40 @@ class RosterJerseyBadge extends StatelessWidget {
       child: Text(
         label,
         style: AppTextStyles.heading14.copyWith(color: AppColors.current.primary),
+      ),
+    );
+  }
+}
+
+class RosterPositionBadge extends StatelessWidget {
+  final String position;
+  const RosterPositionBadge({super.key, required this.position});
+
+  @override
+  Widget build(BuildContext context) {
+    final clean = position.trim().toUpperCase();
+    if (clean.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.current.primaryLight,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.current.primary.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Text(
+        clean,
+        style: AppTextStyles.heading14.copyWith(
+          color: AppColors.current.primary,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -1278,21 +1313,7 @@ class RosterSheetHeader extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: isSaveEnabled ? onSave : null,
-              child: Text(
-                'Save',
-                style: AppTextStyles.heading14.copyWith(
-                  color: isSaveEnabled
-                      ? AppColors.current.primary
-                      : AppColors.current.gray400,
-                ),
-              ),
-            ),
-          ),
+          )
         ],
       ),
     );

@@ -105,7 +105,7 @@ void main() {
       expect(sorted[2].gender, 'Male');
     });
 
-    test('Sorts by Number alphabetically (string abcd concept)', () {
+    test('Sorts by Number numerically', () {
       final state = RosterState(
         allMembers: list,
         searchQuery: '',
@@ -114,10 +114,10 @@ void main() {
       );
 
       final sorted = state.filtered;
-      // '1', '10', '2' in string order
+      // '1', '2', '10' in numerical order
       expect(sorted[0].jerseyNo, '1');
-      expect(sorted[1].jerseyNo, '10');
-      expect(sorted[2].jerseyNo, '2');
+      expect(sorted[1].jerseyNo, '2');
+      expect(sorted[2].jerseyNo, '10');
     });
   });
 }

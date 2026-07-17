@@ -97,7 +97,7 @@ class RosterListRow extends StatelessWidget {
           const SizedBox(width: 6),
         ],
         if (pos.isNotEmpty) ...[
-          _Chip(label: pos),
+          _Chip(label: pos.toUpperCase()),
           const SizedBox(width: 6),
         ],
       ];

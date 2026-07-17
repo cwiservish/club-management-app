@@ -93,7 +93,7 @@ class AddEditEventPage extends ConsumerStatefulWidget {
   ConsumerState<AddEditEventPage> createState() => _AddEditEventPageState();
 }
 
-class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
+class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with WidgetsBindingObserver {
   // Scheduling type key: 1=Single Session, 2=Tournament, 3=League (from API)
   int _schedulingTypeKey = 1;
 
@@ -411,6 +411,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (widget.defaultSchedulingTypeKey != null) _schedulingTypeKey = widget.defaultSchedulingTypeKey!;
     if (widget.defaultEventTypeKey != null) _eventTypeKey = widget.defaultEventTypeKey!;
     // Always re-fetch dropdowns on every open so data is fresh
@@ -502,6 +503,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _removeTimePickerOverlay();
     _hideLocationOverlay();
     _locationDebounceTimer?.cancel();
@@ -511,6 +513,18 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> {
     _templateNameController.dispose();
     _newOpponentNameController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    final bottomInset = WidgetsBinding.instance.platformDispatcher.views.first.viewInsets.bottom;
+    if (bottomInset == 0.0) {
+      final currentFocus = FocusScope.of(context);
+      if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
+        currentFocus.unfocus();
+      }
+    }
   }
 
   // Dynamic End Time computation based on Start Time + Duration
