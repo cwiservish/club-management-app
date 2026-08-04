@@ -34,6 +34,7 @@ import '../../features/auth/pages/login_page.dart';
 import '../../features/auth/pages/forgot_password_page.dart';
 import '../../shell/app_shell.dart';
 import '../../core/shared_widgets/profile_webview_page.dart';
+import '../../core/utils/navigator_key.dart';
 import 'app_routes.dart';
 
 // ─── Auth Listenable ──────────────────────────────────────────────────────────
@@ -53,6 +54,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.listen(currentUserProvider, (_, __) => listenable.notify());
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     refreshListenable: listenable,
     redirect: (context, state) {
