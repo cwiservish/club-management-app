@@ -117,6 +117,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   OverlayEntry? _locationOverlay;
   Timer? _locationDebounceTimer;
   final GlobalKey _locationFieldKey = GlobalKey();
+  final LayerLink _locationLayerLink = LayerLink();
 
   // Save template states
   bool _showSaveTemplateForm = false;
@@ -143,6 +144,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   int _durationMinutes = 30;
   // Custom Time Picker overlay
   final GlobalKey _startTimeFieldKey = GlobalKey();
+  final LayerLink _startTimeLayerLink = LayerLink();
   OverlayEntry? _timePickerOverlay;
   int _homeAwayKey = 0; // 0=not set, 1=Home, 2=Away, 3=Neutral (from API)
   int _arrivalTimeKey = 0; // 0=No set arrival time (from API)
@@ -157,15 +159,23 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   int _bottomColorIndex = 0;
   int _socksColorIndex = 0;
 
+  // ─── Single Active Dropdown / Overlay Dismissal ──────────────────────────────
+
+  void _closeAllDropdowns({bool unfocus = false}) {
+    _hideLocationOverlay();
+    _removeTimePickerOverlay();
+    if (unfocus && mounted) {
+      FocusScope.of(context).unfocus();
+    }
+  }
 
   // ─── Location Overlay ────────────────────────────────────────────────────────
 
   void _showLocationOverlay() {
+    _removeTimePickerOverlay();
+
     final renderBox = _locationFieldKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
-
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
 
     if (_locationOverlay != null) {
       _locationOverlay!.markNeedsBuild();
@@ -175,23 +185,21 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     _locationOverlay = OverlayEntry(
       builder: (_) {
         final colors = AppColors.current;
+        final box = _locationFieldKey.currentContext?.findRenderObject() as RenderBox?;
+        final width = box?.size.width ?? (MediaQuery.of(context).size.width - 38);
+
         return Stack(
           children: [
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: _hideLocationOverlay,
-                child: const SizedBox.expand(),
-              ),
-            ),
-            Positioned(
-              left: offset.dx,
-              top: offset.dy + size.height + 4,
-              width: size.width,
+            CompositedTransformFollower(
+              link: _locationLayerLink,
+              showWhenUnlinked: false,
+              targetAnchor: Alignment.bottomLeft,
+              followerAnchor: Alignment.topLeft,
+              offset: const Offset(0, 4),
               child: Material(
                 color: Colors.transparent,
-                child: GestureDetector(
-                  onTap: () {},
+                child: SizedBox(
+                  width: width,
                   child: Container(
                     constraints: const BoxConstraints(maxHeight: 220),
                     decoration: BoxDecoration(
@@ -200,7 +208,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                       border: Border.all(color: colors.border),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
+                          color: Colors.black.withValues(alpha: 0.12),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -278,6 +286,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   }
 
   void _onLocationChanged(String val) {
+    _removeTimePickerOverlay();
     _locationDebounceTimer?.cancel();
     if (val.trim().isEmpty) {
       _hideLocationOverlay();
@@ -342,45 +351,45 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     }
   }
 
-  @override
   void _showStartTimeOverlay() {
-    _removeTimePickerOverlay();
+    _closeAllDropdowns();
     _clampStartTimeToNowIfToday(); // ensure wheel opens at a valid time
 
     final renderBox = _startTimeFieldKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-
     _timePickerOverlay = OverlayEntry(
-      builder: (_) => Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: _removeTimePickerOverlay,
-              child: const SizedBox.expand(),
-            ),
-          ),
-          Positioned(
-            left: offset.dx,
-            top: offset.dy + size.height + 4,
-            child: Material(
-              color: Colors.transparent,
-              child: GestureDetector(
-                onTap: () {},
-                child: _buildCustomTimePickerCard(
-                  onTimeChanged: () {
-                    setState(() => _clampStartTimeToNowIfToday());
-                    _timePickerOverlay?.markNeedsBuild();
-                  },
+      builder: (_) {
+        final box = _startTimeFieldKey.currentContext?.findRenderObject() as RenderBox?;
+        final width = box?.size.width;
+
+        return Stack(
+          children: [
+            CompositedTransformFollower(
+              link: _startTimeLayerLink,
+              showWhenUnlinked: false,
+              targetAnchor: Alignment.bottomLeft,
+              followerAnchor: Alignment.topLeft,
+              offset: const Offset(0, 4),
+              child: Material(
+                color: Colors.transparent,
+                child: SizedBox(
+                  width: width,
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: _buildCustomTimePickerCard(
+                      onTimeChanged: () {
+                        setState(() => _clampStartTimeToNowIfToday());
+                        _timePickerOverlay?.markNeedsBuild();
+                      },
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
 
     Overlay.of(context).insert(_timePickerOverlay!);
@@ -516,18 +525,6 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     super.dispose();
   }
 
-  @override
-  void didChangeMetrics() {
-    super.didChangeMetrics();
-    final bottomInset = WidgetsBinding.instance.platformDispatcher.views.first.viewInsets.bottom;
-    if (bottomInset == 0.0) {
-      final currentFocus = FocusScope.of(context);
-      if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
-        currentFocus.unfocus();
-      }
-    }
-  }
-
   // Dynamic End Time computation based on Start Time + Duration
   String _getEndTimeString() {
     final startMinutes = _startTime.hour * 60 + _startTime.minute;
@@ -570,6 +567,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
   // Pickers
   Future<void> _pickDate(BuildContext context) async {
+    _closeAllDropdowns(unfocus: true);
     final today = DateUtils.dateOnly(DateTime.now());
     final parent = widget.parentEvent;
 
@@ -603,6 +601,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   }
 
   Future<void> _pickStartDate(BuildContext context) async {
+    _closeAllDropdowns(unfocus: true);
     final picked = await showDatePicker(
       context: context,
       initialDate: _startDate ?? DateTime.now(),
@@ -620,6 +619,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   }
 
   Future<void> _pickEndDate(BuildContext context) async {
+    _closeAllDropdowns(unfocus: true);
     final picked = await showDatePicker(
       context: context,
       initialDate: _endDate ?? _startDate ?? DateTime.now(),
@@ -848,6 +848,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           _showError('Please enter a title');
           return;
         }
+        if (!RegExp(r'[a-zA-Z]').hasMatch(title)) {
+          _showError('Title must contain at least one letter');
+          return;
+        }
         allowForFutureGames = false;
       }
 
@@ -900,6 +904,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         final title = _titleController.text.trim();
         if (title.isEmpty) {
           _showError('Please enter a title');
+          return;
+        }
+        if (!RegExp(r'[a-zA-Z]').hasMatch(title)) {
+          _showError('Title must contain at least one letter');
           return;
         }
         if (_startDate == null) {
@@ -1061,7 +1069,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       title: isDuplicateMode ? 'Duplicate Event' : isEditMode ? 'Edit Event' : (widget.title ?? 'New Event'),
       leftIcon: Icons.close,
       leftLabel: 'Close',
-      onLeftTap: () => context.pop(),
+      onLeftTap: () {
+        _closeAllDropdowns(unfocus: true);
+        context.pop();
+      },
       rightWidget: dropdownState.isSavingNewEvent
           ? const Padding(
               padding: EdgeInsets.symmetric(horizontal: 12),
@@ -1073,7 +1084,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             )
           : null,
       rightText: 'Save',
-      onRightTap: (dropdownState.isLoadingNewEventDropdowns || dropdownState.isSavingNewEvent) ? null : _onSave,
+      onRightTap: (dropdownState.isLoadingNewEventDropdowns || dropdownState.isSavingNewEvent)
+          ? null
+          : () {
+              _closeAllDropdowns(unfocus: true);
+              _onSave();
+            },
     );
 
     // Full-screen loader while fetching dropdown options
@@ -1137,29 +1153,33 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           children: [
             subHeader,
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 10),
-                    child: Text(
-                      isDuplicateMode ? 'Duplicate Event' : isEditMode ? 'Edit Event' : (widget.title ?? 'New Event'),
-                      style: AppTextStyles.heading22.copyWith(color: colors.textPrimary, fontWeight: FontWeight.bold),
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () => _closeAllDropdowns(unfocus: true),
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: Text(
+                        isDuplicateMode ? 'Duplicate Event' : isEditMode ? 'Edit Event' : (widget.title ?? 'New Event'),
+                        style: AppTextStyles.heading22.copyWith(color: colors.textPrimary, fontWeight: FontWeight.bold),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildFormContainer(dropdowns),
-                  if (isEditMode && !isDuplicateMode) ...[
-                    const SizedBox(height: 16),
-                    EventEditDangerCard(
-                      isEdit: true,
-                      isCancelled: _isCancelled,
-                      onCancelledChanged: (v) => setState(() => _isCancelled = v),
-                      onDelete: _handleDeleteEvent,
-                    ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
+                    _buildFormContainer(dropdowns),
+                    if (isEditMode && !isDuplicateMode) ...[
+                      const SizedBox(height: 16),
+                      EventEditDangerCard(
+                        isEdit: true,
+                        isCancelled: _isCancelled,
+                        onCancelledChanged: (v) => setState(() => _isCancelled = v),
+                        onDelete: _handleDeleteEvent,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ],
@@ -1240,13 +1260,16 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     final isSelected = _schedulingTypeKey == key;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() {
-          _schedulingTypeKey = key;
-          // Single Session → default to Practice if no event type set
-          if (key == 1 && _eventTypeKey == 0) _eventTypeKey = 2;
-          // Tournament / League → reset event type to 0 (not applicable)
-          if (key == 2 || key == 3) _eventTypeKey = 0;
-        }),
+        onTap: () {
+          _closeAllDropdowns(unfocus: true);
+          setState(() {
+            _schedulingTypeKey = key;
+            // Single Session → default to Practice if no event type set
+            if (key == 1 && _eventTypeKey == 0) _eventTypeKey = 2;
+            // Tournament / League → reset event type to 0 (not applicable)
+            if (key == 2 || key == 3) _eventTypeKey = 0;
+          });
+        },
         child: Container(
           height: 44,
           alignment: Alignment.center,
@@ -1374,6 +1397,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             label: 'Title',
             hintText: 'e.g. Practice',
             controller: _titleController,
+            onTap: () => _closeAllDropdowns(),
           ),
         ],
         const SizedBox(height: 20),
@@ -1396,6 +1420,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
               child: KeyedSubtree(
                 key: _startTimeFieldKey,
                 child: _buildPickerField(
+                  fieldKey: _startTimeFieldKey,
+                  layerLink: _startTimeLayerLink,
                   label: 'Start time',
                   valueText: timeStr,
                   isPlaceholder: false,
@@ -1509,6 +1535,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         // Location Field
         _buildTextField(
           fieldKey: _locationFieldKey,
+          layerLink: _locationLayerLink,
           label: 'Location',
           hintText: 'Search location...',
           controller: _locationController,
@@ -1545,6 +1572,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           hintText: 'Arrive 30 min early. Bring both jerseys.',
           controller: _notesController,
           maxLines: 3,
+          onTap: () => _closeAllDropdowns(),
         ),
         const SizedBox(height: 24),
         _buildBottomButton(),
@@ -1593,6 +1621,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             label: 'Title',
             hintText: titlePlaceholder,
             controller: _titleController,
+            onTap: () => _closeAllDropdowns(),
           ),
         ] else ...[
           _buildOpponentSection(dropdowns),
@@ -1665,6 +1694,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                 child: KeyedSubtree(
                   key: _startTimeFieldKey,
                   child: _buildPickerField(
+                    fieldKey: _startTimeFieldKey,
+                    layerLink: _startTimeLayerLink,
                     label: 'Start time',
                     valueText: timeStr,
                     isPlaceholder: false,
@@ -1781,6 +1812,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         // Location Field
         _buildTextField(
           fieldKey: _locationFieldKey,
+          layerLink: _locationLayerLink,
           label: 'Location',
           hintText: 'Search location...',
           controller: _locationController,
@@ -1819,6 +1851,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           hintText: 'Arrive 30 min early. Bring both jerseys.',
           controller: _notesController,
           maxLines: 3,
+          onTap: () => _closeAllDropdowns(),
         ),
         const SizedBox(height: 24),
         _buildBottomButton(),
@@ -1858,7 +1891,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     final colors = AppColors.current;
     final isSelected = _homeAwayKey == option.key;
     return GestureDetector(
-      onTap: () => setState(() => _homeAwayKey = option.key),
+      onTap: () {
+        _closeAllDropdowns(unfocus: true);
+        setState(() => _homeAwayKey = option.key);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 15),
         decoration: BoxDecoration(
@@ -1895,7 +1931,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     final borderColor = isSelected ? selectedColor : colors.border;
 
     return GestureDetector(
-      onTap: () => setState(() => _eventTypeKey = type.key),
+      onTap: () {
+        _closeAllDropdowns(unfocus: true);
+        setState(() => _eventTypeKey = type.key);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
@@ -1922,7 +1961,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     final isSelected = _knowsSchedule == activeValue;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _knowsSchedule = activeValue),
+        onTap: () {
+          _closeAllDropdowns(unfocus: true);
+          setState(() => _knowsSchedule = activeValue);
+        },
         child: Container(
           constraints: const BoxConstraints(minHeight: 40),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -1955,6 +1997,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
   Widget _buildTextField({
     Key? fieldKey,
+    LayerLink? layerLink,
     required String label,
     required String hintText,
     required TextEditingController controller,
@@ -1962,8 +2005,47 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     Widget? suffixIcon,
     int maxLines = 1,
     ValueChanged<String>? onChanged,
+    VoidCallback? onTap,
   }) {
     final colors = AppColors.current;
+    Widget textField = TextField(
+      key: fieldKey,
+      controller: controller,
+      maxLines: maxLines,
+      onChanged: onChanged,
+      onTap: onTap,
+      style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
+      cursorColor: colors.primary,
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: AppTextStyles.body16.copyWith(color: colors.textSecondary.withValues(alpha: 0.5)),
+        prefixIcon: prefixIcon,
+        suffixIcon: suffixIcon,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        filled: true,
+        fillColor: colors.isDark ? colors.background : Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: colors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: colors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: colors.primary, width: 1.5),
+        ),
+      ),
+    );
+
+    if (layerLink != null) {
+      textField = CompositedTransformTarget(
+        link: layerLink,
+        child: textField,
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1972,40 +2054,14 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
         ),
         const SizedBox(height: 8),
-        TextField(
-          key: fieldKey,
-          controller: controller,
-          maxLines: maxLines,
-          onChanged: onChanged,
-          style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
-          cursorColor: colors.primary,
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle: AppTextStyles.body16.copyWith(color: colors.textSecondary.withValues(alpha: 0.5)),
-            prefixIcon: prefixIcon,
-            suffixIcon: suffixIcon,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            filled: true,
-            fillColor: colors.isDark ? colors.background : Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: colors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: colors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: colors.primary, width: 1.5),
-            ),
-          ),
-        ),
+        textField,
       ],
     );
   }
 
   Widget _buildPickerField({
+    Key? fieldKey,
+    LayerLink? layerLink,
     required String label,
     required String valueText,
     required bool isPlaceholder,
@@ -2013,6 +2069,43 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     required VoidCallback onTap,
   }) {
     final colors = AppColors.current;
+    Widget picker = InkWell(
+      key: fieldKey,
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: colors.isDark ? colors.background : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: colors.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                valueText,
+                style: AppTextStyles.body16.copyWith(
+                  color: isPlaceholder
+                      ? colors.textSecondary.withValues(alpha: 0.5)
+                      : colors.textPrimary,
+                ),
+              ),
+            ),
+            Icon(icon, color: colors.textSecondary, size: 20),
+          ],
+        ),
+      ),
+    );
+
+    if (layerLink != null) {
+      picker = CompositedTransformTarget(
+        link: layerLink,
+        child: picker,
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2021,34 +2114,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
         ),
         const SizedBox(height: 8),
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: colors.isDark ? colors.background : Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: colors.border),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    valueText,
-                    style: AppTextStyles.body16.copyWith(
-                      color: isPlaceholder
-                          ? colors.textSecondary.withValues(alpha: 0.5)
-                          : colors.textPrimary,
-                    ),
-                  ),
-                ),
-                Icon(icon, color: colors.textSecondary, size: 20),
-              ],
-            ),
-          ),
-        ),
+        picker,
       ],
     );
   }
@@ -2072,6 +2138,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         child: DropdownButton<T>(
           value: value,
           isExpanded: true,
+          onTap: () => _closeAllDropdowns(unfocus: true),
           items: items.map((item) {
             return DropdownMenuItem<T>(
               value: item,
@@ -2081,7 +2148,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
               ),
             );
           }).toList(),
-          onChanged: onChanged,
+          onChanged: (val) {
+            _closeAllDropdowns(unfocus: true);
+            onChanged(val);
+          },
           icon: Icon(Icons.keyboard_arrow_down, color: colors.textSecondary, size: 20),
           dropdownColor: colors.isDark ? colors.card : Colors.white,
         ),
@@ -2116,7 +2186,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             final isSelected = selectedIndex == index;
 
             return GestureDetector(
-              onTap: () => onColorSelected(index),
+              onTap: () {
+                _closeAllDropdowns(unfocus: true);
+                onColorSelected(index);
+              },
               child: Container(
                 width: 38,
                 height: 38,
@@ -2215,12 +2288,15 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                   _buildUniformTemplateTab(
                     label: t.templateName,
                     isSelected: _selectedApiTemplate?.id == t.id,
-                    onTap: () => setState(() {
-                      _selectedUniformMode = t.templateName;
-                      _selectedApiTemplate = t;
-                      _showSaveTemplateForm = false;
-                      _templateNameController.clear();
-                    }),
+                    onTap: () {
+                      _closeAllDropdowns(unfocus: true);
+                      setState(() {
+                        _selectedUniformMode = t.templateName;
+                        _selectedApiTemplate = t;
+                        _showSaveTemplateForm = false;
+                        _templateNameController.clear();
+                      });
+                    },
                   ),
                   const SizedBox(width: 10),
                 ],
@@ -2228,25 +2304,31 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                   _buildUniformTemplateTab(
                     label: t.name,
                     isSelected: _selectedApiTemplate == null && _selectedUniformMode == t.name,
-                    onTap: () => setState(() {
-                      _selectedUniformMode = t.name;
-                      _selectedApiTemplate = null;
-                      _topColorIndex = t.topIndex;
-                      _bottomColorIndex = t.bottomIndex;
-                      _socksColorIndex = t.socksIndex;
-                      _showSaveTemplateForm = false;
-                      _templateNameController.clear();
-                    }),
+                    onTap: () {
+                      _closeAllDropdowns(unfocus: true);
+                      setState(() {
+                        _selectedUniformMode = t.name;
+                        _selectedApiTemplate = null;
+                        _topColorIndex = t.topIndex;
+                        _bottomColorIndex = t.bottomIndex;
+                        _socksColorIndex = t.socksIndex;
+                        _showSaveTemplateForm = false;
+                        _templateNameController.clear();
+                      });
+                    },
                   ),
                   const SizedBox(width: 10),
                 ],
                 _buildUniformTemplateTab(
                   label: 'New combo',
                   isSelected: isNewCombo,
-                  onTap: () => setState(() {
-                    _selectedUniformMode = 'New combo';
-                    _selectedApiTemplate = null;
-                  }),
+                  onTap: () {
+                    _closeAllDropdowns(unfocus: true);
+                    setState(() {
+                      _selectedUniformMode = 'New combo';
+                      _selectedApiTemplate = null;
+                    });
+                  },
                 ),
               ],
             ),
@@ -2281,7 +2363,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           const SizedBox(height: 16),
 
           GestureDetector(
-            onTap: () => setState(() => _showSaveTemplateForm = !_showSaveTemplateForm),
+            onTap: () {
+              _closeAllDropdowns(unfocus: true);
+              setState(() => _showSaveTemplateForm = !_showSaveTemplateForm);
+            },
             child: Text(
               'Save this combo as a template',
               style: AppTextStyles.body14.copyWith(
@@ -2297,6 +2382,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9 ]')),
               ],
+              onTap: () => _closeAllDropdowns(),
               onChanged: (_) => setState(() {}),
               style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
               cursorColor: colors.primary,
@@ -2431,6 +2517,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           const SizedBox(height: 8),
           TextField(
             controller: _newOpponentNameController,
+            onTap: () => _closeAllDropdowns(),
             style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
             cursorColor: colors.primary,
             decoration: InputDecoration(

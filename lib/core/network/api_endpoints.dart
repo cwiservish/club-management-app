@@ -12,7 +12,7 @@ abstract final class ApiEndpoints {
   ApiEndpoints._();
 
   // ─── Base ──────────────────────────────────────────────────────────────────
-  static const String baseUrl = 'https://qa.playbook365.com/apps/club';
+  static const String baseUrl = 'https://qa.sportid.app/apps/club';
 
 
   // ─── Team ──────────────────────────────────────────────────────────────────

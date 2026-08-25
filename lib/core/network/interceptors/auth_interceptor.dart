@@ -36,29 +36,11 @@ class AuthInterceptor extends Interceptor {
       return handler.next(options);
     }
 
-    if (token != null) {
+    if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
-      return handler.next(options);
     }
 
-    // Token is null, but this is a protected endpoint. Trigger logout/popup.
-    onUnauthorized?.call();
-
-    return handler.reject(
-      DioException(
-        requestOptions: options,
-        error: 'Unauthorized. Token not provided.',
-        response: Response(
-          requestOptions: options,
-          statusCode: 401,
-          data: {
-            'success': false,
-            'message': 'Unauthorized. Token not provided.',
-          },
-        ),
-        type: DioExceptionType.badResponse,
-      ),
-    );
+    return handler.next(options);
   }
 
   @override

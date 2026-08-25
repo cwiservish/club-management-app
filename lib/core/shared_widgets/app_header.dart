@@ -129,42 +129,49 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
               size: 24,
             ),
           ),
-          const SizedBox(width: 34),
-          const Spacer(),
-          GestureDetector(
-            onTap: () => _showTeamMenu(context, teamsList, activeTeam),
-            child: Container(
-              height: 37,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: pillBgColor,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0D101828),
-                    offset: Offset(0, 1),
-                    blurRadius: 2,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Center(
+              child: GestureDetector(
+                onTap: () => _showTeamMenu(context, teamsList, activeTeam),
+                child: Container(
+                  height: 37,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: pillBgColor,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0D101828),
+                        offset: Offset(0, 1),
+                        blurRadius: 2,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    activeTeamName,
-                    style: AppTextStyles.body16.copyWith(
-                      color: textColor,
-                      fontWeight: FontWeight.w600,
-                      height: 1.25,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          activeTeamName,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: AppTextStyles.body16.copyWith(
+                            color: textColor,
+                            fontWeight: FontWeight.w600,
+                            height: 1.25,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(Icons.keyboard_arrow_down, color: textColor, size: 20),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Icon(Icons.keyboard_arrow_down, color: textColor, size: 20),
-                ],
+                ),
               ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
           InkWell(
             onTap: () => showAddMenu(context, activeTeam: activeTeam),
             child: Padding(
@@ -176,7 +183,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
           GestureDetector(
             onTap: () => context.go(AppRoutes.settings),
             child: Icon(

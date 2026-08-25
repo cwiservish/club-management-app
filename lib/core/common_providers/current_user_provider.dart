@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../local_storage/app_storage.dart';
@@ -17,23 +18,34 @@ import 'selected_team_provider.dart';
 class CurrentUserNotifier extends AsyncNotifier<AppUser?> {
   @override
   Future<AppUser?> build() async {
-    print('[CurrentUserProvider] Initializing...');
-    final user = await ref.read(appStorageProvider).readUser();
-    print('[CurrentUserProvider] Loaded user: ${user?.email}');
+    try {
+      debugPrint('[CurrentUserProvider] Initializing...');
+      final user = await ref.read(appStorageProvider).readUser();
+      final token = await ref.read(appStorageProvider).readToken();
+      debugPrint('[CurrentUserProvider] Loaded user: ${user?.email}, token present: ${token != null}');
 
-    // Eagerly re-hydrate authTokenProvider on startup
-    final token = await ref.read(appStorageProvider).readToken();
-    if (token != null) {
-      ref.read(authTokenProvider.notifier).setToken(token);
+      if (user != null && token != null && token.isNotEmpty) {
+        ref.read(authTokenProvider.notifier).setToken(token);
+
+        final savedUuid = await ref.read(appStorageProvider).readSelectedTeamUuid();
+        if (savedUuid != null) {
+          SelectedTeamNotifier.setInitialUuid(savedUuid);
+        }
+        return user;
+      }
+
+      if (user != null && (token == null || token.isEmpty)) {
+        debugPrint('[CurrentUserProvider] User found without valid token. Clearing session.');
+        await ref.read(appStorageProvider).clearAll();
+        ref.read(authTokenProvider.notifier).setToken(null);
+        return null;
+      }
+
+      return user;
+    } catch (e, st) {
+      debugPrint('[CurrentUserProvider] Error loading persisted user session: $e\n$st');
+      return null;
     }
-
-    // Eagerly re-hydrate selected team UUID on startup
-    final savedUuid = await ref.read(appStorageProvider).readSelectedTeamUuid();
-    if (savedUuid != null) {
-      SelectedTeamNotifier.setInitialUuid(savedUuid);
-    }
-
-    return user;
   }
 
   Future<void> setUser(AppUser user) async {

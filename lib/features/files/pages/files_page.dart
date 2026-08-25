@@ -1,6 +1,6 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/common_providers/theme_provider.dart';
@@ -49,16 +49,16 @@ class FilesPage extends ConsumerWidget {
     }
   }
 
-  Future<void> _pickAndUploadFile(BuildContext context, WidgetRef ref, ImageSource source) async {
+  Future<void> _pickAndUploadFile(BuildContext context, WidgetRef ref) async {
     try {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(
-        source: source,
-        imageQuality: 85,
+      final result = await FilePicker.pickFiles(
+        type: FileType.any,
+        allowMultiple: false,
       );
 
-      if (pickedFile != null) {
-        final success = await ref.read(filesProvider.notifier).uploadFile(pickedFile.path);
+      if (result != null && result.files.single.path != null) {
+        final filePath = result.files.single.path!;
+        final success = await ref.read(filesProvider.notifier).uploadFile(filePath);
         if (context.mounted) {
           if (success) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -88,64 +88,6 @@ class FilesPage extends ConsumerWidget {
         );
       }
     }
-  }
-
-  void _showSourceBottomSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.current.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.current.gray300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Upload File',
-                style: AppTextStyles.heading16.copyWith(
-                  color: AppColors.current.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: Icon(Icons.photo_library_outlined, color: AppColors.current.primary),
-                title: Text(
-                  'Choose from Gallery',
-                  style: AppTextStyles.body15.copyWith(color: AppColors.current.textPrimary),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickAndUploadFile(context, ref, ImageSource.gallery);
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.camera_alt_outlined, color: AppColors.current.primary),
-                title: Text(
-                  'Take a Photo',
-                  style: AppTextStyles.body15.copyWith(color: AppColors.current.textPrimary),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickAndUploadFile(context, ref, ImageSource.camera);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, FileItem file) {
@@ -223,7 +165,7 @@ class FilesPage extends ConsumerWidget {
                 SubHeader(
                   title: 'Files',
                   rightWidget: InkWell(
-                    onTap: () => _showSourceBottomSheet(context, ref),
+                    onTap: () => _pickAndUploadFile(context, ref),
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
                       padding: const EdgeInsets.all(8),
@@ -248,7 +190,7 @@ class FilesPage extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 FilesUploadButton(
-                                  onTap: () => _showSourceBottomSheet(context, ref),
+                                  onTap: () => _pickAndUploadFile(context, ref),
                                 ),
                                 const SizedBox(height: 24),
                                 const FilesSectionLabel(title: 'Recent Files'),

@@ -1115,6 +1115,16 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
       return;
     }
 
+    if (!RegExp(r'[a-zA-Z]').hasMatch(eventName)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Title must contain at least one letter'),
+          backgroundColor: AppColors.current.error,
+        ),
+      );
+      return;
+    }
+
     if (_selectedDateTime == null && !_timeTbd) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

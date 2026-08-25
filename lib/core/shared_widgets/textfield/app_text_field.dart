@@ -2,21 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 
-class _NoHandleControls extends MaterialTextSelectionControls {
-  @override
-  Widget buildHandle(BuildContext context, TextSelectionHandleType type, double textLineHeight, [VoidCallback? onTap]) {
-    return const SizedBox.shrink();
-  }
-
-  @override
-  Size getHandleSize(double textLineHeight) => Size.zero;
-
-  @override
-  Offset getHandleAnchor(TextSelectionHandleType type, double textLineHeight) => Offset.zero;
-}
-
-final _noHandleControls = _NoHandleControls();
-
 class AppTextField extends StatelessWidget {
   final TextEditingController controller;
   final String? hintText;
@@ -55,7 +40,6 @@ class AppTextField extends StatelessWidget {
       minLines: minLines,
       maxLines: maxLines,
       onChanged: onChanged,
-      selectionControls: _noHandleControls,
       cursorColor: colors.primary,
       style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
       decoration: InputDecoration(

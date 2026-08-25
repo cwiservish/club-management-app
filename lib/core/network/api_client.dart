@@ -12,6 +12,7 @@ import 'interceptors/auth_interceptor.dart';
 import 'interceptors/error_interceptor.dart';
 import 'interceptors/logging_interceptor.dart';
 import 'models/api_response.dart';
+import '../local_storage/app_storage.dart';
 import 'token_storage.dart';
 
 // ─── ApiClient ────────────────────────────────────────────────────────────────
@@ -197,7 +198,16 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 
   dio.interceptors.addAll([
     AuthInterceptor(
-      getToken: () async => ref.read(authTokenProvider),
+      getToken: () async {
+        var token = ref.read(authTokenProvider);
+        if (token == null || token.isEmpty) {
+          token = await ref.read(appStorageProvider).readToken();
+          if (token != null && token.isNotEmpty) {
+            ref.read(authTokenProvider.notifier).setToken(token);
+          }
+        }
+        return token;
+      },
       onUnauthorized: () async {
         final isLoggedIn = ref.read(currentUserProvider).value != null;
         if (isLoggedIn) {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
@@ -41,18 +42,21 @@ class LoginNotifier extends AsyncNotifier<void> {
 
       await ref.read(appStorageProvider).saveToken(token);
       ref.read(authTokenProvider.notifier).setToken(token);
-
-      final res = await ref.read(apiClientProvider).post(
-        ApiEndpoints.clubTeamsList,
-        body: '',
-        options: Options(contentType: 'application/x-www-form-urlencoded'),
-      );
-      final grid = ((res.data as Map<String, dynamic>?)?['grid'] as List?) ?? [];
-      final teams = grid.map((e) => Team.fromJson(e as Map<String, dynamic>)).toList();
-      await ref.read(appStorageProvider).saveTeams(teams);
-
       await ref.read(currentUserProvider.notifier).setUser(user);
-      ref.invalidate(userTeamsProvider);
+
+      try {
+        final res = await ref.read(apiClientProvider).post(
+          ApiEndpoints.clubTeamsList,
+          body: '',
+          options: Options(contentType: 'application/x-www-form-urlencoded'),
+        );
+        final grid = ((res.data as Map<String, dynamic>?)?['grid'] as List?) ?? [];
+        final teams = grid.map((e) => Team.fromJson(e as Map<String, dynamic>)).toList();
+        await ref.read(appStorageProvider).saveTeams(teams);
+        ref.invalidate(userTeamsProvider);
+      } catch (e) {
+        debugPrint('[LoginNotifier] Failed to load user teams on login: $e');
+      }
     });
   }
 }
