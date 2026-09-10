@@ -121,15 +121,20 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          GestureDetector(
+          InkResponse(
             onTap: () => showAccountDrawer(context),
-            child: CustomSvgIcon(
-              assetPath: AppAssets.rosterIcon,
-              color: textColor,
-              size: 24,
+            radius: 24,
+            customBorder: const CircleBorder(),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: CustomSvgIcon(
+                assetPath: AppAssets.rosterIcon,
+                color: textColor,
+                size: 24,
+              ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           Expanded(
             child: Center(
               child: GestureDetector(
@@ -171,9 +176,11 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          InkWell(
+          const SizedBox(width: 4),
+          InkResponse(
             onTap: () => showAddMenu(context, activeTeam: activeTeam),
+            radius: 20,
+            customBorder: const CircleBorder(),
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: CustomSvgIcon(
@@ -183,13 +190,18 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
+          const SizedBox(width: 4),
+          InkResponse(
             onTap: () => context.go(AppRoutes.settings),
-            child: Icon(
-              Icons.more_vert,
-              color: textColor,
-              size: 28,
+            radius: 22,
+            customBorder: const CircleBorder(),
+            child: Padding(
+              padding: const EdgeInsets.all(6.0),
+              child: Icon(
+                Icons.more_vert,
+                color: textColor,
+                size: 26,
+              ),
             ),
           ),
         ],

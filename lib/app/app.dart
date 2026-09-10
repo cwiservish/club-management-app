@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'theme/app_colors.dart';
@@ -11,19 +12,32 @@ class Playbook365App extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final isDark = themeMode == ThemeMode.dark;
 
-    return MaterialApp.router(
-      title: 'Playbook365',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        scaffoldBackgroundColor: AppColors.current.background,
+    final overlayStyle = SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: isDark ? AppColors.dark.surface : AppColors.light.surface,
+      systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      systemNavigationBarDividerColor: Colors.transparent,
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: MaterialApp.router(
+        title: 'Playbook365',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          fontFamily: 'Inter',
+          scaffoldBackgroundColor: AppColors.current.background,
+        ),
+        builder: (_, child) => KeyedSubtree(
+          key: ValueKey(themeMode),
+          child: child!,
+        ),
+        routerConfig: ref.watch(appRouterProvider),
       ),
-      builder: (_, child) => KeyedSubtree(
-        key: ValueKey(themeMode),
-        child: child!,
-      ),
-      routerConfig: ref.watch(appRouterProvider),
     );
   }
 }

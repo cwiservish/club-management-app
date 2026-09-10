@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -24,6 +25,7 @@ class _ThemeModeNotifier extends Notifier<ThemeMode> {
   ThemeMode build() {
     _instance = this;
     AppColors.setCurrent(AppColors.light);
+    _applyOverlay(false);
     // Async: restore persisted preference without blocking build
     Future(() async {
       final saved = await _storage.read(key: _key);
@@ -33,9 +35,22 @@ class _ThemeModeNotifier extends Notifier<ThemeMode> {
   }
 
   void _apply(ThemeMode mode) {
-    AppColors.setCurrent(mode == ThemeMode.dark ? AppColors.dark : AppColors.light);
-    _storage.write(key: _key, value: mode == ThemeMode.dark ? 'dark' : 'light');
+    final isDark = mode == ThemeMode.dark;
+    AppColors.setCurrent(isDark ? AppColors.dark : AppColors.light);
+    _storage.write(key: _key, value: isDark ? 'dark' : 'light');
+    _applyOverlay(isDark);
     state = mode;
+  }
+
+  void _applyOverlay(bool isDark) {
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: isDark ? AppColors.dark.surface : AppColors.light.surface,
+      systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      systemNavigationBarDividerColor: Colors.transparent,
+    ));
   }
 }
 
