@@ -11,7 +11,6 @@ import '../models/chat_member.dart';
 import '../providers/chat_state_provider.dart';
 import '../models/save_channel_models.dart';
 import '../models/remove_channel_models.dart';
-import '../models/member_list_models.dart';
 
 class EditChannelPage extends ConsumerStatefulWidget {
   final ChatChannel channel;
@@ -82,6 +81,110 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
         _selectedMembers.add(member);
       }
     });
+  }
+
+  Future<void> _confirmRemoveMember(ChatMember member) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.current.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(
+          'Remove Member',
+          style: AppTextStyles.heading18.copyWith(
+            color: AppColors.current.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to remove ${member.name} from this channel?',
+          style: AppTextStyles.body14.copyWith(color: AppColors.current.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.current.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Remove',
+              style: AppTextStyles.body14.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      _toggleMemberSelection(member);
+    }
+  }
+
+  Future<void> _onSavePressed() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final channelName = widget.channel.canEdit
+        ? _nameController.text.trim()
+        : widget.channel.name;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.current.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(
+          'Save Changes',
+          style: AppTextStyles.heading18.copyWith(
+            color: AppColors.current.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to save changes to #$channelName?',
+          style: AppTextStyles.body14.copyWith(color: AppColors.current.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.current.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Save',
+              style: AppTextStyles.body14.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _submit();
+    }
   }
 
   Future<void> _submit() async {
@@ -305,7 +408,7 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
                               if (!widget.channel.canEdit) ...[
                                 const SizedBox(height: 8),
                                 Text(
-                                  'You do not have permission to edit this channel\'s name.',
+                                  'You have view-only access to this channel.',
                                   style: AppTextStyles.body13.copyWith(
                                     color: AppColors.current.textSecondary,
                                   ),
@@ -315,14 +418,16 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
                               _buildSectionHeader('CHANNEL PARTICIPANTS (${_selectedMembers.length})'),
                               const SizedBox(height: 12),
                               _buildParticipantsList(),
-                              const SizedBox(height: 24),
-                              _buildSectionHeader('ADD NEW MEMBERS'),
-                              const SizedBox(height: 12),
-                              _buildSearchField(),
-                              const SizedBox(height: 16),
-                              _buildSearchResults(selectedTeam.uuid),
-                              const SizedBox(height: 40),
-                              _buildDangerZone(),
+                              if (widget.channel.canEdit) ...[
+                                const SizedBox(height: 24),
+                                _buildSectionHeader('ADD NEW MEMBERS'),
+                                const SizedBox(height: 12),
+                                _buildSearchField(),
+                                const SizedBox(height: 16),
+                                _buildSearchResults(selectedTeam.uuid),
+                                const SizedBox(height: 40),
+                                _buildDangerZone(),
+                              ],
                             ],
                           ),
                         ),
@@ -380,25 +485,26 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Edit Channel',
+              widget.channel.canEdit ? 'Edit Channel' : 'Channel Details',
               style: AppTextStyles.heading18.copyWith(
                 color: AppColors.current.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          TextButton(
-            onPressed: isValid && !_isSaving ? _submit : null,
-            child: Text(
-              'Save',
-              style: AppTextStyles.body16.copyWith(
-                color: isValid && !_isSaving 
-                    ? AppColors.current.primary 
-                    : AppColors.current.textSecondary.withOpacity(0.4),
-                fontWeight: FontWeight.bold,
+          if (widget.channel.canEdit)
+            TextButton(
+              onPressed: isValid && !_isSaving ? _onSavePressed : null,
+              child: Text(
+                'Save',
+                style: AppTextStyles.body16.copyWith(
+                  color: isValid && !_isSaving 
+                      ? AppColors.current.primary 
+                      : AppColors.current.textSecondary.withOpacity(0.4),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -491,12 +597,14 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
     }
 
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.current.card,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.current.border),
       ),
       child: ListView.separated(
+        padding: EdgeInsets.zero,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _selectedMembers.length,
@@ -527,10 +635,12 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
               member.email,
               style: AppTextStyles.label12.copyWith(color: AppColors.current.textSecondary),
             ),
-            trailing: IconButton(
-              icon: Icon(Icons.remove_circle_outline, color: AppColors.current.error),
-              onPressed: () => _toggleMemberSelection(member),
-            ),
+            trailing: widget.channel.canEdit
+                ? IconButton(
+                    icon: Icon(Icons.remove_circle_outline, color: AppColors.current.error),
+                    onPressed: () => _confirmRemoveMember(member),
+                  )
+                : null,
           );
         },
       ),
@@ -605,12 +715,14 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
         }
 
         return Container(
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: AppColors.current.card,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.current.border),
           ),
           child: ListView.separated(
+            padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: members.length,
@@ -666,12 +778,14 @@ class _EditChannelPageState extends ConsumerState<EditChannelPage> {
 
   Widget _buildSkeletonResults() {
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.current.card,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.current.border),
       ),
       child: ListView.separated(
+        padding: EdgeInsets.zero,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: 3,

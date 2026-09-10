@@ -177,23 +177,29 @@ class HomeNotifier extends Notifier<HomeState> {
     // (e.g. RSVP saved in event details). This keeps home in sync in real-time.
     ref.listen(eventRefreshSignalProvider, (_, __) {
       final team = ref.read(selectedTeamProvider);
-      if (team != null) Future.microtask(() => fetchEvents(team.uuid));
+      if (team != null) Future.microtask(() => fetchEvents(team.uuid, isRefresh: true));
     });
 
-    // Preserve existing events across rebuilds (e.g. when selectedTeamProvider
-    // re-emits the same team) so the UI never flashes a blank/loading state.
-    final previous = stateOrNull;
     return HomeState(
-      events:         previous?.events         ?? const [],
-      bannerImageUrl: previous?.bannerImageUrl,
-      userRsvps:      previous?.userRsvps      ?? const {},
+      events:         const [],
+      bannerImageUrl: null,
+      userRsvps:      const {},
       isLoading: activeTeam != null,
     );
   }
 
   /// Fetches events for the selected team from QA API.
-  Future<void> fetchEvents(String teamUuid) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+  Future<void> fetchEvents(String teamUuid, {bool isRefresh = false}) async {
+    if (!isRefresh) {
+      state = state.copyWith(
+        isLoading: true,
+        errorMessage: null,
+        events: const [],
+        userRsvps: const {},
+      );
+    } else {
+      state = state.copyWith(isLoading: true, errorMessage: null);
+    }
     try {
       final result = await ref.read(homeServiceProvider).fetchEvents(teamUuid);
       final fetched = result.events;
@@ -326,7 +332,7 @@ class HomeNotifier extends Notifier<HomeState> {
       // Reload the events list
       final activeTeam = ref.read(selectedTeamProvider);
       if (activeTeam != null) {
-        await fetchEvents(activeTeam.uuid);
+        await fetchEvents(activeTeam.uuid, isRefresh: true);
       } else {
         state = state.copyWith(isLoading: false);
       }

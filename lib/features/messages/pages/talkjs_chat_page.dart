@@ -73,16 +73,16 @@ class TalkJSChatPage extends ConsumerWidget {
     }
 
     String displayName = args.topic;
-    if (activeChannel != null && activeChannel!.channelType == 6 && activeChannel!.teamId != 0) {
+    if (activeChannel != null && activeChannel.channelType == 6 && activeChannel.teamId != 0) {
       final parts = <String>[];
-      if (activeChannel!.teamName != null && activeChannel!.teamName!.isNotEmpty) {
-        parts.add(activeChannel!.teamName!);
+      if (activeChannel.teamName != null && activeChannel.teamName!.isNotEmpty) {
+        parts.add(activeChannel.teamName!);
       }
-      if (activeChannel!.teamDivision != null && activeChannel!.teamDivision!.isNotEmpty) {
-        parts.add(activeChannel!.teamDivision!);
+      if (activeChannel.teamDivision != null && activeChannel.teamDivision!.isNotEmpty) {
+        parts.add(activeChannel.teamDivision!);
       }
-      if (activeChannel!.teamLevel != null && activeChannel!.teamLevel!.isNotEmpty) {
-        parts.add(activeChannel!.teamLevel!);
+      if (activeChannel.teamLevel != null && activeChannel.teamLevel!.isNotEmpty) {
+        parts.add(activeChannel.teamLevel!);
       }
       if (parts.isNotEmpty) {
         displayName = parts.join(' ');
@@ -148,6 +148,27 @@ class TalkJSChatPage extends ConsumerWidget {
     );
   }
 
+  void _openChannelDetails(BuildContext context, bool canEdit) {
+    context.push(
+      '${AppRoutes.messages}/${AppRoutes.editChannel}',
+      extra: ChatChannel(
+        chatChannelId: args.chatChannelId ?? 0,
+        uuid: args.conversationId,
+        clientId: 0,
+        name: args.topic,
+        channelType: 0,
+        isDefault: 0,
+        organizationId: 0,
+        teamId: 0,
+        createdById: 0,
+        createdByType: 0,
+        unreadCount: 0,
+        permission: args.permission ?? 'ReadWrite',
+        canEdit: canEdit,
+      ),
+    );
+  }
+
   // ─── App Bar ─────────────────────────────────────────────────────────────
 
   Widget _buildAppBar(BuildContext context, String displayName, {required bool canEdit}) {
@@ -161,6 +182,8 @@ class TalkJSChatPage extends ConsumerWidget {
               : 'Group Channel')
           : 'Direct Message';
     }
+
+    final bool canOpenDetails = args.isGroup && args.permission != 'None' && !args.conversationId.startsWith('replyto_');
 
     return Container(
       width: double.infinity,
@@ -186,36 +209,43 @@ class TalkJSChatPage extends ConsumerWidget {
 
                 // Center: Bold Title + Subtitle
                 Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        displayName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.body16.copyWith(
-                          color: AppColors.current.textPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                  child: InkWell(
+                    onTap: canOpenDetails ? () => _openChannelDetails(context, canEdit) : null,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            displayName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.body16.copyWith(
+                              color: AppColors.current.textPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            subtitle,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.label12.copyWith(
+                              color: AppColors.current.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 1),
-                      Text(
-                        subtitle,
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.label12.copyWith(
-                          color: AppColors.current.textSecondary,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
 
-                // Right: Bell + optional Settings
+                // Right: Settings + Bell
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (args.isGroup && args.permission != 'None' && !args.conversationId.startsWith('replyto_') && canEdit)
+                    if (canOpenDetails)
                       IconButton(
                         icon: Icon(
                           Icons.settings_outlined,
@@ -224,29 +254,8 @@ class TalkJSChatPage extends ConsumerWidget {
                         ),
                         padding: const EdgeInsets.all(4),
                         constraints: const BoxConstraints(),
-                        onPressed: () {
-                          context.push(
-                            '${AppRoutes.messages}/${AppRoutes.editChannel}',
-                            extra: ChatChannel(
-                              chatChannelId: args.chatChannelId ?? 0,
-                              uuid: args.conversationId,
-                              clientId: 0,
-                              name: args.topic,
-                              channelType: 0,
-                              isDefault: 0,
-                              organizationId: 0,
-                              teamId: 0,
-                              createdById: 0,
-                              createdByType: 0,
-                              unreadCount: 0,
-                              permission: args.permission ?? 'ReadWrite',
-                              canEdit: canEdit,
-                            ),
-                          );
-                        },
-                      )
-                    else
-                      const SizedBox(width: 36),
+                        onPressed: () => _openChannelDetails(context, canEdit),
+                      ),
                     IconButton(
                       icon: Icon(
                         Icons.notifications_none_outlined,

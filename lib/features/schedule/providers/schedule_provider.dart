@@ -124,24 +124,25 @@ class ScheduleNotifier extends Notifier<ScheduleState> {
     // Refresh when any feature signals that event data has changed
     ref.listen(eventRefreshSignalProvider, (_, __) {
       final team = ref.read(selectedTeamProvider);
-      if (team != null) Future.microtask(() => fetchEvents(team.uuid));
+      if (team != null) Future.microtask(() => fetchEvents(team.uuid, isRefresh: true));
     });
 
-    // Preserve existing events across rebuilds so the UI never flashes blank.
-    final previous = stateOrNull;
     return ScheduleState(
-      events:       previous?.events ?? const [],
-      selectedDate: previous?.selectedDate ?? now,
-      displayMonth: previous?.displayMonth ?? DateTime(now.year, now.month, 1),
-      monthView:    previous?.monthView ?? false,
+      events:       const [],
+      selectedDate: now,
+      displayMonth: DateTime(now.year, now.month, 1),
+      monthView:    false,
       isLoading: activeTeam != null,
     );
   }
 
   /// Fetch events from QA API.
-  Future<void> fetchEvents(String teamUuid) async {
-    // Keep existing events visible — no blank screen during refresh
-    state = state.copyWith(isLoading: true, errorMessage: null);
+  Future<void> fetchEvents(String teamUuid, {bool isRefresh = false}) async {
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      events: isRefresh ? state.events : const [],
+    );
     try {
       final fetched = await ref.read(scheduleServiceProvider).fetchScheduleEvents(teamUuid);
       state = state.copyWith(
@@ -160,7 +161,7 @@ class ScheduleNotifier extends Notifier<ScheduleState> {
   Future<void> refresh() async {
     final activeTeam = ref.read(selectedTeamProvider);
     if (activeTeam != null) {
-      await fetchEvents(activeTeam.uuid);
+      await fetchEvents(activeTeam.uuid, isRefresh: true);
     } else {
       state = state.copyWith(isLoading: false);
     }
