@@ -3,7 +3,7 @@ description: Club Management App — Playbook365
 
 publish_to: 'none'
 
-version: 1.0.0+5
+version: 1.0.0+7
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -20,7 +20,7 @@ dependencies:
   image_picker: ^1.1.2
   google_maps_flutter: ^2.12.0
   talkjs_flutter: ^0.17.5
-  talkjs_flutter_inappwebview: any
+  flutter_inappwebview: ^6.1.5
 
   # UI helpers
   # cached_network_image: ^3.3.0
@@ -36,6 +36,12 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^3.0.0
   flutter_launcher_icons: ^0.13.1
+
+dependency_overrides:
+  flutter_inappwebview_platform_interface:
+    path: packages/flutter_inappwebview_platform_interface
+  talkjs_flutter_inappwebview_android:
+    path: packages/talkjs_flutter_inappwebview_android
 
 flutter:
   uses-material-design: true

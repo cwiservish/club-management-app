@@ -17,6 +17,7 @@ import '../../../core/common_providers/selected_team_provider.dart';
 import '../../../core/common_providers/event_refresh_provider.dart';
 import '../../../core/models/club_event.dart';
 import '../widgets/event_edit_danger_card.dart';
+import '../utils/duplicate_event_helper.dart';
 
 // ─── Models ──────────────────────────────────────────────────────────────────
 
@@ -459,8 +460,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       _latitude = e.latitude ?? '';
       _longitude = e.longitude ?? '';
 
-      // Title (raw field, not display_name)
-      _titleController.text = e.titleRaw;
+      // Title (pre-fill with original event title)
+      _titleController.text = _originalEventTitle;
 
       // Notes
       _notesController.text = e.notes ?? '';
@@ -781,6 +782,43 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     }
   }
 
+  /// Returns the original event title for comparison and fallback pre-fill.
+  String get _originalEventTitle => DuplicateEventHelper.getOriginalEventTitle(widget.editEvent);
+
+  /// Checks whether all relevant event details of the duplicated event are
+  /// 100% identical to the original event [widget.editEvent].
+  bool _isDuplicatedEventIdentical() {
+    final e = widget.editEvent;
+    if (e == null) return false;
+    return DuplicateEventHelper.isDuplicatedEventIdentical(
+      originalEvent: e,
+      schedulingTypeKey: _schedulingTypeKey,
+      eventTypeKey: _eventTypeKey,
+      location: _locationName.isNotEmpty ? _locationName : _locationController.text,
+      notes: _notesController.text,
+      isCancelled: _isCancelled,
+      selectedDate: _selectedDate,
+      startTime: _startTime,
+      durationMinutes: _durationHours * 60 + _durationMinutes,
+      homeAwayKey: _homeAwayKey,
+      arrivalTimeKey: _arrivalTimeKey,
+      selectedOpponentId: _selectedOpponentId,
+      newOpponentName: _newOpponentNameController.text,
+      title: _titleController.text,
+      selectedApiTemplate: _selectedApiTemplate,
+      topColorIndex: _topColorIndex,
+      bottomColorIndex: _bottomColorIndex,
+      socksColorIndex: _socksColorIndex,
+      showSaveTemplateForm: _showSaveTemplateForm,
+      templateName: _templateNameController.text,
+      knowsSchedule: _knowsSchedule,
+      startDate: _startDate,
+      endDate: _endDate,
+      latitude: _latitude,
+      longitude: _longitude,
+    );
+  }
+
   void _onSave() => _doSave();
 
   Future<void> _doSave() async {
@@ -841,6 +879,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           _showError('Please select or add an opponent');
           return;
         }
+
+        // Duplicate naming logic for game/scrimmage
+        if (widget.isDuplicate && _isDuplicatedEventIdentical()) {
+          final origTitle = _originalEventTitle;
+          title = origTitle.isNotEmpty ? 'Copy of - $origTitle' : 'Copy of - Event';
+        }
       } else {
         // Flow 2: Practice, Team Event, Camp — title is required, no opponent
         title = _titleController.text.trim();
@@ -851,6 +895,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         if (!RegExp(r'[a-zA-Z]').hasMatch(title)) {
           _showError('Title must contain at least one letter');
           return;
+        }
+
+        // Duplicate naming logic: prepend "Copy of - " only if 100% identical to original
+        if (widget.isDuplicate && _isDuplicatedEventIdentical()) {
+          title = 'Copy of - $title';
+          _titleController.text = title;
         }
         allowForFutureGames = false;
       }
@@ -901,7 +951,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     if (_schedulingTypeKey == 2 || _schedulingTypeKey == 3) {
       if (!_knowsSchedule) {
         // Flow 3: Placeholder — date range only
-        final title = _titleController.text.trim();
+        var title = _titleController.text.trim();
         if (title.isEmpty) {
           _showError('Please enter a title');
           return;
@@ -909,6 +959,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         if (!RegExp(r'[a-zA-Z]').hasMatch(title)) {
           _showError('Title must contain at least one letter');
           return;
+        }
+
+        // Duplicate naming logic: prepend "Copy of - " only if 100% identical to original
+        if (widget.isDuplicate && _isDuplicatedEventIdentical()) {
+          title = 'Copy of - $title';
+          _titleController.text = title;
         }
         if (_startDate == null) {
           _showError('Please select a start date');
@@ -1003,6 +1059,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         return;
       }
 
+      var flow4Title = '';
+      if (widget.isDuplicate && _isDuplicatedEventIdentical()) {
+        final origTitle = _originalEventTitle;
+        flow4Title = origTitle.isNotEmpty ? 'Copy of - $origTitle' : 'Copy of - Event';
+      }
+
       // Flow 4: "Yes I have it" → always sent as single session game (scheduling_mode=1, event_type=1)
       final request = NewEventSaveRequest(
         teamUuid: activeTeam.uuid,
@@ -1014,7 +1076,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         eventFrom: widget.parentEvent != null ? 2 : (widget.editEvent?.eventFrom ?? 0),
         eventId: widget.parentEvent?.dbId ?? (widget.editEvent?.eventId ?? 0),
         scheduleGameId: widget.editEvent?.scheduleGameId ?? 0,
-        title: '',
+        title: flow4Title,
         sessionDate: _formatSessionDate(_selectedDate!),
         startTime: _formatStartTime24(_startTime),
         duration: _durationHours * 60 + _durationMinutes,
@@ -1303,10 +1365,16 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   Widget _buildBottomButton() {
     return const SizedBox.shrink();
     // ignore: dead_code
+    final isEditMode = widget.editEvent != null && !widget.isDuplicate;
+    final isDuplicateMode = widget.editEvent != null && widget.isDuplicate;
     final colors = AppColors.current;
     final isSaving = ref.watch(eventAddEditProvider).isSavingNewEvent;
     String buttonText = 'Save';
-    if (_schedulingTypeKey == 1) {
+    if (isDuplicateMode) {
+      buttonText = 'Duplicate event';
+    } else if (isEditMode) {
+      buttonText = 'Update event';
+    } else if (_schedulingTypeKey == 1) {
       buttonText = 'Save event';
     } else {
       buttonText = _knowsSchedule ? 'Save event' : 'Save placeholder';
