@@ -17,6 +17,7 @@ class HomeCardViewModel {
   final int maybeCount;
   final int noCount;
   final HomeRsvp selectedRsvp;
+  final bool isLoadingRsvp;
   final String? latitude;
   final String? longitude;
   final bool requiresPlayerSelection;
@@ -35,6 +36,7 @@ class HomeCardViewModel {
     required this.maybeCount,
     required this.noCount,
     required this.selectedRsvp,
+    this.isLoadingRsvp = false,
     this.latitude,
     this.longitude,
     this.requiresPlayerSelection = false,

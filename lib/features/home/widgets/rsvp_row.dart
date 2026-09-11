@@ -10,6 +10,7 @@ class RsvpRow extends StatelessWidget {
   final int maybeCount;
   final int noCount;
   final HomeRsvp selected;
+  final bool isLoading;
   final ValueChanged<HomeRsvp> onSelect;
 
   const RsvpRow({
@@ -18,49 +19,76 @@ class RsvpRow extends StatelessWidget {
     required this.maybeCount,
     required this.noCount,
     required this.selected,
+    this.isLoading = false,
     required this.onSelect,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final colors = AppColors.current;
+
+    return Stack(
+      alignment: Alignment.center,
       children: [
-        Expanded(
-          child: RsvpBtn(
-            label:       '$goingCount Going',
-            activeColor: AppColors.current.rsvpGoing,
-            isActive:    selected == HomeRsvp.going,
-            radius:      const BorderRadius.only(
-              topLeft:    Radius.circular(8),
-              bottomLeft: Radius.circular(8),
+        Row(
+          children: [
+            Expanded(
+              child: RsvpBtn(
+                label:       '$goingCount Going',
+                activeColor: colors.rsvpGoing,
+                isActive:    selected == HomeRsvp.going,
+                radius:      const BorderRadius.only(
+                  topLeft:    Radius.circular(8),
+                  bottomLeft: Radius.circular(8),
+                ),
+                hasDivider: true,
+                onTap:      isLoading ? () {} : () => onSelect(HomeRsvp.going),
+              ),
             ),
-            hasDivider: true,
-            onTap:      () => onSelect(HomeRsvp.going),
-          ),
-        ),
-        Expanded(
-          child: RsvpBtn(
-            label:       '$maybeCount Maybe',
-            activeColor: AppColors.current.rsvpMaybe,
-            isActive:    selected == HomeRsvp.maybe,
-            radius:      BorderRadius.zero,
-            hasDivider:  true,
-            onTap:       () => onSelect(HomeRsvp.maybe),
-          ),
-        ),
-        Expanded(
-          child: RsvpBtn(
-            label:       '$noCount No',
-            activeColor: AppColors.current.rsvpNo,
-            isActive:    selected == HomeRsvp.no,
-            radius:      const BorderRadius.only(
-              topRight:    Radius.circular(8),
-              bottomRight: Radius.circular(8),
+            Expanded(
+              child: RsvpBtn(
+                label:       '$maybeCount Maybe',
+                activeColor: colors.rsvpMaybe,
+                isActive:    selected == HomeRsvp.maybe,
+                radius:      BorderRadius.zero,
+                hasDivider:  true,
+                onTap:       isLoading ? () {} : () => onSelect(HomeRsvp.maybe),
+              ),
             ),
-            hasDivider: false,
-            onTap:      () => onSelect(HomeRsvp.no),
-          ),
+            Expanded(
+              child: RsvpBtn(
+                label:       '$noCount No',
+                activeColor: colors.rsvpNo,
+                isActive:    selected == HomeRsvp.no,
+                radius:      const BorderRadius.only(
+                  topRight:    Radius.circular(8),
+                  bottomRight: Radius.circular(8),
+                ),
+                hasDivider: false,
+                onTap:      isLoading ? () {} : () => onSelect(HomeRsvp.no),
+              ),
+            ),
+          ],
         ),
+        if (isLoading)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: (colors.isDark ? Colors.black : Colors.white).withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: colors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

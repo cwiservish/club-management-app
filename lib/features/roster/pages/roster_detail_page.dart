@@ -90,7 +90,8 @@ class _RosterDetailPageState extends ConsumerState<RosterDetailPage> {
       }
     }
 
-    final isEditable = profile?.isEditable ?? true;
+    final isProfileLoaded = !profileState.isLoading && profileState.profile != null;
+    final isEditable = isProfileLoaded && (profile?.isEditable ?? true);
 
     return Scaffold(
       backgroundColor: AppColors.current.card,

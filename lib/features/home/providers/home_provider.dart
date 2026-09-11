@@ -31,6 +31,8 @@ class HomeState {
 
   final EventType? filter;
   final bool isLoading;
+  final Set<String>? _loadingRsvpEventIds;
+  Set<String> get loadingRsvpEventIds => _loadingRsvpEventIds ?? const {};
   final String? errorMessage;
 
   const HomeState({
@@ -39,8 +41,9 @@ class HomeState {
     required this.userRsvps,
     this.filter,
     this.isLoading = false,
+    Set<String>? loadingRsvpEventIds,
     this.errorMessage,
-  });
+  }) : _loadingRsvpEventIds = loadingRsvpEventIds;
 
   // ── Filtered event list ──────────────────────────────────────────────────
 
@@ -96,6 +99,7 @@ class HomeState {
         maybeCount:   maybe,
         noCount:      no,
         selectedRsvp: userChoice,
+        isLoadingRsvp: loadingRsvpEventIds.contains(event.id),
         latitude:     event.latitude,
         longitude:    event.longitude,
         requiresPlayerSelection: event.requiresPlayerSelection,
@@ -113,6 +117,7 @@ class HomeState {
     Map<String, HomeRsvp>? userRsvps,
     Object? filter = _sentinel,
     bool? isLoading,
+    Set<String>? loadingRsvpEventIds,
     String? errorMessage,
   }) {
     return HomeState(
@@ -121,6 +126,7 @@ class HomeState {
       userRsvps: userRsvps ?? this.userRsvps,
       filter:    filter == _sentinel ? this.filter : filter as EventType?,
       isLoading: isLoading ?? this.isLoading,
+      loadingRsvpEventIds: loadingRsvpEventIds ?? this.loadingRsvpEventIds,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
@@ -262,6 +268,7 @@ class HomeNotifier extends Notifier<HomeState> {
     state = state.copyWith(
       userRsvps: {...state.userRsvps, event.id: rsvp},
       events: _withOptimisticRsvp(state.events, event.id, rsvp),
+      loadingRsvpEventIds: {...state.loadingRsvpEventIds, event.id},
     );
 
     int attendanceValue = 0;
@@ -298,6 +305,9 @@ class HomeNotifier extends Notifier<HomeState> {
         events: _withOptimisticRsvp(state.events, event.id, previousRsvp),
       );
       return (success: false, message: e.toString());
+    } finally {
+      final updated = Set<String>.from(state.loadingRsvpEventIds)..remove(event.id);
+      state = state.copyWith(loadingRsvpEventIds: updated);
     }
   }
 

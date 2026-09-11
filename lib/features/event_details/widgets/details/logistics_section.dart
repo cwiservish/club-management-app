@@ -69,8 +69,8 @@ class LogisticsSection extends StatelessWidget {
               iconBgColor: colors.primaryLight,
               iconColor: colors.actionAccent,
               label: 'Location',
-              value: event.locationName,
-              subtitle: event.locationAddress,
+              value: event.locationName.trim().isNotEmpty ? event.locationName.trim() : 'Location not set',
+              subtitle: event.locationAddress.trim().isNotEmpty ? event.locationAddress.trim() : null,
               showArrow: true,
               borderBottom: true,
             ),
@@ -143,7 +143,7 @@ class _LogisticsRow extends StatelessWidget {
     final resolvedIconColor = iconColor ?? colors.textSecondary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         border: borderBottom
             ? Border(bottom: BorderSide(color: colors.border.withValues(alpha: 0.5)))
@@ -160,10 +160,11 @@ class _LogisticsRow extends StatelessWidget {
             ),
             child: Icon(icon, size: 16, color: resolvedIconColor),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   label,
@@ -174,10 +175,10 @@ class _LogisticsRow extends StatelessWidget {
                   value,
                   style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
                 ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 1),
+                if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 2),
                   Text(
-                    subtitle!,
+                    subtitle!.trim(),
                     style: AppTextStyles.body14.copyWith(color: colors.textSecondary),
                   ),
                 ],

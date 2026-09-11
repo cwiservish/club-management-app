@@ -496,6 +496,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         if (template != null) {
           _selectedApiTemplate = template;
           _selectedUniformMode = template.templateName;
+          _topColorIndex = hexToColorIndex(template.topColor.isNotEmpty ? template.topColor : e.uniformTopColor);
+          _bottomColorIndex = hexToColorIndex(template.bottomColor.isNotEmpty ? template.bottomColor : e.uniformBottomColor);
+          _socksColorIndex = hexToColorIndex(template.socksColor.isNotEmpty ? template.socksColor : e.uniformSocksColor);
         } else {
           // Template not in list — fall back to hex colors
           _topColorIndex = hexToColorIndex(e.uniformTopColor);
@@ -1495,7 +1498,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                 onTap: _showStartTimeOverlay,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               flex: 5,
               child: Column(
@@ -1511,6 +1514,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                       Expanded(
                         child: _buildDropdownField<int>(
                           value: _durationHours,
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
                           items: const [0, 1, 2, 3, 4, 5, 6, 7, 8],
                           itemLabel: (v) => v == 1 ? '1 hr' : '$v hrs',
                           onChanged: (val) {
@@ -1524,6 +1528,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                       Expanded(
                         child: _buildDropdownField<int>(
                           value: _durationMinutes,
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
                           items: const [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
                           itemLabel: (v) => '$v min',
                           onChanged: (val) {
@@ -1766,7 +1771,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                   onTap: _showStartTimeOverlay,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 flex: 5,
                 child: Column(
@@ -1782,6 +1787,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                         Expanded(
                           child: _buildDropdownField<int>(
                             value: _durationHours,
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
                             items: const [0, 1, 2, 3, 4, 5, 6, 7, 8],
                             itemLabel: (v) => v == 1 ? '1 hr' : '$v hrs',
                             onChanged: (val) {
@@ -1795,6 +1801,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                         Expanded(
                           child: _buildDropdownField<int>(
                             value: _durationMinutes,
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
                             items: const [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
                             itemLabel: (v) => '$v min',
                             onChanged: (val) {
@@ -2186,11 +2193,13 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     required List<T> items,
     required String Function(T) itemLabel,
     required ValueChanged<T?> onChanged,
+    EdgeInsetsGeometry? padding,
+    TextStyle? textStyle,
   }) {
     final colors = AppColors.current;
     return Container(
       height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: padding ?? const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: colors.isDark ? colors.background : Colors.white,
         borderRadius: BorderRadius.circular(10),
@@ -2206,7 +2215,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
               value: item,
               child: Text(
                 itemLabel(item),
-                style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
+                style: textStyle ?? AppTextStyles.body14.copyWith(color: colors.textPrimary),
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
               ),
             );
           }).toList(),
@@ -2214,7 +2226,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             _closeAllDropdowns(unfocus: true);
             onChanged(val);
           },
-          icon: Icon(Icons.keyboard_arrow_down, color: colors.textSecondary, size: 20),
+          icon: Icon(Icons.keyboard_arrow_down, color: colors.textSecondary, size: 18),
           dropdownColor: colors.isDark ? colors.card : Colors.white,
         ),
       ),
@@ -2288,9 +2300,15 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   Widget _buildUniformSectionHeader() {
     final colors = AppColors.current;
     
-    final topColor = kUniformColors[_topColorIndex].color;
-    final bottomColor = kUniformColors[_bottomColorIndex].color;
-    final socksColor = kUniformColors[_socksColorIndex].color;
+    final Color topColor = _selectedApiTemplate != null
+        ? (hexToColor(_selectedApiTemplate!.topColor) ?? kUniformColors[_topColorIndex].color)
+        : kUniformColors[_topColorIndex].color;
+    final Color bottomColor = _selectedApiTemplate != null
+        ? (hexToColor(_selectedApiTemplate!.bottomColor) ?? kUniformColors[_bottomColorIndex].color)
+        : kUniformColors[_bottomColorIndex].color;
+    final Color socksColor = _selectedApiTemplate != null
+        ? (hexToColor(_selectedApiTemplate!.socksColor) ?? kUniformColors[_socksColorIndex].color)
+        : kUniformColors[_socksColorIndex].color;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2355,6 +2373,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                       setState(() {
                         _selectedUniformMode = t.templateName;
                         _selectedApiTemplate = t;
+                        _topColorIndex = hexToColorIndex(t.topColor);
+                        _bottomColorIndex = hexToColorIndex(t.bottomColor);
+                        _socksColorIndex = hexToColorIndex(t.socksColor);
                         _showSaveTemplateForm = false;
                         _templateNameController.clear();
                       });

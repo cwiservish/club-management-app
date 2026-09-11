@@ -28,6 +28,7 @@ class HomeCard extends ConsumerWidget {
     WidgetRef ref,
     HomeRsvp rsvp,
   ) async {
+    if (viewModel.isLoadingRsvp) return;
     final notifier = ref.read(homeProvider.notifier);
 
     // If player selection is required AND there are multiple targets, show sheet.
@@ -145,6 +146,7 @@ class HomeCard extends ConsumerWidget {
                           maybeCount: viewModel.maybeCount,
                           noCount:    viewModel.noCount,
                           selected:   viewModel.selectedRsvp,
+                          isLoading:  viewModel.isLoadingRsvp,
                           onSelect: (rsvp) => _handleRsvpTap(context, ref, rsvp),
                         ),
 
