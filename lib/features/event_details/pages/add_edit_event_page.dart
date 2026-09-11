@@ -1485,17 +1485,14 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           children: [
             Expanded(
               flex: 4,
-              child: KeyedSubtree(
-                key: _startTimeFieldKey,
-                child: _buildPickerField(
-                  fieldKey: _startTimeFieldKey,
-                  layerLink: _startTimeLayerLink,
-                  label: 'Start time',
-                  valueText: timeStr,
-                  isPlaceholder: false,
-                  icon: Icons.access_time,
-                  onTap: _showStartTimeOverlay,
-                ),
+              child: _buildPickerField(
+                fieldKey: _startTimeFieldKey,
+                layerLink: _startTimeLayerLink,
+                label: 'Start time',
+                valueText: timeStr,
+                isPlaceholder: false,
+                icon: Icons.access_time,
+                onTap: _showStartTimeOverlay,
               ),
             ),
             const SizedBox(width: 12),
@@ -1759,17 +1756,14 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             children: [
               Expanded(
                 flex: 4,
-                child: KeyedSubtree(
-                  key: _startTimeFieldKey,
-                  child: _buildPickerField(
-                    fieldKey: _startTimeFieldKey,
-                    layerLink: _startTimeLayerLink,
-                    label: 'Start time',
-                    valueText: timeStr,
-                    isPlaceholder: false,
-                    icon: Icons.access_time,
-                    onTap: _showStartTimeOverlay,
-                  ),
+                child: _buildPickerField(
+                  fieldKey: _startTimeFieldKey,
+                  layerLink: _startTimeLayerLink,
+                  label: 'Start time',
+                  valueText: timeStr,
+                  isPlaceholder: false,
+                  icon: Icons.access_time,
+                  onTap: _showStartTimeOverlay,
                 ),
               ),
               const SizedBox(width: 12),
