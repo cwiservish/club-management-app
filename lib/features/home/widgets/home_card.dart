@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/club_event.dart';
-import '../models/home_models.dart';
 import '../providers/home_provider.dart';
 import 'rsvp_player_selection_sheet.dart';
 import 'rsvp_row.dart';
@@ -191,18 +190,18 @@ class HomeCard extends ConsumerWidget {
                         Container(
                           width: 6,
                           height: 6,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: Colors.green,
                             shape: BoxShape.circle,
                           ),
                         ),
                         const SizedBox(width: 4),
-                        Text(
+                        const Text(
                           'Event Game',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color:Colors.green,
+                            color: Colors.green,
                             height: 1.1,
                           ),
                         ),

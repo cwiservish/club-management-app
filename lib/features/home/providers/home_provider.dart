@@ -177,7 +177,7 @@ class HomeNotifier extends Notifier<HomeState> {
     // (e.g. RSVP saved in event details). This keeps home in sync in real-time.
     ref.listen(eventRefreshSignalProvider, (_, __) {
       final team = ref.read(selectedTeamProvider);
-      if (team != null) Future.microtask(() => fetchEvents(team.uuid, isRefresh: true));
+      if (team != null) Future.microtask(() => fetchEvents(team.uuid, isSilent: true));
     });
 
     return HomeState(
@@ -189,15 +189,15 @@ class HomeNotifier extends Notifier<HomeState> {
   }
 
   /// Fetches events for the selected team from QA API.
-  Future<void> fetchEvents(String teamUuid, {bool isRefresh = false}) async {
-    if (!isRefresh) {
+  Future<void> fetchEvents(String teamUuid, {bool isRefresh = false, bool isSilent = false}) async {
+    if (!isRefresh && !isSilent) {
       state = state.copyWith(
         isLoading: true,
         errorMessage: null,
         events: const [],
         userRsvps: const {},
       );
-    } else {
+    } else if (!isSilent) {
       state = state.copyWith(isLoading: true, errorMessage: null);
     }
     try {
@@ -227,7 +227,7 @@ class HomeNotifier extends Notifier<HomeState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: e.toString(),
+        errorMessage: isSilent ? null : e.toString(),
       );
     }
   }
@@ -280,8 +280,8 @@ class HomeNotifier extends Notifier<HomeState> {
       );
 
       if (result.success) {
-        // Background refresh — events not cleared so no loader is shown
-        fetchEvents(activeTeam.uuid);
+        // Background refresh — silent update without showing any loader
+        fetchEvents(activeTeam.uuid, isSilent: true);
         return (success: true, message: result.message.isNotEmpty ? result.message : 'RSVP updated successfully.');
       } else {
         // Revert optimistic update
