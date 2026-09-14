@@ -11,6 +11,7 @@ import '../../../core/models/team_model.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/interceptors/logging_interceptor.dart';
+import '../../../core/network/interceptors/maintenance_interceptor.dart';
 import '../../../core/network/token_storage.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
@@ -23,6 +24,7 @@ final authServiceProvider = Provider<AuthService>((ref) {
       sendTimeout: timeout,
     ),
   );
+  dio.interceptors.add(const MaintenanceInterceptor());
   if (EnvironmentConfig.enableLogging) {
     dio.interceptors.add(LoggingInterceptor());
   }

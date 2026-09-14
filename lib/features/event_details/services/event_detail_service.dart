@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/interceptors/maintenance_interceptor.dart';
 import '../../../core/config/environment_config.dart';
 import '../models/event_dropdown_options_models.dart';
 import '../models/event_detail_model.dart';
@@ -339,5 +340,6 @@ class EventDetailService {
 
 final eventDetailServiceProvider = Provider<EventDetailService>((ref) {
   final apiClient = ref.watch(apiClientProvider);
-  return EventDetailService(apiClient, Dio());
+  final dio = Dio()..interceptors.add(const MaintenanceInterceptor());
+  return EventDetailService(apiClient, dio);
 });

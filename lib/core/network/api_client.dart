@@ -11,6 +11,7 @@ import 'api_endpoints.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/error_interceptor.dart';
 import 'interceptors/logging_interceptor.dart';
+import 'interceptors/maintenance_interceptor.dart';
 import 'models/api_response.dart';
 import '../local_storage/app_storage.dart';
 import 'token_storage.dart';
@@ -217,6 +218,7 @@ final apiClientProvider = Provider<ApiClient>((ref) {
         }
       },
     ),
+    const MaintenanceInterceptor(),
     if (EnvironmentConfig.enableLogging) LoggingInterceptor(),
     ErrorInterceptor(),
   ]);
