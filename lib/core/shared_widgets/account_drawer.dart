@@ -95,12 +95,20 @@ class _Header extends ConsumerWidget {
 
     String displayRole = 'PLAYER';
     if (selectedTeam != null) {
-      if (selectedTeam.isCoach) {
+      // Prefer the role label returned by the API (e.g. "Organization Staff").
+      if (selectedTeam.roleLabel.isNotEmpty) {
+        displayRole = selectedTeam.roleLabel;
+      } else if (selectedTeam.role.isNotEmpty) {
+        // Fallback: "organization_staff" -> "Organization Staff"
+        displayRole = selectedTeam.role
+            .split(RegExp(r'[_\s]+'))
+            .where((w) => w.isNotEmpty)
+            .map((w) => '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+            .join(' ');
+      } else if (selectedTeam.isCoach) {
         displayRole = 'COACH';
       } else if (selectedTeam.isParent) {
         displayRole = 'PARENT';
-      } else if (selectedTeam.role.isNotEmpty) {
-        displayRole = selectedTeam.role.toUpperCase();
       } else {
         displayRole = user?.role.name.toUpperCase() ?? 'PLAYER';
       }
@@ -109,6 +117,7 @@ class _Header extends ConsumerWidget {
     }
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 28, 28, 24),
       decoration: BoxDecoration(
         color: colors.card,
@@ -137,33 +146,31 @@ class _Header extends ConsumerWidget {
                 user?.displayName ?? 'User',
                 style: AppTextStyles.heading22.copyWith(color: colors.textPrimary),
               ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.isDark
-                          ? colors.actionAccent.withValues(alpha: 0.1)
-                          : colors.primary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      displayRole,
-                      style: AppTextStyles.heading14.copyWith(
-                        color: colors.isDark ? colors.actionAccent : colors.primary,
-                      ),
-                    ),
+              const SizedBox(height: 4),
+              Text(
+                user?.email ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.label13.copyWith(color: colors.gray500),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.isDark
+                      ? colors.actionAccent.withValues(alpha: 0.1)
+                      : colors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  displayRole,
+                  style: AppTextStyles.heading14.copyWith(
+                    color: colors.isDark ? colors.actionAccent : colors.primary,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    user?.email ?? '',
-                    style: AppTextStyles.label13.copyWith(color: colors.gray500),
-                  ),
-                ],
+                ),
               ),
             ],
           ),

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
 import '../models/event_dropdown_options_models.dart';

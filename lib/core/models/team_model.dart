@@ -18,7 +18,13 @@ class Team {
   final String domainUrl;
   final List<String> roles;
   final String role;
+  final String? _roleLabel; // API `role_label`, e.g. "Organization Staff"
+  // Null-safe for hot reload (objects created before this field existed).
+  String get roleLabel => _roleLabel ?? '';
+  /// True when the API says `is_coach`, or the user's organization role is
+  /// 1, 2 or 3 (those get the same access as a coach).
   final bool isCoach;
+  final int organizationRoleId;
   final bool isParent;
   final String code;
   final List<TeamPlayer> players;
@@ -43,13 +49,18 @@ class Team {
     required this.domainUrl,
     required this.roles,
     required this.role,
+    String roleLabel = '',
     required this.isCoach,
+    this.organizationRoleId = 0,
     required this.isParent,
     required this.code,
     required this.players,
-  });
+  }) : _roleLabel = roleLabel;
+
+  static const _coachAccessOrgRoleIds = {1, 2, 3};
 
   factory Team.fromJson(Map<String, dynamic> json) {
+    final orgRoleId = _parseInt(json['organization_role_id']);
     return Team(
       teamId: _parseInt(json['team_id']),
       uuid: _parseString(json['uuid']),
@@ -70,7 +81,9 @@ class Team {
       domainUrl: _parseString(json['domain_url']),
       roles: _parseStringList(json['roles']),
       role: _parseString(json['role']),
-      isCoach: _parseBool(json['is_coach']),
+      roleLabel: _parseString(json['role_label']),
+      isCoach: _parseBool(json['is_coach']) || _coachAccessOrgRoleIds.contains(orgRoleId),
+      organizationRoleId: orgRoleId,
       isParent: _parseBool(json['is_parent']),
       code: _parseString(json['code']),
       players: _parsePlayersList(json['players']),
@@ -97,7 +110,9 @@ class Team {
     'domain_url': domainUrl,
     'roles': roles,
     'role': role,
+    'role_label': roleLabel,
     'is_coach': isCoach,
+    'organization_role_id': organizationRoleId,
     'is_parent': isParent,
     'code': code,
     'players': players.map((p) => p.toJson()).toList(),

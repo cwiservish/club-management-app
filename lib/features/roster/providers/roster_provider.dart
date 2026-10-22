@@ -123,13 +123,20 @@ class RosterState {
 }
 
 class RosterNotifier extends Notifier<RosterState> {
+  /// Staff filter currently requested ('team' on the event page, null elsewhere).
+  /// build() reuses it so its automatic fetch can't overwrite a filtered one.
+  String? _staffType;
+
+  /// Only the most recently started fetch may write state (avoids races).
+  int _fetchSeq = 0;
+
   @override
   RosterState build() {
     final activeTeam = ref.watch(selectedTeamProvider);
 
     // Schedule API call reactively after the widget tree builds
     if (activeTeam != null) {
-      Future.microtask(() => fetchPlayers(activeTeam.uuid));
+      Future.microtask(() => fetchPlayers(activeTeam.uuid, staffType: _staffType));
     }
 
     return RosterState(
@@ -143,22 +150,27 @@ class RosterNotifier extends Notifier<RosterState> {
   }
 
   /// Fetches players and staff from the API for the selected team UUID.
-  Future<void> fetchPlayers(String teamUuid) async {
+  /// [staffType] ('team' / 'organization') is forwarded to the staff list API;
+  /// null keeps the default behaviour.
+  Future<void> fetchPlayers(String teamUuid, {String? staffType}) async {
+    _staffType = staffType;
+    final seq = ++_fetchSeq;
     state = state.copyWith(isLoading: true, errorMessage: null, allMembers: []);
     try {
       final service = ref.read(rosterServiceProvider);
       final results = await Future.wait([
         service.fetchPlayers(teamUuid),
-        service.fetchStaff(teamUuid),
+        service.fetchStaff(teamUuid, staffType: staffType),
       ]);
 
+      if (seq != _fetchSeq) return; // a newer fetch superseded this one
       final playersResponse = results[0] as PlayersListResponse;
       final staffResponse = results[1] as StaffListResponse;
 
       final playerMembers = playersResponse.data.grid.map((p) {
         return RosterMember(
           id: p.uuid,
-          playerId: p.playerId,
+          playerId: p.playerId > 0 ? p.playerId : null,
           firstName: p.firstName,
           lastName: p.lastName,
           role: MemberRole.player,
@@ -176,8 +188,11 @@ class RosterNotifier extends Notifier<RosterState> {
       }).toList();
 
       final staffMembers = staffResponse.data.grid.map((s) {
+        final effectiveStaffId = s.staffId > 0 ? s.staffId : (s.id > 0 ? s.id : null);
         return RosterMember(
           id: s.uuid,
+          staffId: effectiveStaffId,
+          customerId: s.customerId > 0 ? s.customerId : null,
           firstName: s.firstName,
           lastName: s.lastName,
           role: MemberRole.staff,
@@ -187,7 +202,7 @@ class RosterNotifier extends Notifier<RosterState> {
           gender: s.genderLabel,
           jerseyNo: s.jerseyNo,
           primaryPosition: '',
-          attendancePercent: 95, // Mock default staff attendance percentage
+          attendancePercent: 95,
           avatarColor: _getRandomColor(s.name),
         );
       }).toList();
@@ -200,6 +215,7 @@ class RosterNotifier extends Notifier<RosterState> {
         isLoading: false,
       );
     } catch (e) {
+      if (seq != _fetchSeq) return;
       state = state.copyWith(
         isLoading: false,
         errorMessage: e.toString(),
@@ -208,10 +224,10 @@ class RosterNotifier extends Notifier<RosterState> {
   }
 
   /// Pull-to-refresh implementation.
-  Future<void> refresh() async {
+  Future<void> refresh({String? staffType}) async {
     final activeTeam = ref.read(selectedTeamProvider);
     if (activeTeam != null) {
-      await fetchPlayers(activeTeam.uuid);
+      await fetchPlayers(activeTeam.uuid, staffType: staffType);
     }
   }
 

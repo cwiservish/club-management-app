@@ -28,10 +28,13 @@ class ChatMember {
   });
 
   factory ChatMember.fromJson(Map<String, dynamic> json) {
+    final email = _parseString(json['email']);
+    final rawName = _parseString(json['name']).trim();
     return ChatMember(
       uuid: _parseString(json['uuid']),
-      email: _parseString(json['email']),
-      name: _parseString(json['name']),
+      email: email,
+      // Some members come back with an empty name; show the email instead of a blank row.
+      name: rawName.isNotEmpty ? rawName : email,
       memberUuid: _parseString(json['member_uuid']),
       memberId: _parseInt(json['member_id']),
       memberType: _parseString(json['member_type']),

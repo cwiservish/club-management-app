@@ -93,21 +93,185 @@ class NewEventUniformTemplate {
   final String bottomColor;
   final String socksColor;
 
+  /// Hex color per uniform item (e.g. "cap" -> "#112233"); only non-empty entries.
+  final Map<String, String> colors;
+
   const NewEventUniformTemplate({
     required this.id,
     required this.templateName,
     required this.topColor,
     required this.bottomColor,
     required this.socksColor,
+    this.colors = const {},
   });
 
   factory NewEventUniformTemplate.fromJson(Map<String, dynamic> json) {
+    final colors = <String, String>{};
+    for (final entry in json.entries) {
+      final k = entry.key;
+      if (k.endsWith('_color') && k != 'template_color') {
+        final v = entry.value?.toString() ?? '';
+        if (v.isNotEmpty) colors[k.substring(0, k.length - 6)] = v;
+      }
+    }
+    final nested = json['uniform'];
+    if (nested is Map) {
+      for (final entry in nested.entries) {
+        final v = entry.value?.toString() ?? '';
+        if (v.isNotEmpty) colors[entry.key.toString()] = v;
+      }
+    }
     return NewEventUniformTemplate(
+      colors: colors,
       id: (json['id'] as num).toInt(),
       templateName: json['template_name']?.toString() ?? '',
       topColor: json['top_color']?.toString() ?? '',
       bottomColor: json['bottom_color']?.toString() ?? '',
       socksColor: json['socks_color']?.toString() ?? '',
+    );
+  }
+}
+
+// ─── Location Types ─────────────────────────────────────────────────────────
+
+class NewEventLocationType {
+  final int key;
+  final int value;
+  final String label;
+
+  const NewEventLocationType({
+    required this.key,
+    required this.value,
+    required this.label,
+  });
+
+  factory NewEventLocationType.fromJson(Map<String, dynamic> json) {
+    return NewEventLocationType(
+      key: (json['key'] as num?)?.toInt() ?? 0,
+      value: (json['value'] as num?)?.toInt() ?? 0,
+      label: json['label']?.toString() ?? '',
+    );
+  }
+}
+
+// ─── Our Locations (Venues & Fields) ─────────────────────────────────────────
+
+class OurLocationField {
+  final int fieldId;
+  final int venueId;
+  final String parentId;
+  final String fieldName;
+  final String label;
+
+  const OurLocationField({
+    required this.fieldId,
+    required this.venueId,
+    required this.parentId,
+    required this.fieldName,
+    required this.label,
+  });
+
+  factory OurLocationField.fromJson(Map<String, dynamic> json) {
+    return OurLocationField(
+      fieldId: (json['field_id'] as num?)?.toInt() ?? 0,
+      venueId: (json['venue_id'] as num?)?.toInt() ?? 0,
+      parentId: json['parent_id']?.toString() ?? '',
+      fieldName: json['field_name']?.toString() ?? '',
+      label: json['label']?.toString() ?? json['field_name']?.toString() ?? '',
+    );
+  }
+}
+
+class OurLocationVenue {
+  final int venueId;
+  final String name;
+  final String label;
+  final String latitude;
+  final String longitude;
+  final List<OurLocationField> fields;
+
+  const OurLocationVenue({
+    required this.venueId,
+    required this.name,
+    required this.label,
+    required this.latitude,
+    required this.longitude,
+    required this.fields,
+  });
+
+  factory OurLocationVenue.fromJson(Map<String, dynamic> json) {
+    final fieldsRaw = json['fields'] as List? ?? [];
+    final fields = fieldsRaw
+        .whereType<Map<String, dynamic>>()
+        .map((e) => OurLocationField.fromJson(e))
+        .toList();
+
+    return OurLocationVenue(
+      venueId: (json['venue_id'] as num?)?.toInt() ?? 0,
+      name: json['name']?.toString() ?? '',
+      label: json['label']?.toString() ?? json['name']?.toString() ?? '',
+      latitude: json['latitude']?.toString() ?? '',
+      longitude: json['longitude']?.toString() ?? '',
+      fields: fields,
+    );
+  }
+}
+
+// ─── Saved Locations ─────────────────────────────────────────────────────────
+
+class SavedLocationItem {
+  final int id;
+  final int savedLocationId;
+  final String uuid;
+  final int organizationId;
+  final String location;
+  final String address;
+  final String latitude;
+  final String longitude;
+  final String city;
+  final String state;
+  final String country;
+  final String postalCode;
+  final String placeId;
+  final String name;
+  final String organizationName;
+
+  const SavedLocationItem({
+    required this.id,
+    required this.savedLocationId,
+    required this.uuid,
+    required this.organizationId,
+    required this.location,
+    required this.address,
+    required this.latitude,
+    required this.longitude,
+    required this.city,
+    required this.state,
+    required this.country,
+    required this.postalCode,
+    required this.placeId,
+    required this.name,
+    required this.organizationName,
+  });
+
+  factory SavedLocationItem.fromJson(Map<String, dynamic> json) {
+    final idVal = (json['id'] as num?)?.toInt() ?? 0;
+    return SavedLocationItem(
+      id: idVal,
+      savedLocationId: (json['saved_location_id'] as num?)?.toInt() ?? idVal,
+      uuid: json['uuid']?.toString() ?? '',
+      organizationId: (json['organization_id'] as num?)?.toInt() ?? 0,
+      location: json['location']?.toString() ?? '',
+      address: json['address']?.toString() ?? '',
+      latitude: json['latitude']?.toString() ?? '',
+      longitude: json['longitude']?.toString() ?? '',
+      city: json['city']?.toString() ?? '',
+      state: json['state']?.toString() ?? '',
+      country: json['country']?.toString() ?? '',
+      postalCode: json['postal_code']?.toString() ?? '',
+      placeId: json['place_id']?.toString() ?? '',
+      name: json['name']?.toString() ?? json['location']?.toString() ?? '',
+      organizationName: json['organization_name']?.toString() ?? '',
     );
   }
 }
@@ -122,6 +286,14 @@ class NewEventDropdownOptions {
   final List<NewEventArrivalTimeOption> arrivalTimeOptions;
   final List<OpponentTeam> teams;
   final List<NewEventUniformTemplate> uniformTemplates;
+  /// API `uniform_colors`: palette for the uniform color pickers.
+  final List<({String label, String hex})> uniformColors;
+  final List<String>? _uniformItems;
+  // Null-safe for hot reload (objects created before this field existed).
+  List<String> get uniformItems => _uniformItems ?? const ['top', 'bottom', 'socks'];
+  final List<NewEventLocationType> locationTypes;
+  final List<OurLocationVenue> ourLocations;
+  final List<SavedLocationItem> savedLocations;
 
   const NewEventDropdownOptions({
     required this.timezones,
@@ -131,7 +303,12 @@ class NewEventDropdownOptions {
     required this.arrivalTimeOptions,
     required this.teams,
     required this.uniformTemplates,
-  });
+    List<String> uniformItems = const ['top', 'bottom', 'socks'],
+    this.uniformColors = const [],
+    this.locationTypes = const [],
+    this.ourLocations = const [],
+    this.savedLocations = const [],
+  }) : _uniformItems = uniformItems;
 
   factory NewEventDropdownOptions.fromJson(Map<String, dynamic> json) {
     // timezones
@@ -186,6 +363,40 @@ class NewEventDropdownOptions {
         .map((e) => NewEventUniformTemplate.fromJson(e))
         .toList();
 
+    // uniform_items — dynamic list of garments/gear that can have a color
+    final uniformItems = (json['uniform_items'] as List? ?? [])
+        .map((e) => e.toString())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    // uniform_colors — [{key, label, value: "#hex"}]
+    final uniformColors = (json['uniform_colors'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => (label: e['label']?.toString() ?? '', hex: e['value']?.toString() ?? ''))
+        .where((c) => c.hex.isNotEmpty)
+        .toList();
+
+    // location_types
+    final locationTypes = (json['location_types'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map((e) => NewEventLocationType.fromJson(e))
+        .toList();
+
+    // venues (facilities with their fields); falls back to legacy our_locations
+    final venuesRaw = json['venues'] is List && (json['venues'] as List).isNotEmpty
+        ? json['venues'] as List
+        : (json['our_locations'] as List? ?? []);
+    final ourLocations = venuesRaw
+        .whereType<Map<String, dynamic>>()
+        .map((e) => OurLocationVenue.fromJson(e))
+        .toList();
+
+    // saved_locations
+    final savedLocations = (json['saved_locations'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map((e) => SavedLocationItem.fromJson(e))
+        .toList();
+
     return NewEventDropdownOptions(
       timezones: timezones,
       schedulingTypes: schedulingTypes,
@@ -194,6 +405,11 @@ class NewEventDropdownOptions {
       arrivalTimeOptions: arrivalTimeOptions,
       teams: teams,
       uniformTemplates: uniformTemplates,
+      uniformItems: uniformItems.isNotEmpty ? uniformItems : const ['top', 'bottom', 'socks'],
+      uniformColors: uniformColors,
+      locationTypes: locationTypes,
+      ourLocations: ourLocations,
+      savedLocations: savedLocations,
     );
   }
 }

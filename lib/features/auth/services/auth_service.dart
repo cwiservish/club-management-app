@@ -15,7 +15,8 @@ class AuthService {
         data: {
           'loginId': email,
           'password': password,
-          'applicationId': EnvironmentConfig.fusionAuthAppId,
+          // No `applicationId`: login works for any FusionAuth user in the tenant
+          // (parents, athletes, managers / organization staff).
         },
         options: Options(
           headers: {

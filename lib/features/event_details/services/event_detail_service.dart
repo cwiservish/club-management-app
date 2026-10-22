@@ -298,8 +298,13 @@ class EventDetailService {
               return {
                 'name': placeLabel.isNotEmpty ? placeLabel : addressLabel,
                 'description': addressLabel,
+                'address': addressLabel,
                 'latitude': map['latitude']?.toString() ?? '',
                 'longitude': map['longitude']?.toString() ?? '',
+                'city': map['city']?.toString() ?? '',
+                'state': map['stateCode']?.toString() ?? map['state']?.toString() ?? '',
+                'country': map['countryCode']?.toString() ?? map['country']?.toString() ?? '',
+                'postal_code': map['postalCode']?.toString() ?? '',
               };
             }).toList();
           }
@@ -312,7 +317,7 @@ class EventDetailService {
     return [];
   }
 
-  /// Fetches place geometry details from Place ID.
+  /// Fetches place geometry and address details from Place ID.
   Future<Map<String, dynamic>?> fetchPlaceDetails(String placeId) async {
     final apiKey = EnvironmentConfig.googleMapsApiKey;
     if (apiKey.isNotEmpty) {
@@ -321,7 +326,7 @@ class EventDetailService {
         final response = await _dio.get(url, queryParameters: {
           'place_id': placeId,
           'key': apiKey,
-          'fields': 'geometry',
+          'fields': 'geometry,formatted_address,address_components',
         });
 
         if (response.statusCode == 200 && response.data != null) {

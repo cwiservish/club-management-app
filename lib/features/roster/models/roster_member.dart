@@ -6,6 +6,9 @@ import '../../../core/enums/player_position.dart';
 class RosterMember {
   final String id;
   final int? playerId;
+  final int? staffId;
+  /// Staff `customer_id`: what the event save API expects in `staff_ids`.
+  final int? customerId;
   final String firstName;
   final String lastName;
   final MemberRole role;
@@ -28,9 +31,21 @@ class RosterMember {
   final String jerseyNo;
   final String imageUrl;
 
+  /// Numeric id the event APIs expect (player_ids / staff_ids); `id` stays the
+  /// uuid used by the profile and attendance APIs. For staff the server
+  /// matches `staff_ids` against `customer_id`, not the staff row id.
+  String get apiId {
+    if (role == MemberRole.player) return playerId?.toString() ?? id;
+    final customer = customerId;
+    if (customer != null && customer > 0) return customer.toString();
+    return staffId?.toString() ?? id;
+  }
+
   const RosterMember({
     required this.id,
     this.playerId,
+    this.staffId,
+    this.customerId,
     required this.firstName,
     required this.lastName,
     required this.role,

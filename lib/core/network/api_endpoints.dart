@@ -30,7 +30,8 @@ abstract final class ApiEndpoints {
   static const String eventSessionAvailability = '/teams/event/session/availability';
   static const String eventAttendeeSave = '/teams/event-attendee/save';
   static const String eventSessionAttendeeSave = '/teams/event/session-attendee/save';
-  static const String eventDropdownOptions = '/teams/event/dropdownoptions';
+  // Old '/teams/event/dropdownoptions' now 404s; the session endpoint also returns `timezones`.
+  static const String eventDropdownOptions = '/teams/event/session/dropdownoptions';
   static const String newEventDropdownOptions = '/teams/event/session/dropdownoptions';
   static const String eventDetail = '/teams/event/detail';
   static const String eventSave = '/teams/event/save';

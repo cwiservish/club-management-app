@@ -159,7 +159,9 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
           ? event.homeAwayLabel!
           : _homeAwayLabel(event.homeAwayKey),
       opponent: event.opponent ?? '',
-      arrivalTime: (event.arrivalTime != null && event.arrivalTime!.isNotEmpty)
+      // The API fills `arrival_time` even when no arrival offset is set, so only
+      // trust it when `arrival_early` > 0.
+      arrivalTime: (event.arrivalEarly > 0 && event.arrivalTime != null && event.arrivalTime!.isNotEmpty)
           ? event.arrivalTime!
           : _arrivalLabel(event.arrivalEarly),
       myRsvp: userRsvp,

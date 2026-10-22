@@ -61,8 +61,8 @@ class RosterService {
   }
 
   /// Fetches staff members for a given team from the API.
-  Future<StaffListResponse> fetchStaff(String teamUuid) async {
-    final requestBody = StaffListRequest(teamUuid: teamUuid).toJson();
+  Future<StaffListResponse> fetchStaff(String teamUuid, {String? staffType}) async {
+    final requestBody = StaffListRequest(teamUuid: teamUuid, staffType: staffType).toJson();
 
     // Print Request JSON in logs
     debugPrint('════════════════════════════════════════════════════════════════');

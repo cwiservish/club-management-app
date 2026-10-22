@@ -28,14 +28,17 @@ bool _parseBool(dynamic value) {
 
 class StaffListRequest {
   final String teamUuid;
+  final String? staffType; // 'team' | 'organization'; omitted when null
 
   const StaffListRequest({
     required this.teamUuid,
+    this.staffType,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'team_uuid': teamUuid,
+      if (staffType != null) 'staff_type': staffType,
     };
   }
 }

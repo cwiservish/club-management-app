@@ -18,6 +18,11 @@ import '../../../core/common_providers/event_refresh_provider.dart';
 import '../../../core/models/club_event.dart';
 import '../widgets/event_edit_danger_card.dart';
 import '../utils/duplicate_event_helper.dart';
+import '../widgets/event_location_tab_view.dart';
+import '../widgets/event_repeats_until_section.dart';
+import '../../roster/providers/roster_provider.dart';
+import '../../roster/models/roster_member.dart';
+import '../../../core/enums/member_role.dart';
 
 // ─── Models ──────────────────────────────────────────────────────────────────
 
@@ -120,6 +125,173 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   final GlobalKey _locationFieldKey = GlobalKey();
   final LayerLink _locationLayerLink = LayerLink();
 
+  // Web UI Tab Navigation: 0=Details, 1=Location, 2=Uniform, 3=RSVP
+  int _selectedTabIndex = 0;
+
+  // RSVP selection state
+  Set<String> _selectedAthleteIds = {};
+  Set<String> _selectedStaffIds = {};
+  bool _hasInitializedRsvpSelection = false;
+
+  // Repeats Until state
+  bool _isRepeating = false;
+  String _repeatType = 'Weekly'; // 'Weekly' or 'Monthly'
+  DateTime? _repeatUntilDate;
+  late List<WeeklySlotConfig> _weeklySlots;
+  Set<DateTime> _selectedMonthlyDates = {};
+  DateTime _selectedMonth = DateTime.now();
+
+  // Location Tab Mode & Selections
+  EventLocationMode _locationMode = EventLocationMode.ourLocations;
+  OurLocationVenue? _selectedVenue;
+  OurLocationField? _selectedFieldItem;
+  SavedLocationItem? _selectedSavedLocationItem;
+
+  // Detailed address components for off-site address
+  String _address = '';
+  String _city = '';
+  String _state = '';
+  String _country = '';
+  String _postalCode = '';
+  String _placeId = '';
+
+  /// `venues` field names already start with the facility name
+  /// ("ABC FACILITY - Resource A"), so avoid repeating it.
+  String _venueFieldName(OurLocationVenue venue, OurLocationField field) {
+    return field.fieldName.startsWith(venue.name)
+        ? field.fieldName
+        : '${venue.name} - ${field.fieldName}';
+  }
+
+  String? _resolveLocationText() {
+    switch (_locationMode) {
+      case EventLocationMode.ourLocations:
+        if (_selectedVenue != null) {
+          if (_selectedFieldItem != null) {
+            return _venueFieldName(_selectedVenue!, _selectedFieldItem!);
+          }
+          return _selectedVenue!.name;
+        }
+        return null;
+
+      case EventLocationMode.savedLocation:
+        if (_selectedSavedLocationItem != null) {
+          return _selectedSavedLocationItem!.name.isNotEmpty
+              ? _selectedSavedLocationItem!.name
+              : _selectedSavedLocationItem!.location;
+        }
+        return null;
+
+      case EventLocationMode.offSiteAddress:
+        final addr = _locationController.text.trim();
+        if (addr.isEmpty) return null;
+        return addr;
+
+      case EventLocationMode.tbd:
+        return 'TBD';
+    }
+  }
+
+  ({
+    int locationType,
+    int? venueId,
+    int? fieldId,
+    int? savedLocationId,
+    String address,
+    String city,
+    String state,
+    String country,
+    String postalCode,
+    String placeId,
+    String latitude,
+    String longitude,
+    String locationName,
+  }) _extractLocationData() {
+    int locationType = 1;
+    int? venueId;
+    int? fieldId;
+    int? savedLocationId;
+    String address = _address;
+    String city = _city;
+    String state = _state;
+    String country = _country;
+    String postalCode = _postalCode;
+    String placeId = _placeId;
+    String latitude = _latitude;
+    String longitude = _longitude;
+    String locationName = _locationName;
+
+    switch (_locationMode) {
+      case EventLocationMode.ourLocations:
+        locationType = 1;
+        venueId = _selectedVenue?.venueId;
+        fieldId = _selectedFieldItem?.fieldId;
+        if (_selectedVenue != null) {
+          latitude = _selectedVenue!.latitude;
+          longitude = _selectedVenue!.longitude;
+          locationName = _selectedFieldItem != null
+              ? _venueFieldName(_selectedVenue!, _selectedFieldItem!)
+              : _selectedVenue!.name;
+        }
+        break;
+
+      case EventLocationMode.savedLocation:
+        locationType = 2;
+        savedLocationId = _selectedSavedLocationItem?.savedLocationId ?? _selectedSavedLocationItem?.id;
+        if (_selectedSavedLocationItem != null) {
+          final s = _selectedSavedLocationItem!;
+          address = s.address.isNotEmpty ? s.address : s.location;
+          locationName = s.name.isNotEmpty ? s.name : s.location;
+          latitude = s.latitude;
+          longitude = s.longitude;
+          city = s.city;
+          state = s.state;
+          country = s.country;
+          postalCode = s.postalCode;
+          placeId = s.placeId;
+        }
+        break;
+
+      case EventLocationMode.offSiteAddress:
+        locationType = 3;
+        final rawAddr = _locationController.text.trim();
+        if (address.isEmpty) {
+          address = rawAddr;
+        }
+        locationName = address;
+        break;
+
+      case EventLocationMode.tbd:
+        locationType = 4;
+        locationName = 'TBD';
+        address = '';
+        city = '';
+        state = '';
+        country = '';
+        postalCode = '';
+        placeId = '';
+        latitude = '';
+        longitude = '';
+        break;
+    }
+
+    return (
+      locationType: locationType,
+      venueId: venueId,
+      fieldId: fieldId,
+      savedLocationId: savedLocationId,
+      address: address,
+      city: city,
+      state: state,
+      country: country,
+      postalCode: postalCode,
+      placeId: placeId,
+      latitude: latitude,
+      longitude: longitude,
+      locationName: locationName,
+    );
+  }
+
   // Save template states
   bool _showSaveTemplateForm = false;
   final _templateNameController = TextEditingController();
@@ -140,14 +312,14 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   final _newOpponentNameController = TextEditingController();
 
   DateTime? _selectedDate;
-  TimeOfDay _startTime = const TimeOfDay(hour: 12, minute: 0); // 12:00 PM
+  TimeOfDay _startTime = const TimeOfDay(hour: 17, minute: 0); // 05:00 PM default as shown in web UI
   int _durationHours = 1;
   int _durationMinutes = 30;
   // Custom Time Picker overlay
   final GlobalKey _startTimeFieldKey = GlobalKey();
   final LayerLink _startTimeLayerLink = LayerLink();
   OverlayEntry? _timePickerOverlay;
-  int _homeAwayKey = 0; // 0=not set, 1=Home, 2=Away, 3=Neutral (from API)
+  int _homeAwayKey = 1; // 1=Home (default as shown in web UI), 2=Away, 3=Neutral
   int _arrivalTimeKey = 0; // 0=No set arrival time (from API)
 
   // Tournament/League specific state
@@ -156,9 +328,38 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   DateTime? _endDate;
 
   // Uniform Pickers State (Selected color index)
-  int _topColorIndex = 0;
-  int _bottomColorIndex = 0;
-  int _socksColorIndex = 0;
+  // Dynamic: item name (from API `uniform_items`) -> index into kUniformColors
+  final Map<String, int> _uniformColorIdx = {};
+  List<String> _uniformItems = const ['top', 'bottom', 'socks'];
+  int get _topColorIndex => _uniformColorIdx['top'] ?? 0;
+  set _topColorIndex(int v) => _uniformColorIdx['top'] = v;
+  int get _bottomColorIndex => _uniformColorIdx['bottom'] ?? 0;
+  set _bottomColorIndex(int v) => _uniformColorIdx['bottom'] = v;
+  int get _socksColorIndex => _uniformColorIdx['socks'] ?? 0;
+  set _socksColorIndex(int v) => _uniformColorIdx['socks'] = v;
+
+  /// Hex (or '' for none) for every uniform item currently selected.
+  Map<String, String> _currentUniformHex() => {
+        for (final item in _uniformItems)
+          item: uniformColorToHex(kUniformColors[_uniformColorIdx[item] ?? 0]),
+      };
+
+  /// `uniform` payload: {item: "#hex" | null}. Null when a template id is sent
+  /// or no color is chosen.
+  Map<String, dynamic>? _buildUniformMap(String templateId) {
+    if (templateId.isNotEmpty) return null;
+    final hex = _currentUniformHex();
+    if (hex.values.every((v) => v.isEmpty)) return null;
+    return {for (final e in hex.entries) e.key: e.value.isNotEmpty ? e.value : null};
+  }
+
+  void _applyTemplateColors(NewEventUniformTemplate t) {
+    for (final item in _uniformItems) {
+      final hex = t.colors[item] ??
+          (item == 'top' ? t.topColor : item == 'bottom' ? t.bottomColor : item == 'socks' ? t.socksColor : '');
+      _uniformColorIdx[item] = hexToColorIndex(hex);
+    }
+  }
 
   // ─── Single Active Dropdown / Overlay Dismissal ──────────────────────────────
 
@@ -329,7 +530,13 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         _locationName = item['name']?.toString() ?? '';
         _latitude = item['latitude']?.toString() ?? '';
         _longitude = item['longitude']?.toString() ?? '';
-        _locationController.text = _locationName;
+        _address = item['address']?.toString() ?? item['description']?.toString() ?? _locationName;
+        _city = item['city']?.toString() ?? '';
+        _state = item['state']?.toString() ?? '';
+        _country = item['country']?.toString() ?? '';
+        _postalCode = item['postal_code']?.toString() ?? '';
+        _placeId = item['place_id']?.toString() ?? '';
+        _locationController.text = _address.isNotEmpty ? _address : _locationName;
       });
       _hideLocationOverlay();
     } else {
@@ -340,11 +547,52 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         _locationOverlay?.markNeedsBuild();
         final details = await service.fetchPlaceDetails(placeId);
         if (!mounted) return;
+
+        String formattedAddress = details?['formatted_address']?.toString() ?? item['description']?.toString() ?? name;
+        String city = '';
+        int cityRank = 99; // lower = better match
+        String state = '';
+        String country = '';
+        String postalCode = '';
+
+        final components = details?['address_components'];
+        if (components is List) {
+          for (final c in components) {
+            if (c is Map) {
+              final types = (c['types'] as List? ?? []).map((t) => t.toString()).toList();
+              final longName = c['long_name']?.toString() ?? '';
+              final shortName = c['short_name']?.toString() ?? '';
+              const cityTypes = ['locality', 'postal_town', 'administrative_area_level_2', 'sublocality'];
+              for (int i = 0; i < cityTypes.length; i++) {
+                if (types.contains(cityTypes[i]) && i < cityRank) {
+                  cityRank = i;
+                  city = longName;
+                }
+              }
+              if (types.contains('administrative_area_level_1')) {
+                state = shortName.isNotEmpty ? shortName : longName;
+              }
+              if (types.contains('country')) {
+                country = shortName.isNotEmpty ? shortName : longName;
+              }
+              if (types.contains('postal_code')) {
+                postalCode = longName;
+              }
+            }
+          }
+        }
+
         setState(() {
           _locationName = name;
+          _address = formattedAddress;
+          _city = city;
+          _state = state;
+          _country = country;
+          _postalCode = postalCode;
+          _placeId = placeId;
           _latitude = details?['geometry']?['location']?['lat']?.toString() ?? '';
           _longitude = details?['geometry']?['location']?['lng']?.toString() ?? '';
-          _locationController.text = name;
+          _locationController.text = formattedAddress;
           _isLoadingLocation = false;
         });
         _hideLocationOverlay();
@@ -425,8 +673,32 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     WidgetsBinding.instance.addObserver(this);
     if (widget.defaultSchedulingTypeKey != null) _schedulingTypeKey = widget.defaultSchedulingTypeKey!;
     if (widget.defaultEventTypeKey != null) _eventTypeKey = widget.defaultEventTypeKey!;
+
+    _selectedDate ??= DateUtils.dateOnly(DateTime.now());
+    _selectedMonth = DateTime(_selectedDate!.year, _selectedDate!.month, 1);
+    _selectedMonthlyDates = {DateUtils.dateOnly(_selectedDate!)};
+
+    final defaultEnd = _computeEndTime(_startTime, _durationHours, _durationMinutes);
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    _weeklySlots = List.generate(7, (i) {
+      return WeeklySlotConfig(
+        dayName: dayNames[i],
+        weekday: i + 1,
+        isChecked: true, // Checked by default matching web UI
+        startTime: _startTime,
+        endTime: defaultEnd,
+      );
+    });
+
     // Always re-fetch dropdowns on every open so data is fresh
-    Future.microtask(() => ref.read(eventAddEditProvider.notifier).fetchNewEventDropdowns());
+    Future.microtask(() {
+      ref.read(eventAddEditProvider.notifier).fetchNewEventDropdowns();
+      final activeTeam = ref.read(selectedTeamProvider);
+      if (activeTeam != null) {
+        _rosterNotifier = ref.read(rosterProvider.notifier);
+        _rosterNotifier!.fetchPlayers(activeTeam.uuid, staffType: 'team');
+      }
+    });
   }
 
   /// Pre-fills all form fields from [widget.editEvent] after dropdowns have loaded.
@@ -455,10 +727,81 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       _durationMinutes = e.duration.inMinutes.remainder(60);
 
       // Location
-      _locationController.text = e.location;
-      _locationName = e.location;
-      _latitude = e.latitude ?? '';
-      _longitude = e.longitude ?? '';
+      final loc = e.location.trim();
+      if (loc.isEmpty || loc.toLowerCase() == 'tbd') {
+        _locationMode = EventLocationMode.tbd;
+        _locationController.clear();
+        _locationName = '';
+        _selectedVenue = null;
+        _selectedFieldItem = null;
+        _selectedSavedLocationItem = null;
+      } else {
+        // 1. Try matching with our locations from API
+        OurLocationVenue? matchingVenue;
+        OurLocationField? matchingField;
+
+        for (final v in dropdowns.ourLocations) {
+          if (loc.toLowerCase().startsWith(v.name.toLowerCase()) ||
+              loc.toLowerCase().startsWith(v.label.toLowerCase())) {
+            matchingVenue = v;
+            if (loc.contains(' - ')) {
+              final locLower = loc.toLowerCase();
+              final parts = loc.split(' - ');
+              final fieldPart = parts.sublist(1).join(' - ').trim().toLowerCase();
+              for (final fld in v.fields) {
+                // Field names may or may not already include the facility name.
+                if (locLower == _venueFieldName(v, fld).toLowerCase() ||
+                    locLower == '${v.name} - ${fld.fieldName}'.toLowerCase() ||
+                    fld.fieldName.toLowerCase() == fieldPart ||
+                    fld.label.toLowerCase() == fieldPart) {
+                  matchingField = fld;
+                  break;
+                }
+              }
+            }
+            break;
+          }
+        }
+
+        // 2. Try matching with saved locations from API
+        SavedLocationItem? matchingSaved;
+        if (matchingVenue == null) {
+          for (final s in dropdowns.savedLocations) {
+            if (s.name.toLowerCase() == loc.toLowerCase() ||
+                s.location.toLowerCase() == loc.toLowerCase() ||
+                (s.address.isNotEmpty && s.address.toLowerCase() == loc.toLowerCase())) {
+              matchingSaved = s;
+              break;
+            }
+          }
+        }
+
+        if (matchingVenue != null) {
+          _locationMode = EventLocationMode.ourLocations;
+          _selectedVenue = matchingVenue;
+          _selectedFieldItem = matchingField;
+          _latitude = matchingVenue.latitude;
+          _longitude = matchingVenue.longitude;
+        } else if (matchingSaved != null) {
+          _locationMode = EventLocationMode.savedLocation;
+          _selectedSavedLocationItem = matchingSaved;
+          _latitude = matchingSaved.latitude;
+          _longitude = matchingSaved.longitude;
+          _address = matchingSaved.address;
+          _city = matchingSaved.city;
+          _state = matchingSaved.state;
+          _country = matchingSaved.country;
+          _postalCode = matchingSaved.postalCode;
+          _placeId = matchingSaved.placeId;
+        } else {
+          _locationMode = EventLocationMode.offSiteAddress;
+          _locationController.text = loc;
+          _locationName = loc;
+          _address = loc;
+          _latitude = e.latitude ?? '';
+          _longitude = e.longitude ?? '';
+        }
+      }
 
       // Title (pre-fill with original event title)
       _titleController.text = _originalEventTitle;
@@ -489,6 +832,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       }
 
       // Uniform
+      _uniformItems = dropdowns.uniformItems;
       if (e.uniformTemplateId > 0) {
         final template = dropdowns.uniformTemplates
             .where((t) => t.id == e.uniformTemplateId)
@@ -496,9 +840,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         if (template != null) {
           _selectedApiTemplate = template;
           _selectedUniformMode = template.templateName;
-          _topColorIndex = hexToColorIndex(template.topColor.isNotEmpty ? template.topColor : e.uniformTopColor);
-          _bottomColorIndex = hexToColorIndex(template.bottomColor.isNotEmpty ? template.bottomColor : e.uniformBottomColor);
-          _socksColorIndex = hexToColorIndex(template.socksColor.isNotEmpty ? template.socksColor : e.uniformSocksColor);
+          _applyTemplateColors(template);
+          if (template.topColor.isEmpty) _topColorIndex = hexToColorIndex(e.uniformTopColor);
+          if (template.bottomColor.isEmpty) _bottomColorIndex = hexToColorIndex(e.uniformBottomColor);
+          if (template.socksColor.isEmpty) _socksColorIndex = hexToColorIndex(e.uniformSocksColor);
         } else {
           // Template not in list — fall back to hex colors
           _topColorIndex = hexToColorIndex(e.uniformTopColor);
@@ -515,8 +860,16 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     });
   }
 
+  // Event page loads team-only staff into the shared roster state; restore the
+  // default (all staff) list when leaving so the Roster tab isn't affected.
+  RosterNotifier? _rosterNotifier;
+
   @override
   void dispose() {
+    final rosterNotifier = _rosterNotifier;
+    if (rosterNotifier != null) {
+      Future.microtask(() => rosterNotifier.refresh(staffType: null));
+    }
     WidgetsBinding.instance.removeObserver(this);
     _removeTimePickerOverlay();
     _hideLocationOverlay();
@@ -529,18 +882,69 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     super.dispose();
   }
 
-  // Dynamic End Time computation based on Start Time + Duration
-  String _getEndTimeString() {
-    final startMinutes = _startTime.hour * 60 + _startTime.minute;
-    final durationMinutes = _durationHours * 60 + _durationMinutes;
+  TimeOfDay _computeEndTime(TimeOfDay start, int durHours, int durMinutes) {
+    final startMinutes = start.hour * 60 + start.minute;
+    final durationMinutes = durHours * 60 + durMinutes;
     final totalMinutes = startMinutes + durationMinutes;
 
     final endHour = (totalMinutes ~/ 60) % 24;
     final endMinute = totalMinutes % 60;
+    return TimeOfDay(hour: endHour, minute: endMinute);
+  }
 
-    final amPm = endHour >= 12 ? 'pm' : 'am';
-    final displayHour = endHour == 0 ? 12 : (endHour > 12 ? endHour - 12 : endHour);
-    final displayMinuteStr = endMinute.toString().padLeft(2, '0');
+  void _syncWeeklySlotTimes() {
+    final end = _computeEndTime(_startTime, _durationHours, _durationMinutes);
+    for (final slot in _weeklySlots) {
+      slot.startTime = _startTime;
+      slot.endTime = end;
+    }
+  }
+
+  String _formatDateMMDDYYYY(DateTime date) {
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    final y = date.year.toString();
+    return '$m/$d/$y';
+  }
+
+  Widget _buildFieldLabel(String label, {bool isRequired = false}) {
+    final colors = AppColors.current;
+    if (!isRequired) {
+      return Text(
+        label,
+        style: AppTextStyles.heading14.copyWith(
+          color: colors.textPrimary,
+          fontWeight: FontWeight.w700,
+        ),
+      );
+    }
+    return RichText(
+      text: TextSpan(
+        text: label,
+        style: AppTextStyles.heading14.copyWith(
+          color: colors.textPrimary,
+          fontWeight: FontWeight.w700,
+        ),
+        children: const [
+          TextSpan(
+            text: ' *',
+            style: TextStyle(
+              color: Color(0xFFEF4444),
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Dynamic End Time computation based on Start Time + Duration
+  String _getEndTimeString() {
+    final end = _computeEndTime(_startTime, _durationHours, _durationMinutes);
+    final amPm = end.hour >= 12 ? 'PM' : 'AM';
+    final displayHour = end.hour == 0 ? 12 : (end.hour > 12 ? end.hour - 12 : end.hour);
+    final displayMinuteStr = end.minute.toString().padLeft(2, '0');
 
     return 'Ends at $displayHour:$displayMinuteStr $amPm';
   }
@@ -577,7 +981,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
     // Default bounds
     DateTime firstDate = today;
-    DateTime lastDate = today.add(const Duration(days: 365 * 2));
+    DateTime lastDate = DateTime(2100, 12, 31);
 
     // If a parent league/tournament is provided, restrict to its date range
     if (parent != null) {
@@ -599,6 +1003,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
+        _selectedMonth = DateTime(picked.year, picked.month, 1);
+        _selectedMonthlyDates = {DateUtils.dateOnly(picked)};
         _clampStartTimeToNowIfToday();
       });
     }
@@ -610,7 +1016,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       context: context,
       initialDate: _startDate ?? DateTime.now(),
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      lastDate: DateTime(2100, 12, 31),
     );
     if (picked != null) {
       setState(() {
@@ -628,7 +1034,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       context: context,
       initialDate: _endDate ?? _startDate ?? DateTime.now(),
       firstDate: _startDate ?? DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      lastDate: DateTime(2100, 12, 31),
     );
     if (picked != null) {
       setState(() {
@@ -797,7 +1203,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       originalEvent: e,
       schedulingTypeKey: _schedulingTypeKey,
       eventTypeKey: _eventTypeKey,
-      location: _locationName.isNotEmpty ? _locationName : _locationController.text,
+      location: _resolveLocationText() ?? (_locationName.isNotEmpty ? _locationName : _locationController.text),
       notes: _notesController.text,
       isCancelled: _isCancelled,
       selectedDate: _selectedDate,
@@ -827,6 +1233,19 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   Future<void> _doSave() async {
     if (ref.read(eventAddEditProvider).isSavingNewEvent) return;
 
+    // The "everyone invited" default is normally set when the RSVP tab is built.
+    // If the user never opened it, apply the same default so invitees aren't lost.
+    if (!_hasInitializedRsvpSelection) {
+      final members = ref.read(rosterProvider).allMembers;
+      final athletes = members.where((m) => m.role == MemberRole.player);
+      final staff = members.where((m) => m.role == MemberRole.staff);
+      if (athletes.isNotEmpty || staff.isNotEmpty) {
+        _selectedAthleteIds = athletes.map((a) => a.apiId).toSet();
+        _selectedStaffIds = staff.map((s) => s.apiId).toSet();
+        _hasInitializedRsvpSelection = true;
+      }
+    }
+
     // Uniform template name validation — if toggle is shown, name is required and must be alphanumeric
     if (_selectedApiTemplate == null && _showSaveTemplateForm) {
       final name = _templateNameController.text.trim();
@@ -848,13 +1267,44 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     // ── Flow 1: Single Session ─────────────────────────────────────────────
     if (_schedulingTypeKey == 1) {
       if (_selectedDate == null) {
+        setState(() => _selectedTabIndex = 0);
         _showError('Please select a date');
         return;
       }
 
-      final locationText = _locationController.text.trim();
-      if (locationText.isEmpty) {
-        _showError('Please enter a location');
+      if (_isRepeating) {
+        if (_repeatType == 'Weekly') {
+          if (_repeatUntilDate == null) {
+            setState(() => _selectedTabIndex = 0);
+            _showError('Please select a repeat until date');
+            return;
+          }
+          if (!_weeklySlots.any((s) => s.isChecked)) {
+            setState(() => _selectedTabIndex = 0);
+            _showError('Please select at least one day for weekly repeat');
+            return;
+          }
+        } else if (_repeatType == 'Monthly') {
+          if (_selectedMonthlyDates.isEmpty) {
+            setState(() => _selectedTabIndex = 0);
+            _showError('Please select at least one date for monthly repeat');
+            return;
+          }
+        }
+      }
+
+      final locationText = _resolveLocationText();
+      if (locationText == null) {
+        setState(() => _selectedTabIndex = 1);
+        if (_locationMode == EventLocationMode.ourLocations) {
+          _showError('Please select a facility');
+        } else if (_locationMode == EventLocationMode.savedLocation) {
+          _showError('Please select a saved location');
+        } else if (_locationMode == EventLocationMode.offSiteAddress) {
+          _showError('Please enter an address');
+        } else {
+          _showError('Please set a location');
+        }
         return;
       }
 
@@ -914,8 +1364,59 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         return;
       }
 
+      final locData = _extractLocationData();
+      final totalDurationMinutes = _durationHours * 60 + _durationMinutes;
+      final startDateTime = DateTime(2000, 1, 1, _startTime.hour, _startTime.minute);
+      final endDateTime = startDateTime.add(Duration(minutes: totalDurationMinutes));
+      final endTimeStr = '${endDateTime.hour.toString().padLeft(2, '0')}:${endDateTime.minute.toString().padLeft(2, '0')}';
+
+      int recurringType = 1;
+      dynamic recurrenceDays;
+      String? sessionEndDate;
+
+      if (_isRepeating) {
+        if (_repeatType.toLowerCase() == 'weekly') {
+          recurringType = 2;
+          sessionEndDate = _repeatUntilDate != null ? _formatSessionDate(_repeatUntilDate!) : null;
+          recurrenceDays = _weeklySlots.where((s) => s.isChecked).map((s) {
+            final slotStart = _formatStartTime24(s.startTime);
+            final slotEnd = _formatStartTime24(s.endTime);
+            final dayMap = <String, dynamic>{
+              'day': s.dayName,
+              'start_time': slotStart,
+            };
+            if (slotEnd.isNotEmpty) {
+              dayMap['end_time'] = slotEnd;
+            }
+            return dayMap;
+          }).toList();
+        } else if (_repeatType.toLowerCase() == 'monthly') {
+          recurringType = 3;
+          final sortedDates = _selectedMonthlyDates.toList()..sort();
+          recurrenceDays = sortedDates.map(_formatSessionDate).toList();
+        }
+      }
+
+      final playerIds = _selectedAthleteIds
+          .map((id) => int.tryParse(id))
+          .whereType<int>()
+          .toList();
+      final staffIds = _selectedStaffIds
+          .map((id) => int.tryParse(id))
+          .whereType<int>()
+          .toList();
+
+      final uniformFields = _buildUniformFields();
+      final uniformMap = _buildUniformMap(uniformFields.templateId);
+
       final request = NewEventSaveRequest(
         teamUuid: activeTeam.uuid,
+        organizationId: activeTeam.organizationId,
+        organizationName: activeTeam.organizationName,
+        teamId: activeTeam.teamId,
+        teamName: activeTeam.name,
+        createdFrom: 1,
+        withCalendarRows: 1,
         id: editId,
         existingSchedulingMode: existingSchedulingMode,
         status: editStatus,
@@ -925,24 +1426,44 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         eventId: widget.parentEvent?.dbId ?? (widget.editEvent?.eventId ?? 0),
         scheduleGameId: widget.editEvent?.scheduleGameId ?? 0,
         title: title,
-        sessionDate: _formatSessionDate(_selectedDate!),
+        sessionStartDate: _formatSessionDate(_selectedDate!),
+        sessionEndDate: sessionEndDate,
         startTime: _formatStartTime24(_startTime),
-        duration: _durationHours * 60 + _durationMinutes,
-        homeAway: isGameOrScrimmage ? _homeAwayKey : 0,
-        arrivalEarly: isGameOrScrimmage ? _arrivalTimeKey : 0,
-        location: _locationName.isNotEmpty ? _locationName : locationText,
-        latitude: _latitude,
-        longitude: _longitude,
+        endTime: endTimeStr,
+        duration: totalDurationMinutes,
+        recurringType: recurringType,
+        days: recurrenceDays,
+        homeAway: _homeAwayKey,
+        arrivalEarly: _arrivalTimeKey,
+        locationType: locData.locationType,
+        venueId: locData.venueId,
+        fieldId: locData.fieldId,
+        savedLocationId: locData.savedLocationId,
+        location: locData.locationName.isNotEmpty ? locData.locationName : locationText,
+        address: locData.address,
+        city: locData.city,
+        state: locData.state,
+        country: locData.country,
+        postalCode: locData.postalCode,
+        placeId: locData.placeId,
+        latitude: locData.latitude,
+        longitude: locData.longitude,
         opponentTeamId: opponentTeamId,
         opponentTeamName: opponentTeamName,
         allowForFutureGames: allowForFutureGames,
-        uniformTemplateId: _buildUniformFields().templateId,
-        uniformTopColor: _buildUniformFields().topColor,
-        uniformBottomColor: _buildUniformFields().bottomColor,
-        uniformSocksColor: _buildUniformFields().socksColor,
-        chooseComboAsTemplate: _buildUniformFields().chooseCombo,
-        uniformTemplateName: _buildUniformFields().templateName,
+        uniformTemplateId: uniformFields.templateId,
+        uniform: uniformMap,
+        uniformTopColor: uniformFields.topColor,
+        uniformBottomColor: uniformFields.bottomColor,
+        uniformSocksColor: uniformFields.socksColor,
+        chooseComboAsTemplate: uniformFields.chooseCombo,
+        uniformTemplateName: uniformFields.templateName,
         notes: _notesController.text,
+        isRepeating: _isRepeating,
+        repeatType: _repeatType,
+        repeatUntil: _repeatUntilDate != null ? _formatSessionDate(_repeatUntilDate!) : '',
+        playerIds: playerIds,
+        staffIds: staffIds,
       );
 
       final success = await ref.read(eventAddEditProvider.notifier).saveNewEvent(request);
@@ -952,6 +1473,21 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
     // ── Flows 3 & 4: Tournament / League ──────────────────────────────────
     if (_schedulingTypeKey == 2 || _schedulingTypeKey == 3) {
+      // Tournament and League use the same location types as single session.
+      String? multiDayLocation() {
+        final t = _resolveLocationText();
+        if (t == null) {
+          _showError(switch (_locationMode) {
+            EventLocationMode.ourLocations => 'Please select a facility',
+            EventLocationMode.savedLocation => 'Please select a saved location',
+            EventLocationMode.offSiteAddress => 'Please enter an address',
+            EventLocationMode.tbd => 'Please set a location',
+          });
+        }
+        return t;
+      }
+      final locData = _extractLocationData();
+
       if (!_knowsSchedule) {
         // Flow 3: Placeholder — date range only
         var title = _titleController.text.trim();
@@ -977,11 +1513,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           _showError('Please select an end date');
           return;
         }
-        final locationText = _locationController.text.trim();
-        if (locationText.isEmpty) {
-          _showError('Please enter a location');
-          return;
-        }
+        final locationText = multiDayLocation();
+        if (locationText == null) return;
 
         final activeTeam = ref.read(selectedTeamProvider);
         if (activeTeam == null) {
@@ -989,8 +1522,23 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           return;
         }
 
+        final playerIds = _selectedAthleteIds
+            .map((id) => int.tryParse(id))
+            .whereType<int>()
+            .toList();
+        final staffIds = _selectedStaffIds
+            .map((id) => int.tryParse(id))
+            .whereType<int>()
+            .toList();
+
         final request = NewEventSaveRequest(
           teamUuid: activeTeam.uuid,
+          organizationId: activeTeam.organizationId,
+          organizationName: activeTeam.organizationName,
+          teamId: activeTeam.teamId,
+          teamName: activeTeam.name,
+          createdFrom: 1,
+          withCalendarRows: 1,
           id: editId,
           existingSchedulingMode: existingSchedulingMode,
           status: editStatus,
@@ -1005,9 +1553,19 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           duration: 0,
           homeAway: 0,
           arrivalEarly: 0,
-          location: _locationName.isNotEmpty ? _locationName : locationText,
-          latitude: _latitude,
-          longitude: _longitude,
+          locationType: locData.locationType,
+          venueId: locData.venueId,
+          fieldId: locData.fieldId,
+          savedLocationId: locData.savedLocationId,
+          location: (locData.locationName.isNotEmpty ? locData.locationName : locationText),
+          address: locData.address,
+          city: locData.city,
+          state: locData.state,
+          country: locData.country,
+          postalCode: locData.postalCode,
+          placeId: locData.placeId,
+          latitude: locData.latitude,
+          longitude: locData.longitude,
           opponentTeamName: '',
           allowForFutureGames: false,
           uniformTopColor: '',
@@ -1018,6 +1576,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           startDate: _formatSessionDate(_startDate!),
           endDate: _formatSessionDate(_endDate!),
           notes: _notesController.text,
+          playerIds: playerIds,
+          staffIds: staffIds,
         );
 
         final success = await ref.read(eventAddEditProvider.notifier).saveNewEvent(request);
@@ -1030,11 +1590,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         _showError('Please select a date');
         return;
       }
-      final locationText = _locationController.text.trim();
-      if (locationText.isEmpty) {
-        _showError('Please enter a location');
-        return;
-      }
+      final locationText = multiDayLocation();
+      if (locationText == null) return;
 
       final activeTeam = ref.read(selectedTeamProvider);
       if (activeTeam == null) {
@@ -1068,9 +1625,32 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         flow4Title = origTitle.isNotEmpty ? 'Copy of - $origTitle' : 'Copy of - Event';
       }
 
+      final totalDurationMinutes = _durationHours * 60 + _durationMinutes;
+      final startDateTime = DateTime(2000, 1, 1, _startTime.hour, _startTime.minute);
+      final endDateTime = startDateTime.add(Duration(minutes: totalDurationMinutes));
+      final endTimeStr = '${endDateTime.hour.toString().padLeft(2, '0')}:${endDateTime.minute.toString().padLeft(2, '0')}';
+
+      final playerIds = _selectedAthleteIds
+          .map((id) => int.tryParse(id))
+          .whereType<int>()
+          .toList();
+      final staffIds = _selectedStaffIds
+          .map((id) => int.tryParse(id))
+          .whereType<int>()
+          .toList();
+
+      final uniformFields = _buildUniformFields();
+      final uniformMap = _buildUniformMap(uniformFields.templateId);
+
       // Flow 4: "Yes I have it" → always sent as single session game (scheduling_mode=1, event_type=1)
       final request = NewEventSaveRequest(
         teamUuid: activeTeam.uuid,
+        organizationId: activeTeam.organizationId,
+        organizationName: activeTeam.organizationName,
+        teamId: activeTeam.teamId,
+        teamName: activeTeam.name,
+        createdFrom: 1,
+        withCalendarRows: 1,
         id: editId,
         existingSchedulingMode: existingSchedulingMode,
         status: editStatus,
@@ -1080,24 +1660,38 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         eventId: widget.parentEvent?.dbId ?? (widget.editEvent?.eventId ?? 0),
         scheduleGameId: widget.editEvent?.scheduleGameId ?? 0,
         title: flow4Title,
-        sessionDate: _formatSessionDate(_selectedDate!),
+        sessionStartDate: _formatSessionDate(_selectedDate!),
         startTime: _formatStartTime24(_startTime),
-        duration: _durationHours * 60 + _durationMinutes,
+        endTime: endTimeStr,
+        duration: totalDurationMinutes,
         homeAway: _homeAwayKey,
         arrivalEarly: _arrivalTimeKey,
-        location: _locationName.isNotEmpty ? _locationName : locationText,
-        latitude: _latitude,
-        longitude: _longitude,
+        locationType: locData.locationType,
+        venueId: locData.venueId,
+        fieldId: locData.fieldId,
+        savedLocationId: locData.savedLocationId,
+        location: (locData.locationName.isNotEmpty ? locData.locationName : locationText),
+        address: locData.address,
+        city: locData.city,
+        state: locData.state,
+        country: locData.country,
+        postalCode: locData.postalCode,
+        placeId: locData.placeId,
+        latitude: locData.latitude,
+        longitude: locData.longitude,
         opponentTeamId: flow4OpponentTeamId,
         opponentTeamName: flow4OpponentTeamName,
         allowForFutureGames: flow4AllowForFutureGames,
-        uniformTemplateId: _buildUniformFields().templateId,
-        uniformTopColor: _buildUniformFields().topColor,
-        uniformBottomColor: _buildUniformFields().bottomColor,
-        uniformSocksColor: _buildUniformFields().socksColor,
-        chooseComboAsTemplate: _buildUniformFields().chooseCombo,
-        uniformTemplateName: _buildUniformFields().templateName,
+        uniformTemplateId: uniformFields.templateId,
+        uniform: uniformMap,
+        uniformTopColor: uniformFields.topColor,
+        uniformBottomColor: uniformFields.bottomColor,
+        uniformSocksColor: uniformFields.socksColor,
+        chooseComboAsTemplate: uniformFields.chooseCombo,
+        uniformTemplateName: uniformFields.templateName,
         notes: _notesController.text,
+        playerIds: playerIds,
+        staffIds: staffIds,
       );
 
       final success = await ref.read(eventAddEditProvider.notifier).saveNewEvent(request);
@@ -1211,12 +1805,14 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
     final dropdowns = dropdownState.newEventDropdowns!;
 
+    final showCategoryHeader = widget.defaultSchedulingTypeKey == null && !_isChildGameEdit && !_isChildDuplicate;
+
     return Scaffold(
-      backgroundColor: colors.isDark ? colors.background : const Color(0xFFF4F5F7),
+      backgroundColor: colors.isDark ? colors.background : const Color(0xFFF8F9FA),
       body: SafeArea(
         child: Column(
           children: [
-            subHeader,
+            _buildWebHeader(context),
             Expanded(
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
@@ -1224,15 +1820,52 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 10),
-                      child: Text(
-                        isDuplicateMode ? 'Duplicate Event' : isEditMode ? 'Edit Event' : (widget.title ?? 'New Event'),
-                        style: AppTextStyles.heading22.copyWith(color: colors.textPrimary, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildFormContainer(dropdowns),
+                    if (showCategoryHeader) ...[
+                      _buildCategoryHeaderCard(dropdowns),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_schedulingTypeKey == 1) ...[
+                      _buildWebTabBar(),
+                      const SizedBox(height: 16),
+                      if (_selectedTabIndex == 0)
+                        _buildDetailsTabContent(dropdowns)
+                      else if (_selectedTabIndex == 1)
+                        _buildLocationTabContent(dropdowns)
+                      else if (_selectedTabIndex == 2)
+                        _buildUniformTabContent(dropdowns)
+                      else
+                        _buildRsvpTabContent(dropdowns),
+                    ] else if (_schedulingTypeKey == 2) ...[
+                      _buildTournamentCard(dropdowns),
+                      if (_knowsSchedule) ...[
+                        const SizedBox(height: 16),
+                        _buildWebTabBar(),
+                        const SizedBox(height: 16),
+                        if (_selectedTabIndex == 0)
+                          _buildDetailsTabContent(dropdowns)
+                        else if (_selectedTabIndex == 1)
+                          _buildLocationTabContent(dropdowns)
+                        else if (_selectedTabIndex == 2)
+                          _buildUniformTabContent(dropdowns)
+                        else
+                          _buildRsvpTabContent(dropdowns),
+                      ],
+                    ] else if (_schedulingTypeKey == 3) ...[
+                      _buildLeagueCard(dropdowns),
+                      if (_knowsSchedule) ...[
+                        const SizedBox(height: 16),
+                        _buildWebTabBar(),
+                        const SizedBox(height: 16),
+                        if (_selectedTabIndex == 0)
+                          _buildDetailsTabContent(dropdowns)
+                        else if (_selectedTabIndex == 1)
+                          _buildLocationTabContent(dropdowns)
+                        else if (_selectedTabIndex == 2)
+                          _buildUniformTabContent(dropdowns)
+                        else
+                          _buildRsvpTabContent(dropdowns),
+                      ],
+                    ],
                     if (isEditMode && !isDuplicateMode) ...[
                       const SizedBox(height: 16),
                       EventEditDangerCard(
@@ -1247,13 +1880,296 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                 ),
               ),
             ),
+            _buildWebFooter(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFormContainer(NewEventDropdownOptions dropdowns) {
+  Widget _buildWebHeader(BuildContext context) {
+    final colors = AppColors.current;
+    final isDark = colors.isDark;
+    final isDuplicateMode = widget.editEvent != null && widget.isDuplicate;
+    final isEditMode = widget.editEvent != null && !widget.isDuplicate;
+    final title = isDuplicateMode
+        ? 'Duplicate Event'
+        : isEditMode
+            ? 'Edit Event'
+            : (widget.title ?? 'Add Event');
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 20, right: 8, top: 8, bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : const Color(0xFF1A1D20),
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.close,
+              color: isDark ? Colors.white70 : const Color(0xFF6B7280),
+              size: 24,
+            ),
+            splashRadius: 20,
+            onPressed: () {
+              _closeAllDropdowns(unfocus: true);
+              context.pop();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebTabBar() {
+    final colors = AppColors.current;
+    final isDark = colors.isDark;
+    const activeYellow = Color(0xFFF5BD1F);
+    final borderColor = isDark ? colors.border : const Color(0xFFE5E7EB);
+
+    final tabs = ['Details', 'Location', 'Uniform', 'RSVP'];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? colors.card : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        children: List.generate(tabs.length, (index) {
+          final isSelected = _selectedTabIndex == index;
+
+          return Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                _closeAllDropdowns(unfocus: true);
+                setState(() => _selectedTabIndex = index);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? (isDark ? const Color(0xFF2A281E) : const Color(0xFFFEFCE8))
+                      : Colors.transparent,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isSelected ? activeYellow : Colors.transparent,
+                      width: 3.0,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  tabs[index],
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected
+                        ? (isDark ? Colors.white : const Color(0xFF1A1D20))
+                        : const Color(0xFF6B7280),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildWebFooter(BuildContext context) {
+    final colors = AppColors.current;
+    final isDark = colors.isDark;
+    final isSaving = ref.watch(eventAddEditProvider).isSavingNewEvent;
+    const yellowBtn = Color(0xFFF5BD1F);
+
+    final isEditMode = widget.editEvent != null && !widget.isDuplicate;
+    final saveButtonLabel = isEditMode
+        ? 'Update Event'
+        : (_schedulingTypeKey == 1 ? 'Save & Send RSVP' : 'Save Event');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? colors.card : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? colors.border : const Color(0xFFE5E7EB),
+            width: 1,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: () {
+                _closeAllDropdowns(unfocus: true);
+                context.pop();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white70 : const Color(0xFF4B5563),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: isSaving ? null : () {
+                _closeAllDropdowns(unfocus: true);
+                _onSave();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: yellowBtn,
+                foregroundColor: const Color(0xFF1A1D20),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A1D20)),
+                      ),
+                    )
+                  : Text(
+                      saveButtonLabel,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A1D20),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationTabContent(NewEventDropdownOptions dropdowns) {
+    final colors = AppColors.current;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colors.isDark ? colors.card : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: _buildLocationView(dropdowns),
+    );
+  }
+
+  /// Shared "Where is this happening?" selector (single session, tournament, league).
+  Widget _buildLocationView(NewEventDropdownOptions dropdowns) {
+    return EventLocationTabView(
+        selectedMode: _locationMode,
+        onModeChanged: (mode) {
+          _closeAllDropdowns(unfocus: true);
+          setState(() {
+            _locationMode = mode;
+            if (mode == EventLocationMode.tbd) {
+              _locationController.clear();
+              _locationName = 'TBD';
+              _latitude = '';
+              _longitude = '';
+            }
+          });
+        },
+        ourLocationVenues: dropdowns.ourLocations,
+        selectedVenue: _selectedVenue,
+        onVenueChanged: (venue) {
+          setState(() {
+            _selectedVenue = venue;
+            _selectedFieldItem = null;
+            if (venue != null) {
+              _latitude = venue.latitude;
+              _longitude = venue.longitude;
+            }
+          });
+        },
+        selectedFieldItem: _selectedFieldItem,
+        onFieldItemChanged: (field) {
+          setState(() {
+            _selectedFieldItem = field;
+          });
+        },
+        savedLocationItems: dropdowns.savedLocations,
+        selectedSavedLocationItem: _selectedSavedLocationItem,
+        onSavedLocationItemChanged: (saved) {
+          setState(() {
+            _selectedSavedLocationItem = saved;
+            if (saved != null) {
+              _address = saved.address;
+              _city = saved.city;
+              _state = saved.state;
+              _country = saved.country;
+              _postalCode = saved.postalCode;
+              _placeId = saved.placeId;
+              _latitude = saved.latitude;
+              _longitude = saved.longitude;
+            }
+          });
+        },
+        addressController: _locationController,
+        onAddressChanged: _onLocationChanged,
+        addressFieldKey: _locationFieldKey,
+        addressLayerLink: _locationLayerLink,
+        onClearAddress: () {
+          setState(() {
+            _locationController.clear();
+            _locationName = '';
+            _address = '';
+            _city = '';
+            _state = '';
+            _country = '';
+            _postalCode = '';
+            _placeId = '';
+            _latitude = '';
+            _longitude = '';
+          });
+          _hideLocationOverlay();
+        },
+    );
+  }
+
+  Widget _buildCategoryHeaderCard(NewEventDropdownOptions dropdowns) {
+    if (widget.defaultSchedulingTypeKey != null || _isChildGameEdit || _isChildDuplicate) {
+      return const SizedBox.shrink();
+    }
+
     final colors = AppColors.current;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1271,44 +2187,423 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Category Header — hidden when scheduling type is pre-set or editing a child game ──
-          if (widget.defaultSchedulingTypeKey == null && !_isChildGameEdit && !_isChildDuplicate) ...[
-            Text(
-              'What are you adding?',
-              style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                for (int i = 0; i < dropdowns.schedulingTypes.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 8),
-                  _buildCategoryButton(dropdowns.schedulingTypes[i].key, dropdowns.schedulingTypes[i].label),
-                ],
+          Text(
+            'What are you adding?',
+            style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              for (int i = 0; i < dropdowns.schedulingTypes.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                _buildCategoryButton(dropdowns.schedulingTypes[i].key, dropdowns.schedulingTypes[i].label),
               ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _getCategorySubtext(),
+            style: AppTextStyles.body14.copyWith(
+              color: colors.textSecondary,
+              height: 1.4,
             ),
-            const SizedBox(height: 12),
-            Text(
-              _getCategorySubtext(),
-              style: AppTextStyles.body14.copyWith(
-                color: colors.textSecondary,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-
-          // ── Category Specific Form Body ──
-          if (_schedulingTypeKey == 1) ...[
-            _buildSingleSessionForm(dropdowns)
-          ] else if (_schedulingTypeKey == 2) ...[
-            _buildTournamentForm(dropdowns)
-          ] else if (_schedulingTypeKey == 3) ...[
-            _buildLeagueForm(dropdowns)
-          ]
+          ),
         ],
       ),
     );
   }
+
+  Widget _buildDetailsTabContent(NewEventDropdownOptions dropdowns) {
+    final colors = AppColors.current;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.isDark ? colors.card : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: _buildSingleSessionForm(dropdowns),
+    );
+  }
+
+  Widget _buildTournamentCard(NewEventDropdownOptions dropdowns) {
+    final colors = AppColors.current;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.isDark ? colors.card : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: _buildTournamentForm(dropdowns),
+    );
+  }
+
+  Widget _buildLeagueCard(NewEventDropdownOptions dropdowns) {
+    final colors = AppColors.current;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.isDark ? colors.card : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: _buildLeagueForm(dropdowns),
+    );
+  }
+
+  Widget _buildUniformTabContent(NewEventDropdownOptions dropdowns) {
+    final colors = AppColors.current;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.isDark ? colors.card : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildUniformSectionHeader(),
+          const SizedBox(height: 8),
+          _buildUniformFormContent(dropdowns),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRsvpTabContent(NewEventDropdownOptions dropdowns) {
+    final colors = AppColors.current;
+    final isDark = colors.isDark;
+    final rosterState = ref.watch(rosterProvider);
+
+    if (rosterState.isLoading) {
+      return Container(
+        height: 260,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isDark ? colors.card : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: CircularProgressIndicator(color: colors.primary),
+      );
+    }
+
+    final rosterMembers = rosterState.allMembers;
+    final apiAthletes = rosterMembers.where((m) => m.role == MemberRole.player).toList();
+    final apiStaff = rosterMembers.where((m) => m.role == MemberRole.staff).toList();
+
+    if (!_hasInitializedRsvpSelection && (apiAthletes.isNotEmpty || apiStaff.isNotEmpty)) {
+      _selectedAthleteIds = apiAthletes.map((a) => a.apiId).toSet();
+      _selectedStaffIds = apiStaff.map((s) => s.apiId).toSet();
+      _hasInitializedRsvpSelection = true;
+    }
+
+    final allAthletesSelected = _selectedAthleteIds.length == apiAthletes.length && apiAthletes.isNotEmpty;
+    final allStaffSelected = _selectedStaffIds.length == apiStaff.length && apiStaff.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? colors.card : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── ATHLETES Header ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'ATHLETES',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: isDark ? colors.textSecondary : const Color(0xFF6B7280),
+                ),
+              ),
+              if (apiAthletes.isNotEmpty)
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (allAthletesSelected) {
+                        _selectedAthleteIds.clear();
+                      } else {
+                        _selectedAthleteIds = apiAthletes.map((a) => a.apiId).toSet();
+                      }
+                    });
+                  },
+                  child: Text(
+                    allAthletesSelected ? 'Clear All' : 'Select All',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // ── ATHLETES Cards Grid ──
+          if (apiAthletes.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'No athletes found in team roster.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? colors.textSecondary : const Color(0xFF6B7280),
+                ),
+              ),
+            )
+          else
+            _buildMemberCardsGrid(
+              members: apiAthletes,
+              selectedIds: _selectedAthleteIds,
+              onToggle: (id) {
+                setState(() {
+                  if (_selectedAthleteIds.contains(id)) {
+                    _selectedAthleteIds.remove(id);
+                  } else {
+                    _selectedAthleteIds.add(id);
+                  }
+                });
+              },
+            ),
+          const SizedBox(height: 24),
+
+          // ── STAFF Header ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'STAFF',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: isDark ? colors.textSecondary : const Color(0xFF6B7280),
+                ),
+              ),
+              if (apiStaff.isNotEmpty)
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (allStaffSelected) {
+                        _selectedStaffIds.clear();
+                      } else {
+                        _selectedStaffIds = apiStaff.map((s) => s.apiId).toSet();
+                      }
+                    });
+                  },
+                  child: Text(
+                    allStaffSelected ? 'Clear All' : 'Select All',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // ── STAFF Cards Grid ──
+          if (apiStaff.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'No staff members found in team roster.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? colors.textSecondary : const Color(0xFF6B7280),
+                ),
+              ),
+            )
+          else
+            _buildMemberCardsGrid(
+              members: apiStaff,
+              selectedIds: _selectedStaffIds,
+              onToggle: (id) {
+                setState(() {
+                  if (_selectedStaffIds.contains(id)) {
+                    _selectedStaffIds.remove(id);
+                  } else {
+                    _selectedStaffIds.add(id);
+                  }
+                });
+              },
+            ),
+          const SizedBox(height: 20),
+
+          // ── Footer Note ──
+          Text(
+            'Everyone picked here is invited to every date of this event and answers the RSVP in the Playbook Club Management App.',
+            style: TextStyle(
+              fontSize: 13.5,
+              height: 1.45,
+              color: isDark ? colors.textSecondary : const Color(0xFF6B7280),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMemberCardsGrid({
+    required List<RosterMember> members,
+    required Set<String> selectedIds,
+    required ValueChanged<String> onToggle,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = (constraints.maxWidth - 12) / 2;
+
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: members.map((member) {
+            final isSelected = selectedIds.contains(member.apiId);
+            return SizedBox(
+              width: cardWidth,
+              child: _buildRsvpMemberCard(
+                member: member,
+                isSelected: isSelected,
+                onTap: () => onToggle(member.apiId),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildRsvpMemberCard({
+    required RosterMember member,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final colors = AppColors.current;
+    final isDark = colors.isDark;
+    const yellowAccent = Color(0xFFF5BD1F);
+    const cardYellowBg = Color(0xFFFEF9C3);
+
+    final initial = member.firstName.isNotEmpty
+        ? member.firstName[0].toUpperCase()
+        : (member.lastName.isNotEmpty ? member.lastName[0].toUpperCase() : '?');
+
+    final name = member.fullName.replaceAll(' ', '');
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        height: 96,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? const Color(0xFF382F10) : cardYellowBg)
+              : (isDark ? colors.card : Colors.white),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? yellowAccent : (isDark ? colors.border : const Color(0xFFE5E7EB)),
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Stack(
+          children: [
+            if (isSelected)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: yellowAccent,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEDE9FE),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      initial,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF6D28D9),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : const Color(0xFF1A1D20),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   String _getCategorySubtext() {
     if (_schedulingTypeKey == 1) {
@@ -1329,8 +2624,11 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           _closeAllDropdowns(unfocus: true);
           setState(() {
             _schedulingTypeKey = key;
-            // Single Session → default to Practice if no event type set
-            if (key == 1 && _eventTypeKey == 0) _eventTypeKey = 2;
+            if (key == 1) {
+              _selectedTabIndex = 0;
+              // Single Session → default to Practice if no event type set
+              if (_eventTypeKey == 0) _eventTypeKey = 2;
+            }
             // Tournament / League → reset event type to 0 (not applicable)
             if (key == 2 || key == 3) _eventTypeKey = 0;
           });
@@ -1365,92 +2663,23 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     );
   }
 
-  Widget _buildBottomButton() {
-    return const SizedBox.shrink();
-    // ignore: dead_code
-    final isEditMode = widget.editEvent != null && !widget.isDuplicate;
-    final isDuplicateMode = widget.editEvent != null && widget.isDuplicate;
-    final colors = AppColors.current;
-    final isSaving = ref.watch(eventAddEditProvider).isSavingNewEvent;
-    String buttonText = 'Save';
-    if (isDuplicateMode) {
-      buttonText = 'Duplicate event';
-    } else if (isEditMode) {
-      buttonText = 'Update event';
-    } else if (_schedulingTypeKey == 1) {
-      buttonText = 'Save event';
-    } else {
-      buttonText = _knowsSchedule ? 'Save event' : 'Save placeholder';
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: isSaving ? null : _onSave,
-          child: Container(
-            height: 48,
-            width: double.infinity,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: const Color(0xFF00E5FF),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: isSaving
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                    ),
-                  )
-                : Text(
-                    buttonText,
-                    style: AppTextStyles.heading16.copyWith(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Center(
-          child: TextButton(
-            onPressed: () => context.pop(),
-            child: Text(
-              'Cancel',
-              style: AppTextStyles.body16.copyWith(
-                color: colors.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   // ── Single Session Form ──
   Widget _buildSingleSessionForm(NewEventDropdownOptions dropdowns) {
     final colors = AppColors.current;
-    final dateStr = _selectedDate == null
-        ? 'dd-mm-yyyy'
-        : '${_selectedDate!.day.toString().padLeft(2, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.year}';
+    final dateStr = _formatDateMMDDYYYY(_selectedDate ?? DateTime.now());
     final startHour = _startTime.hour == 0 ? 12 : (_startTime.hour > 12 ? _startTime.hour - 12 : _startTime.hour);
     final startMinuteStr = _startTime.minute.toString().padLeft(2, '0');
     final startAmPm = _startTime.hour >= 12 ? 'PM' : 'AM';
     final timeStr = '$startHour:$startMinuteStr $startAmPm';
+    // Tournament/League with "Yes, I have it" reuses this form for a single game.
+    final isMultiDayGame = _schedulingTypeKey != 1 && _knowsSchedule;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Event Type — hidden when event type is pre-set or editing a child game
-        if (widget.defaultEventTypeKey == null && !_isChildGameEdit && !_isChildDuplicate) ...[
-          Text(
-            'Event type',
-            style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
-          ),
+        if (!isMultiDayGame && widget.defaultEventTypeKey == null && !_isChildGameEdit && !_isChildDuplicate) ...[
+          _buildFieldLabel('Event type', isRequired: true),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -1460,29 +2689,36 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           const SizedBox(height: 20),
         ],
 
-        // Title or Opponent Field
-        if (_eventTypeKey == 1 || _eventTypeKey == 3) ...[
+        // Opponent Team (for Game or Scrimmage) OR Title (for Practice, Team Event, Camp)
+        if (isMultiDayGame || _eventTypeKey == 1 || _eventTypeKey == 3) ...[
           _buildOpponentSection(dropdowns),
         ] else ...[
           _buildTextField(
             label: 'Title',
             hintText: 'e.g. Practice',
             controller: _titleController,
+            isRequired: true,
             onTap: () => _closeAllDropdowns(),
           ),
         ],
         const SizedBox(height: 20),
 
-        // Date Field
-        _buildPickerField(
-          label: 'Date',
-          valueText: dateStr,
-          isPlaceholder: _selectedDate == null,
-          icon: Icons.calendar_today_outlined,
-          onTap: () => _pickDate(context),
-        ),
-        const SizedBox(height: 20),
+        // Date Field — only shown when event does NOT repeat
+        // When repeating, Start Date and Repeat Until are configured in the repeat section below
+        if (isMultiDayGame || !_isRepeating) ...[
+          _buildPickerField(
+            label: 'Date',
+            isRequired: true,
+            valueText: dateStr,
+            isPlaceholder: false,
+            icon: Icons.calendar_today_outlined,
+            iconOnLeft: true,
+            onTap: () => _pickDate(context),
+          ),
+          const SizedBox(height: 20),
+        ],
 
+        // Start Time * and Duration Row
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1491,49 +2727,54 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
               child: _buildPickerField(
                 fieldKey: _startTimeFieldKey,
                 layerLink: _startTimeLayerLink,
-                label: 'Start time',
+                label: 'Start Time',
+                isRequired: true,
                 valueText: timeStr,
                 isPlaceholder: false,
                 icon: Icons.access_time,
+                iconOnLeft: true,
                 onTap: _showStartTimeOverlay,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             Expanded(
-              flex: 5,
+              flex: 6,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Duration',
-                    style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
-                  ),
+                  _buildFieldLabel('Duration', isRequired: false),
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
                         child: _buildDropdownField<int>(
                           value: _durationHours,
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           items: const [0, 1, 2, 3, 4, 5, 6, 7, 8],
                           itemLabel: (v) => v == 1 ? '1 hr' : '$v hrs',
                           onChanged: (val) {
                             if (val != null) {
-                              setState(() => _durationHours = val);
+                              setState(() {
+                                _durationHours = val;
+                                _syncWeeklySlotTimes();
+                              });
                             }
                           },
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _buildDropdownField<int>(
                           value: _durationMinutes,
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           items: const [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
                           itemLabel: (v) => '$v min',
                           onChanged: (val) {
                             if (val != null) {
-                              setState(() => _durationMinutes = val);
+                              setState(() {
+                                _durationMinutes = val;
+                                _syncWeeklySlotTimes();
+                              });
                             }
                           },
                         ),
@@ -1545,107 +2786,97 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Icon(Icons.access_time_filled_outlined, color: colors.textSecondary, size: 14),
-            const SizedBox(width: 4),
-            Text(
-              _getEndTimeString(),
-              style: AppTextStyles.body13.copyWith(color: colors.textSecondary),
-            ),
-          ],
+        const SizedBox(height: 6),
+        Text(
+          _getEndTimeString(),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: colors.isDark ? colors.textSecondary : const Color(0xFF6B7280),
+          ),
         ),
-        if (_eventTypeKey == 1 || _eventTypeKey == 3) ...[
-          const SizedBox(height: 20),
-          if (dropdowns.homeAwayOptions.isNotEmpty) ...[
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        const SizedBox(height: 20),
+
+        // Home or away
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildFieldLabel('Home or away', isRequired: false),
+            const SizedBox(height: 8),
+            Row(
               children: [
-                Text(
-                  'Home or away',
-                  style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    for (int i = 0; i < dropdowns.homeAwayOptions.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 12),
-                      _buildHomeOrAwayButton(dropdowns.homeAwayOptions[i]),
-                    ],
-                  ],
-                ),
+                _buildHomeOrAwayButton(const NewEventHomeAwayOption(key: 1, value: 'home', label: 'Home')),
+                const SizedBox(width: 10),
+                _buildHomeOrAwayButton(const NewEventHomeAwayOption(key: 2, value: 'away', label: 'Away')),
+                const SizedBox(width: 10),
+                _buildHomeOrAwayButton(const NewEventHomeAwayOption(key: 3, value: 'neutral', label: 'Neutral')),
               ],
             ),
-            const SizedBox(height: 20),
           ],
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Arrive how early',
-                style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
-              ),
-              const SizedBox(height: 8),
-              _buildDropdownField<int>(
-                value: _arrivalTimeKey,
-                items: dropdowns.arrivalTimeOptions.map((o) => o.key).toList(),
-                itemLabel: (key) => dropdowns.arrivalTimeOptions
-                    .firstWhere((o) => o.key == key, orElse: () => const NewEventArrivalTimeOption(key: 0, label: 'No set arrival time'))
-                    .label,
-                onChanged: (val) {
-                  if (val != null) setState(() => _arrivalTimeKey = val);
-                },
-              ),
-            ],
-          ),
-        ],
-        const SizedBox(height: 20),
-
-        // Location Field
-        _buildTextField(
-          fieldKey: _locationFieldKey,
-          layerLink: _locationLayerLink,
-          label: 'Location',
-          hintText: 'Search location...',
-          controller: _locationController,
-          prefixIcon: Icon(Icons.location_on_outlined, color: colors.textSecondary),
-          suffixIcon: _locationController.text.isNotEmpty
-              ? GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _locationController.clear();
-                      _locationName = '';
-                      _latitude = '';
-                      _longitude = '';
-                    });
-                    _hideLocationOverlay();
-                  },
-                  child: Icon(Icons.close, color: colors.textSecondary),
-                )
-              : null,
-          onChanged: _onLocationChanged,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
-        // Uniform Section
-        Divider(color: colors.border, height: 1),
+        // Arrive how early
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildFieldLabel('Arrive how early', isRequired: false),
+            const SizedBox(height: 8),
+            _buildDropdownField<int>(
+              value: _arrivalTimeKey,
+              items: dropdowns.arrivalTimeOptions.isNotEmpty
+                  ? dropdowns.arrivalTimeOptions.map((o) => o.key).toList()
+                  : const [0, 15, 30, 45, 60],
+              itemLabel: (key) => dropdowns.arrivalTimeOptions
+                  .firstWhere(
+                    (o) => o.key == key,
+                    orElse: () => const NewEventArrivalTimeOption(key: 0, label: 'No set arrival time'),
+                  )
+                  .label,
+              onChanged: (val) {
+                if (val != null) setState(() => _arrivalTimeKey = val);
+              },
+            ),
+          ],
+        ),
         const SizedBox(height: 20),
-        _buildUniformSectionHeader(),
-        const SizedBox(height: 8),
-        _buildUniformFormContent(dropdowns),
-        const SizedBox(height: 20),
+
+        // Repeats Until section (Weekly & Monthly modes)
+        if (!isMultiDayGame) EventRepeatsUntilSection(
+          isRepeating: _isRepeating,
+          onRepeatingChanged: (v) => setState(() => _isRepeating = v),
+          repeatType: _repeatType,
+          onRepeatTypeChanged: (v) => setState(() => _repeatType = v),
+          startDate: _selectedDate ?? DateTime.now(),
+          onStartDateChanged: (d) => setState(() {
+            _selectedDate = d;
+            _selectedMonth = DateTime(d.year, d.month, 1);
+            _selectedMonthlyDates = {DateUtils.dateOnly(d)};
+            if (_repeatUntilDate != null && _repeatUntilDate!.isBefore(d)) {
+              _repeatUntilDate = null;
+            }
+          }),
+          repeatUntilDate: _repeatUntilDate,
+          onRepeatUntilDateChanged: (d) => setState(() => _repeatUntilDate = d),
+          weeklySlots: _weeklySlots,
+          onWeeklySlotsChanged: (slots) => setState(() => _weeklySlots = slots),
+          selectedMonthlyDates: _selectedMonthlyDates,
+          onMonthlyDatesChanged: (dates) => setState(() => _selectedMonthlyDates = dates),
+          selectedMonth: _selectedMonth,
+          onSelectedMonthChanged: (m) => setState(() => _selectedMonth = m),
+          defaultStartTime: _startTime,
+          defaultEndTime: _computeEndTime(_startTime, _durationHours, _durationMinutes),
+        ),
+        if (!isMultiDayGame) const SizedBox(height: 20),
 
         // Notes for families
         _buildTextField(
           label: 'Notes for families',
-          hintText: 'Arrive 30 min early. Bring both jerseys.',
+          hintText: 'Arrive 30 min early. Bring both jerseys',
           controller: _notesController,
           maxLines: 3,
           onTap: () => _closeAllDropdowns(),
         ),
-        const SizedBox(height: 24),
-        _buildBottomButton(),
       ],
     );
   }
@@ -1665,7 +2896,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   }
 
   // Tournament and League share a very similar structure
-  Widget _buildSharedMultiDayForm({required String titlePlaceholder, required NewEventDropdownOptions dropdowns}) {
+  Widget _buildSharedMultiDayForm({
+    required String titlePlaceholder,
+    required NewEventDropdownOptions dropdowns,
+  }) {
     final colors = AppColors.current;
     final dateStr = _selectedDate == null
         ? 'dd-mm-yyyy'
@@ -1681,6 +2915,28 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     final endStr = _endDate == null
         ? 'dd-mm-yyyy'
         : '${_endDate!.day.toString().padLeft(2, '0')}-${_endDate!.month.toString().padLeft(2, '0')}-${_endDate!.year}';
+
+    if (_knowsSchedule) {
+      // "Yes, I have it": only the question here; the rest of the UI is the
+      // single-session tabs rendered below this card.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Do you know the game schedule?',
+            style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildScheduleOptionButton(false, 'Not yet — placeholder'),
+              const SizedBox(width: 12),
+              _buildScheduleOptionButton(true, 'Yes, I have it'),
+            ],
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1878,30 +3134,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         ],
         const SizedBox(height: 20),
 
-        // Location Field
-        _buildTextField(
-          fieldKey: _locationFieldKey,
-          layerLink: _locationLayerLink,
-          label: 'Location',
-          hintText: 'Search location...',
-          controller: _locationController,
-          prefixIcon: Icon(Icons.location_on_outlined, color: colors.textSecondary),
-          suffixIcon: _locationController.text.isNotEmpty
-              ? GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _locationController.clear();
-                      _locationName = '';
-                      _latitude = '';
-                      _longitude = '';
-                    });
-                    _hideLocationOverlay();
-                  },
-                  child: Icon(Icons.close, color: colors.textSecondary),
-                )
-              : null,
-          onChanged: _onLocationChanged,
-        ),
+        // Location
+        _buildLocationView(dropdowns),
         const SizedBox(height: 20),
 
         // Uniform Section
@@ -1922,69 +3156,45 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           maxLines: 3,
           onTap: () => _closeAllDropdowns(),
         ),
-        const SizedBox(height: 24),
-        _buildBottomButton(),
       ],
     );
   }
 
   // ── Helper Widgets ──
 
-  // Event type keys: 1=Game, 2=Practice, 3=Scrimmage, 4=Team Event, 5=Camp
-  Color _getEventTypeBgColor(int key, bool isSelected) {
-    if (!isSelected) return Colors.transparent;
-    switch (key) {
-      case 1: return const Color(0xFFFFC107); // Game
-      case 2: return const Color(0xFF00E5FF); // Practice
-      case 3: return const Color(0xFF2F54EB); // Scrimmage
-      case 4: return const Color(0xFFE91E63); // Team Event
-      case 5: return const Color(0xFF00C853); // Camp
-      default: return const Color(0xFF00E5FF);
-    }
-  }
-
-  Color _getEventTypeTextColor(int key, bool isSelected) {
-    final colors = AppColors.current;
-    if (!isSelected) return colors.textSecondary;
-    switch (key) {
-      case 1:
-      case 2: return Colors.black;
-      case 3:
-      case 4:
-      case 5: return Colors.white;
-      default: return Colors.black;
-    }
-  }
-
   Widget _buildHomeOrAwayButton(NewEventHomeAwayOption option) {
     final colors = AppColors.current;
     final isSelected = _homeAwayKey == option.key;
-    return GestureDetector(
-      onTap: () {
-        _closeAllDropdowns(unfocus: true);
-        setState(() => _homeAwayKey = option.key);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 15),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (colors.isDark ? colors.primary : const Color(0xFF2F54EB))
-              : (colors.isDark ? colors.background : Colors.white),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
+    const yellowAccent = Color(0xFFF5BD1F);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          _closeAllDropdowns(unfocus: true);
+          setState(() => _homeAwayKey = option.key);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
             color: isSelected
-                ? (colors.isDark ? colors.primary : const Color(0xFF2F54EB))
-                : colors.border,
-            width: 1.2,
+                ? yellowAccent
+                : (colors.isDark ? colors.background : Colors.white),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? yellowAccent : (colors.isDark ? colors.border : const Color(0xFFD1D5DB)),
+              width: 1.2,
+            ),
           ),
-        ),
-        child: Text(
-          option.label,
-          style: AppTextStyles.body14.copyWith(
-            color: isSelected
-                ? (colors.isDark ? Colors.black : Colors.white)
-                : colors.textPrimary,
-            fontWeight: FontWeight.w600,
+          child: Text(
+            option.label,
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+              color: isSelected
+                  ? const Color(0xFF1A1D20)
+                  : (colors.isDark ? Colors.white : const Color(0xFF374151)),
+            ),
           ),
         ),
       ),
@@ -1994,10 +3204,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   Widget _buildEventTypeChip(NewEventType type) {
     final colors = AppColors.current;
     final isSelected = _eventTypeKey == type.key;
-
-    final selectedColor = _getEventTypeBgColor(type.key, isSelected);
-    final textColor = _getEventTypeTextColor(type.key, isSelected);
-    final borderColor = isSelected ? selectedColor : colors.border;
+    const yellowAccent = Color(0xFFF5BD1F);
 
     return GestureDetector(
       onTap: () {
@@ -2005,20 +3212,25 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         setState(() => _eventTypeKey = type.key);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
         decoration: BoxDecoration(
-          color: selectedColor,
+          color: isSelected
+              ? yellowAccent
+              : (colors.isDark ? colors.background : Colors.white),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: borderColor,
+            color: isSelected ? yellowAccent : (colors.isDark ? colors.border : const Color(0xFFD1D5DB)),
             width: 1.2,
           ),
         ),
         child: Text(
           type.label,
-          style: AppTextStyles.body14.copyWith(
-            color: textColor,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            color: isSelected
+                ? const Color(0xFF1A1D20)
+                : (colors.isDark ? Colors.white70 : const Color(0xFF374151)),
           ),
         ),
       ),
@@ -2032,7 +3244,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       child: GestureDetector(
         onTap: () {
           _closeAllDropdowns(unfocus: true);
-          setState(() => _knowsSchedule = activeValue);
+          setState(() {
+            _knowsSchedule = activeValue;
+            _selectedTabIndex = 0;
+          });
         },
         child: Container(
           constraints: const BoxConstraints(minHeight: 40),
@@ -2073,6 +3288,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     Widget? prefixIcon,
     Widget? suffixIcon,
     int maxLines = 1,
+    bool isRequired = false,
     ValueChanged<String>? onChanged,
     VoidCallback? onTap,
   }) {
@@ -2118,10 +3334,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
-        ),
+        _buildFieldLabel(label, isRequired: isRequired),
         const SizedBox(height: 8),
         textField,
       ],
@@ -2136,6 +3349,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     required bool isPlaceholder,
     required IconData icon,
     required VoidCallback onTap,
+    bool iconOnLeft = false,
+    bool isRequired = false,
   }) {
     final colors = AppColors.current;
     Widget picker = InkWell(
@@ -2144,25 +3359,31 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       borderRadius: BorderRadius.circular(10),
       child: Container(
         height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: colors.isDark ? colors.background : Colors.white,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: colors.border),
+          border: Border.all(color: colors.isDark ? colors.border : const Color(0xFFD1D5DB)),
         ),
         child: Row(
           children: [
+            if (iconOnLeft) ...[
+              Icon(icon, color: colors.textSecondary, size: 19),
+              const SizedBox(width: 10),
+            ],
             Expanded(
               child: Text(
                 valueText,
-                style: AppTextStyles.body16.copyWith(
+                style: AppTextStyles.body15.copyWith(
+                  fontWeight: FontWeight.w700,
                   color: isPlaceholder
                       ? colors.textSecondary.withValues(alpha: 0.5)
-                      : colors.textPrimary,
+                      : (colors.isDark ? Colors.white : const Color(0xFF1A1D20)),
                 ),
               ),
             ),
-            Icon(icon, color: colors.textSecondary, size: 20),
+            if (!iconOnLeft)
+              Icon(icon, color: colors.textSecondary, size: 20),
           ],
         ),
       ),
@@ -2178,10 +3399,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
-        ),
+        _buildFieldLabel(label, isRequired: isRequired),
         const SizedBox(height: 8),
         picker,
       ],
@@ -2351,6 +3569,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   Widget _buildUniformFormContent(NewEventDropdownOptions dropdowns) {
     final colors = AppColors.current;
     final apiTemplates = dropdowns.uniformTemplates;
+    _uniformItems = dropdowns.uniformItems;
     final hasAnyTemplates = apiTemplates.isNotEmpty || _localTemplates.isNotEmpty;
     final isNewCombo = _selectedApiTemplate == null && _selectedUniformMode == 'New combo';
     final showColorPickers = isNewCombo || !hasAnyTemplates;
@@ -2373,9 +3592,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                       setState(() {
                         _selectedUniformMode = t.templateName;
                         _selectedApiTemplate = t;
-                        _topColorIndex = hexToColorIndex(t.topColor);
-                        _bottomColorIndex = hexToColorIndex(t.bottomColor);
-                        _socksColorIndex = hexToColorIndex(t.socksColor);
+                        _applyTemplateColors(t);
                         _showSaveTemplateForm = false;
                         _templateNameController.clear();
                       });
@@ -2426,23 +3643,15 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             style: AppTextStyles.body13.copyWith(color: colors.textSecondary, height: 1.4),
           ),
           const SizedBox(height: 20),
-          _buildUniformColorSelector(
-            label: 'TOP',
-            selectedIndex: _topColorIndex,
-            onColorSelected: (idx) => setState(() => _topColorIndex = idx),
-          ),
-          const SizedBox(height: 20),
-          _buildUniformColorSelector(
-            label: 'BOTTOM',
-            selectedIndex: _bottomColorIndex,
-            onColorSelected: (idx) => setState(() => _bottomColorIndex = idx),
-          ),
-          const SizedBox(height: 20),
-          _buildUniformColorSelector(
-            label: 'SOCKS',
-            selectedIndex: _socksColorIndex,
-            onColorSelected: (idx) => setState(() => _socksColorIndex = idx),
-          ),
+          for (int i = 0; i < _uniformItems.length; i++) ...[
+            if (i > 0) const SizedBox(height: 20),
+            _buildUniformColorSelector(
+              label: _uniformItems[i].toUpperCase(),
+              selectedIndex: _uniformColorIdx[_uniformItems[i]] ?? 0,
+              onColorSelected: (idx) =>
+                  setState(() => _uniformColorIdx[_uniformItems[i]] = idx),
+            ),
+          ],
           const SizedBox(height: 16),
 
           GestureDetector(
@@ -2536,10 +3745,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Opponent',
-          style: AppTextStyles.heading14.copyWith(color: AppColors.current.textPrimary),
-        ),
+        _buildFieldLabel('Opponent Team', isRequired: false),
         const SizedBox(height: 8),
         _buildDropdownField<String>(
           value: _selectedOpponentId,

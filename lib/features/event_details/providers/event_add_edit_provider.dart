@@ -1,3 +1,4 @@
+import '../models/uniform_color.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
@@ -183,6 +184,8 @@ class EventAddEditNotifier extends Notifier<EventAddEditState> {
       final activeTeam = ref.read(selectedTeamProvider);
       final eventService = ref.read(eventDetailServiceProvider);
       final options = await eventService.fetchNewEventDropdownOptions(activeTeam?.uuid);
+
+      applyUniformPalette(options.uniformColors);
 
       // Default timezone: America/Chicago if available
       TimezoneModel? defaultTz;
