@@ -26,6 +26,12 @@ class HomeCardViewModel {
   final String? homeAwayLabel;
   final String? eventName;
 
+  /// Status 5: a coach's session waiting for a manager to confirm it.
+  final bool isDraft;
+
+  /// Server `can_rsvp`: false hides the RSVP buttons' interactivity.
+  final bool canRsvp;
+
   const HomeCardViewModel({
     required this.id,
     required this.date,
@@ -44,5 +50,7 @@ class HomeCardViewModel {
     this.scheduleGameId,
     this.homeAwayLabel,
     this.eventName,
+    this.isDraft = false,
+    this.canRsvp = true,
   });
 }

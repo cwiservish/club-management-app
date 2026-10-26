@@ -84,6 +84,38 @@ class OpponentTeam {
   }
 }
 
+// ─── Uniform Item ─────────────────────────────────────────────────────────────
+
+/// API `uniform_items` entry. Fixed items always show a color picker; the
+/// rest are optional and picked by the user.
+class UniformItemDef {
+  final String key;
+  final String label;
+  final bool isFixed;
+
+  const UniformItemDef({required this.key, required this.label, required this.isFixed});
+
+  static const defaults = [
+    UniformItemDef(key: 'top', label: 'Top', isFixed: true),
+    UniformItemDef(key: 'bottom', label: 'Bottom', isFixed: true),
+    UniformItemDef(key: 'socks', label: 'Socks', isFixed: true),
+  ];
+
+  factory UniformItemDef.fromJson(dynamic e) {
+    if (e is Map) {
+      final key = e['key']?.toString() ?? '';
+      final label = e['label']?.toString() ?? '';
+      return UniformItemDef(
+        key: key,
+        label: label.isNotEmpty ? label : key,
+        isFixed: e['is_fixed'] == true || e['is_fixed'] == 1,
+      );
+    }
+    final key = e.toString();
+    return UniformItemDef(key: key, label: key, isFixed: true);
+  }
+}
+
 // ─── Uniform Template ─────────────────────────────────────────────────────────
 
 class NewEventUniformTemplate {
@@ -170,6 +202,17 @@ class OurLocationField {
     required this.fieldName,
     required this.label,
   });
+
+  /// Static last option of the Field dropdown: the field is decided later (`field_id` 0).
+  static const OurLocationField tbd = OurLocationField(
+    fieldId: 0,
+    venueId: 0,
+    parentId: '',
+    fieldName: 'TBD',
+    label: 'TBD',
+  );
+
+  bool get isTbd => fieldId == 0;
 
   factory OurLocationField.fromJson(Map<String, dynamic> json) {
     return OurLocationField(
@@ -288,9 +331,9 @@ class NewEventDropdownOptions {
   final List<NewEventUniformTemplate> uniformTemplates;
   /// API `uniform_colors`: palette for the uniform color pickers.
   final List<({String label, String hex})> uniformColors;
-  final List<String>? _uniformItems;
+  final List<UniformItemDef>? _uniformItems;
   // Null-safe for hot reload (objects created before this field existed).
-  List<String> get uniformItems => _uniformItems ?? const ['top', 'bottom', 'socks'];
+  List<UniformItemDef> get uniformItems => _uniformItems ?? UniformItemDef.defaults;
   final List<NewEventLocationType> locationTypes;
   final List<OurLocationVenue> ourLocations;
   final List<SavedLocationItem> savedLocations;
@@ -303,7 +346,7 @@ class NewEventDropdownOptions {
     required this.arrivalTimeOptions,
     required this.teams,
     required this.uniformTemplates,
-    List<String> uniformItems = const ['top', 'bottom', 'socks'],
+    List<UniformItemDef> uniformItems = UniformItemDef.defaults,
     this.uniformColors = const [],
     this.locationTypes = const [],
     this.ourLocations = const [],
@@ -365,8 +408,8 @@ class NewEventDropdownOptions {
 
     // uniform_items — dynamic list of garments/gear that can have a color
     final uniformItems = (json['uniform_items'] as List? ?? [])
-        .map((e) => e.toString())
-        .where((e) => e.isNotEmpty)
+        .map(UniformItemDef.fromJson)
+        .where((e) => e.key.isNotEmpty)
         .toList();
 
     // uniform_colors — [{key, label, value: "#hex"}]
@@ -405,7 +448,7 @@ class NewEventDropdownOptions {
       arrivalTimeOptions: arrivalTimeOptions,
       teams: teams,
       uniformTemplates: uniformTemplates,
-      uniformItems: uniformItems.isNotEmpty ? uniformItems : const ['top', 'bottom', 'socks'],
+      uniformItems: uniformItems.isNotEmpty ? uniformItems : UniformItemDef.defaults,
       uniformColors: uniformColors,
       locationTypes: locationTypes,
       ourLocations: ourLocations,

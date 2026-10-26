@@ -163,9 +163,18 @@ class ScheduleEvent {
   final bool notificationEnabled;
   final AttendanceCounts? attendanceCounts;
   final MyRsvp? myRsvp;
-  final List<RsvpTarget> rsvpTargets;
+  final List<RsvpTargetDetail> rsvpTargets;
+  final bool canRsvp;
+  final List<UniformDetail> uniformDetails;
+  final bool canChangeDate;
+  final bool canChangeRecurrence;
   final int eventFrom;
   final int eventId;
+  final String code;
+  final int recurringType;
+  final int venueId;
+  final int fieldId;
+  final int locationType;
 
   const ScheduleEvent({
     required this.id,
@@ -224,6 +233,15 @@ class ScheduleEvent {
     required this.rsvpTargets,
     this.eventFrom = 0,
     this.eventId = 0,
+    this.code = '',
+    this.recurringType = 1,
+    this.venueId = 0,
+    this.fieldId = 0,
+    this.locationType = 1,
+    this.canRsvp = true,
+    this.uniformDetails = const [],
+    this.canChangeDate = true,
+    this.canChangeRecurrence = true,
   });
 
   factory ScheduleEvent.fromJson(Map<String, dynamic>? json) {
@@ -285,10 +303,10 @@ class ScheduleEvent {
     final targetsList = json['rsvp_targets'] as List?;
     final parsedTargets = targetsList != null
         ? targetsList
-            .map((e) => e is Map<String, dynamic> ? RsvpTarget.fromJson(e) : null)
-            .whereType<RsvpTarget>()
+            .map((e) => e is Map<String, dynamic> ? RsvpTargetDetail.fromJson(e) : null)
+            .whereType<RsvpTargetDetail>()
             .toList()
-        : <RsvpTarget>[];
+        : <RsvpTargetDetail>[];
 
     return ScheduleEvent(
       id: _parseInt(json['id']),
@@ -351,6 +369,16 @@ class ScheduleEvent {
       rsvpTargets: parsedTargets,
       eventFrom: _parseInt(json['event_from']),
       eventId: _parseInt(json['event_id']),
+      code: _parseString(json['code']),
+      recurringType: json['recurring_type'] != null ? _parseInt(json['recurring_type']) : 1,
+      venueId: _parseInt(json['venue_id']),
+      fieldId: _parseInt(json['field_id']),
+      locationType: json['location_type'] != null ? _parseInt(json['location_type']) : 1,
+      canRsvp: json.containsKey('can_rsvp') ? _parseBool(json['can_rsvp']) : true,
+      uniformDetails: UniformDetail.listFromJson(json['uniform_details']),
+      canChangeDate: json.containsKey('can_change_date') ? _parseBool(json['can_change_date']) : true,
+      canChangeRecurrence:
+          json.containsKey('can_change_recurrence') ? _parseBool(json['can_change_recurrence']) : true,
     );
   }
 
@@ -416,12 +444,15 @@ class ScheduleEvent {
         myRsvpStatus = rawAttendance.toString().toLowerCase();
         if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
       }
-      if (myRsvpStatus == null && myRsvp!.targets.isNotEmpty) {
-        final dynamic raw = myRsvp!.targets.first.attendance;
-        if (raw != null) {
-          myRsvpStatus = raw.toString().toLowerCase();
-          if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
-        }
+    }
+    if (myRsvpStatus == null) {
+      final firstTarget = rsvpTargets.isNotEmpty
+          ? rsvpTargets.first
+          : (myRsvp != null && myRsvp!.targets.isNotEmpty ? myRsvp!.targets.first : null);
+      final dynamic raw = firstTarget?.attendance;
+      if (raw != null) {
+        myRsvpStatus = raw.toString().toLowerCase();
+        if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
       }
     }
 
@@ -451,7 +482,9 @@ class ScheduleEvent {
     }
 
     final bool requiresPlayerSelection = myRsvp?.requiresPlayerSelection ?? false;
-    final List<ClubEventRsvpTarget> domainTargets = myRsvp?.targets.map((t) =>
+    // Top-level `rsvp_targets` is who the user answers for; fall back to the legacy my_rsvp.targets.
+    final sourceTargets = rsvpTargets.isNotEmpty ? rsvpTargets : (myRsvp?.targets ?? const <RsvpTargetDetail>[]);
+    final List<ClubEventRsvpTarget> domainTargets = sourceTargets.map((t) =>
       ClubEventRsvpTarget(
         attendeeType: t.attendeeType,
         customerId: t.customerId,
@@ -461,7 +494,7 @@ class ScheduleEvent {
         attendance: t.attendance,
         notes: t.notes,
       ),
-    ).toList() ?? [];
+    ).toList();
 
     return ClubEvent(
       id: domainId,
@@ -513,6 +546,15 @@ class ScheduleEvent {
       eventName: eventName.isNotEmpty ? eventName : null,
       eventFrom: eventFrom,
       eventId: eventId,
+      code: code,
+      recurringType: recurringType,
+      venueId: venueId > 0 ? venueId : null,
+      fieldId: fieldId > 0 ? fieldId : null,
+      locationType: locationType,
+      canRsvp: canRsvp,
+      uniformDetails: uniformDetails,
+      canChangeDate: canChangeDate,
+      canChangeRecurrence: canChangeRecurrence,
     );
   }
 }
@@ -595,29 +637,6 @@ class RsvpTargetDetail {
       })(),
       attendance: json?['attendance'],
       notes: _parseString(json?['notes']),
-    );
-  }
-}
-
-class RsvpTarget {
-  final String attendeeType;
-  final int customerId;
-  final int? playerId;
-  final String name;
-
-  const RsvpTarget({
-    required this.attendeeType,
-    required this.customerId,
-    this.playerId,
-    required this.name,
-  });
-
-  factory RsvpTarget.fromJson(Map<String, dynamic>? json) {
-    return RsvpTarget(
-      attendeeType: _parseString(json?['attendee_type']),
-      customerId: _parseInt(json?['customer_id']),
-      playerId: json?['player_id'] != null ? _parseInt(json?['player_id']) : null,
-      name: _parseString(json?['name']),
     );
   }
 }

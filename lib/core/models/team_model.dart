@@ -59,6 +59,9 @@ class Team {
 
   static const _coachAccessOrgRoleIds = {1, 2, 3};
 
+  /// Organization roles 1-3 can confirm drafts that coaches save.
+  bool get isManager => _coachAccessOrgRoleIds.contains(organizationRoleId);
+
   factory Team.fromJson(Map<String, dynamic> json) {
     final orgRoleId = _parseInt(json['organization_role_id']);
     return Team(

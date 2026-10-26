@@ -54,14 +54,15 @@ void main() {
       expect(find.text('No'), findsOneWidget);
       expect(find.text('Yes'), findsOneWidget);
       // Weekly slots are not visible when isRepeating is false
-      expect(find.text('Start Date:'), findsNothing);
+      expect(find.text('Repeat Until:'), findsNothing);
 
       // Tap 'Yes'
       await tester.tap(find.text('Yes'));
       await tester.pumpAndSettle();
 
       // Now repeating view is expanded
-      expect(find.text('Start Date:'), findsOneWidget);
+      // Weekly start date is always today, so there is no Start Date row.
+      expect(find.text('Start Date:'), findsNothing);
       expect(find.text('Repeat Until:'), findsOneWidget);
       expect(find.text('Mon'), findsOneWidget);
       expect(find.text('05:00 PM'), findsOneWidget);

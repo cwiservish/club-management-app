@@ -43,7 +43,7 @@ class AppShell extends ConsumerWidget {
           activeIndex = 0;
         }
 
-        // Edit / duplicate event is full-screen like Add Event: no bottom nav.
+        // Edit event is full-screen like Add Event: no bottom nav.
         final hideNavBar = location.endsWith('/edit');
 
         return Scaffold(

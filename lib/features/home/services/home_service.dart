@@ -150,7 +150,9 @@ class HomeService {
       String? myRsvpStatus;
       final bool requiresPlayerSelection = myRsvpMap != null ? _parseBool(myRsvpMap['requires_player_selection']) : false;
       final List<ClubEventRsvpTarget> rsvpTargets = [];
-      
+      // `can_rsvp` is the server's verdict; older responses without it keep RSVP enabled.
+      final bool canRsvp = json.containsKey('can_rsvp') ? _parseBool(json['can_rsvp']) : true;
+
       if (myRsvpMap != null) {
         // Explicitly check for null so that integer 0 (= No) is never skipped
         final dynamic rawAttendance = myRsvpMap['attendance'];
@@ -186,6 +188,35 @@ class HomeService {
                 ),
               );
             }
+          }
+        }
+      }
+
+      // Top-level `rsvp_targets` (who the user answers for) wins over the legacy my_rsvp.targets.
+      final topTargets = json['rsvp_targets'];
+      if (topTargets is List) {
+        rsvpTargets.clear();
+        for (final t in topTargets) {
+          if (t is Map<String, dynamic>) {
+            final sid = _parseInt(t['team_event_session_attendee_id'] ?? t['team_event_attendee_id']);
+            rsvpTargets.add(
+              ClubEventRsvpTarget(
+                attendeeType: t['attendee_type']?.toString() ?? '',
+                customerId: _parseInt(t['attendee_id'] ?? t['customer_id']),
+                playerId: t['player_id'] != null ? _parseInt(t['player_id']) : null,
+                name: t['name']?.toString() ?? '',
+                teamEventAttendeeId: sid > 0 ? sid : null,
+                attendance: t['attendance'],
+                notes: t['notes']?.toString() ?? '',
+              ),
+            );
+          }
+        }
+        if (myRsvpStatus == null && rsvpTargets.isNotEmpty) {
+          final raw = rsvpTargets.first.attendance;
+          if (raw != null) {
+            myRsvpStatus = raw.toString().toLowerCase();
+            if (myRsvpStatus == 'null' || myRsvpStatus == '') myRsvpStatus = null;
           }
         }
       }
@@ -236,6 +267,11 @@ class HomeService {
       final scheduleGameId = _parseInt(json['schedule_game_id']) > 0 ? _parseInt(json['schedule_game_id']) : null;
       final eventFrom = _parseInt(json['event_from']);
       final eventId = _parseInt(json['event_id']);
+      final seriesCode = json['code']?.toString() ?? '';
+      final recurringType = json['recurring_type'] != null ? _parseInt(json['recurring_type']) : 1;
+      final venueIdVal = _parseInt(json['venue_id']);
+      final fieldIdVal = _parseInt(json['field_id']);
+      final locationTypeVal = json['location_type'] != null ? _parseInt(json['location_type']) : 1;
       final status = _parseInt(json['status'] ?? 1);
       final homeAwayKey = _parseInt(json['home_away']);
       final isHome = homeAwayKey == 1;
@@ -298,6 +334,16 @@ class HomeService {
         status: status,
         eventFrom: eventFrom,
         eventId: eventId,
+        code: seriesCode,
+        recurringType: recurringType,
+        venueId: venueIdVal > 0 ? venueIdVal : null,
+        fieldId: fieldIdVal > 0 ? fieldIdVal : null,
+        locationType: locationTypeVal,
+        canRsvp: canRsvp,
+        uniformDetails: UniformDetail.listFromJson(json['uniform_details']),
+        canChangeDate: json.containsKey('can_change_date') ? _parseBool(json['can_change_date']) : true,
+        canChangeRecurrence:
+            json.containsKey('can_change_recurrence') ? _parseBool(json['can_change_recurrence']) : true,
         schedulingMode: schedulingMode,
         schedulingModeLabel: schedulingModeLabel,
         eventDuration: eventDuration,

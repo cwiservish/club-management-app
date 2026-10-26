@@ -1,3 +1,4 @@
+import '../models/session_slot_models.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -141,6 +142,103 @@ class EventDetailService {
     debugPrint('════════════════════════════════════════════════════════════════');
 
     return NewEventSaveResponse.fromJson(rawResponseMap);
+  }
+
+  /// Detail of one session (`id`) or a whole series (`code`). For a series,
+  /// `data.edit` holds what the series edit form starts from.
+  Future<Map<String, dynamic>> fetchSessionDetail({required String teamUuid, int? id, String? code}) async {
+    final response = await _apiClient.post(ApiEndpoints.sessionDetail, body: {
+      'team_uuid': teamUuid,
+      if (id != null) 'id': id,
+      if (code != null && code.isNotEmpty) 'code': code,
+    });
+    if (!response.success || response.data is! Map) {
+      throw SlotApiException(response.message ?? 'Could not load the session');
+    }
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  /// Cancels (status 2) or reinstates (status 1) one session (`id`) or a series from
+  /// today on (`code`). Reinstating a field booking can answer `data.conflicts`.
+  Future<NewEventSaveResponse> setSessionStatus({
+    required String teamUuid,
+    int? id,
+    String? code,
+    required int status,
+  }) async {
+    final response = await _apiClient.post(ApiEndpoints.sessionStatus, body: {
+      'team_uuid': teamUuid,
+      if (code != null && code.isNotEmpty) 'code': code else 'id': id,
+      'status': status,
+    });
+    return NewEventSaveResponse.fromJson({
+      'success': response.success,
+      'message': response.message ?? '',
+      'data': response.data,
+    });
+  }
+
+  /// Manager confirms draft session(s): one (`id`) or every draft of a series (`code`).
+  Future<NewEventSaveResponse> confirmSession({required String teamUuid, int? id, String? code}) async {
+    final response = await _apiClient.post(ApiEndpoints.sessionConfirm, body: {
+      'team_uuid': teamUuid,
+      if (code != null && code.isNotEmpty) 'code': code else 'id': id,
+    });
+    return NewEventSaveResponse.fromJson({
+      'success': response.success,
+      'message': response.message ?? '',
+      'data': response.data,
+    });
+  }
+
+  /// Builds the conflict board: every date the save would write, with availability.
+  /// [body] is the same body that will be saved (without `slots`).
+  Future<SlotBoard> generateSlots(Map<String, dynamic> body) async {
+    final payload = Map<String, dynamic>.from(body)..remove('slots');
+    final response = await _apiClient.post(ApiEndpoints.sessionGenerateSlots, body: payload);
+    final data = response.data is Map ? Map<String, dynamic>.from(response.data as Map) : <String, dynamic>{};
+    if (!response.success) {
+      throw SlotApiException(response.message ?? 'Could not check availability', conflicts: _conflictsOf(data));
+    }
+    return SlotBoard.fromJson(data);
+  }
+
+  /// Re-checks ONE row after the user changed its time or field.
+  Future<SessionSlot> checkFieldAvailability({
+    required String teamUuid,
+    required int venueId,
+    required int fieldId,
+    required SessionSlot slot,
+    List<int> excludeIds = const [],
+  }) async {
+    final response = await _apiClient.post(ApiEndpoints.sessionFieldAvailability, body: {
+      'team_uuid': teamUuid,
+      'location_type': 1,
+      'venue_id': venueId,
+      'field_id': fieldId,
+      'date': slot.date,
+      'start_time': slot.startTime,
+      'end_time': slot.endTime,
+      'exclude_ids': excludeIds,
+    });
+    final data = response.data is Map ? Map<String, dynamic>.from(response.data as Map) : <String, dynamic>{};
+    if (!response.success) {
+      throw SlotApiException(response.message ?? 'Could not check availability');
+    }
+    final checked = SessionSlot.fromJson(data, fallback: slot);
+    return slot.copyWith(
+      fieldId: fieldId,
+      checked: true,
+      isAvailable: checked.isAvailable,
+      isBlocking: checked.isBlocking,
+      warnings: checked.warnings,
+      message: checked.message,
+    );
+  }
+
+  List<Map<String, dynamic>> _conflictsOf(Map<String, dynamic> data) {
+    final raw = data['conflicts'];
+    return raw is List ? raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : const [];
   }
 
   /// Deletes / removes an event.

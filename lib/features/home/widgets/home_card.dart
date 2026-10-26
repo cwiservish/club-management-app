@@ -28,7 +28,7 @@ class HomeCard extends ConsumerWidget {
     WidgetRef ref,
     HomeRsvp rsvp,
   ) async {
-    if (viewModel.isLoadingRsvp) return;
+    if (viewModel.isLoadingRsvp || !viewModel.canRsvp) return;
     final notifier = ref.read(homeProvider.notifier);
 
     // If player selection is required AND there are multiple targets, show sheet.
@@ -108,6 +108,20 @@ class HomeCard extends ConsumerWidget {
                         const SizedBox(height: 2),
                         Text(viewModel.timeRange,
                             style: AppTextStyles.heading18.copyWith(color: AppColors.current.textPrimary, fontWeight: FontWeight.w600)),
+                        if (viewModel.isDraft) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF3CD),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'Draft: Waiting for approval',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF8A6D00)),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 10), // Spacing between time and event name
                         Text(viewModel.type,
                             style: AppTextStyles.body14.copyWith(color: AppColors.current.textSecondary, fontWeight: FontWeight.bold)),
@@ -147,6 +161,7 @@ class HomeCard extends ConsumerWidget {
                           noCount:    viewModel.noCount,
                           selected:   viewModel.selectedRsvp,
                           isLoading:  viewModel.isLoadingRsvp,
+                          enabled:    viewModel.canRsvp,
                           onSelect: (rsvp) => _handleRsvpTap(context, ref, rsvp),
                         ),
 

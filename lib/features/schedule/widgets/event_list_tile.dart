@@ -57,6 +57,7 @@ class ScheduleEventCard extends ConsumerWidget {
     final status = rsvpStatus ?? _deriveStatus(latestEvent);
 
     Future<void> handleRsvpTap() async {
+      if (!latestEvent.canRsvp) return;
       final chosenStatus = await showDialog<String>(
         context: context,
         builder: (_) => MyRsvpDialog(event: latestEvent),
@@ -257,13 +258,31 @@ class ScheduleEventCard extends ConsumerWidget {
                     child: _Col(
                       width: 74,
                       color: AppColors.current.card,
-                      child: _RsvpBox(status: status),
+                      child: Opacity(
+                        opacity: latestEvent.canRsvp ? 1 : 0.45,
+                        child: _RsvpBox(status: status),
+                      ),
                     ),
                   ),
                 ],
               ],
             ),
           ),
+          if (latestEvent.status == 5)
+            Container(
+              width: double.infinity,
+              color: const Color(0xFFFFF3CD),
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Text(
+                'Draft: Waiting for approval',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body13.copyWith(
+                  height: 0,
+                  color: const Color(0xFF8A6D00),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           if (latestEvent.status == 2)
             Container(
               width: double.infinity,

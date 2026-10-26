@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/models/club_event.dart';
 import '../../models/event_detail_model.dart';
 import '../../models/uniform_color.dart';
 
@@ -19,14 +20,17 @@ class LogisticsSection extends StatelessWidget {
 
     Uri? uri;
     if (lat != null && lng != null && (lat != 0.0 || lng != 0.0)) {
-      uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+      uri = Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=$lat,$lng');
     } else if (event.locationName.trim().isNotEmpty) {
-      uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(event.locationName)}');
+      uri = Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(event.locationName)}');
     }
 
     if (uri != null) {
       try {
-        final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        final success =
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
         if (!success && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Could not open map.')),
@@ -42,7 +46,8 @@ class LogisticsSection extends StatelessWidget {
     } else {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No location details available to show on map.')),
+          const SnackBar(
+              content: Text('No location details available to show on map.')),
         );
       }
     }
@@ -69,13 +74,27 @@ class LogisticsSection extends StatelessWidget {
               iconBgColor: colors.primaryLight,
               iconColor: colors.actionAccent,
               label: 'Location',
-              value: event.locationName.trim().isNotEmpty ? event.locationName.trim() : 'Location not set',
-              subtitle: event.locationAddress.trim().isNotEmpty ? event.locationAddress.trim() : null,
+              value: event.locationName.trim().isNotEmpty
+                  ? event.locationName.trim()
+                  : 'Location not set',
+              subtitle: event.locationAddress.trim().isNotEmpty
+                  ? event.locationAddress.trim()
+                  : null,
               showArrow: true,
               borderBottom: true,
             ),
           ),
-          if (event.uniformTopColor.isNotEmpty || event.uniformBottomColor.isNotEmpty || event.uniformSocksColor.isNotEmpty)
+          if (event.uniformDetails.isNotEmpty)
+            _LogisticsRow(
+              icon: Icons.checkroom_outlined,
+              label: 'Uniform',
+              value: '',
+              borderBottom: event.isGame,
+              valueWidget: _UniformDetailsRow(details: event.uniformDetails),
+            )
+          else if (event.uniformTopColor.isNotEmpty ||
+              event.uniformBottomColor.isNotEmpty ||
+              event.uniformSocksColor.isNotEmpty)
             _LogisticsRow(
               icon: Icons.checkroom_outlined,
               label: 'Uniform',
@@ -146,7 +165,8 @@ class _LogisticsRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         border: borderBottom
-            ? Border(bottom: BorderSide(color: colors.border.withValues(alpha: 0.5)))
+            ? Border(
+                bottom: BorderSide(color: colors.border.withValues(alpha: 0.5)))
             : null,
       ),
       child: Row(
@@ -168,18 +188,22 @@ class _LogisticsRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: AppTextStyles.label12.copyWith(color: colors.textSecondary),
+                  style: AppTextStyles.label12
+                      .copyWith(color: colors.textSecondary),
                 ),
                 const SizedBox(height: 2),
-                valueWidget ?? Text(
-                  value,
-                  style: AppTextStyles.heading15.copyWith(color: colors.textPrimary),
-                ),
+                valueWidget ??
+                    Text(
+                      value,
+                      style: AppTextStyles.heading15
+                          .copyWith(color: colors.textPrimary),
+                    ),
                 if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     subtitle!.trim(),
-                    style: AppTextStyles.body14.copyWith(color: colors.textSecondary),
+                    style: AppTextStyles.body14
+                        .copyWith(color: colors.textSecondary),
                   ),
                 ],
               ],
@@ -189,6 +213,54 @@ class _LogisticsRow extends StatelessWidget {
             Icon(Icons.chevron_right, size: 20, color: colors.textSecondary),
         ],
       ),
+    );
+  }
+}
+
+/// Swatch + "Top: Black" per item. `color_label` is empty for non-standard hex values: swatch only.
+class _UniformDetailsRow extends StatelessWidget {
+  final List<UniformDetail> details;
+
+  const _UniformDetailsRow({required this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.current;
+    // One item per line.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final d in details)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: hexToColor(d.color) ?? Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: colors.border.withValues(alpha: 0.5), width: 1),
+                  ),
+                ),
+                if (d.colorLabel.isNotEmpty) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    d.label.isNotEmpty
+                        ? '${d.label}: ${d.colorLabel}'
+                        : d.colorLabel,
+                    style: AppTextStyles.heading15
+                        .copyWith(color: colors.textPrimary),
+                  ),
+                ],
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
@@ -213,7 +285,8 @@ class _UniformColorRow extends StatelessWidget {
             width: 14,
             height: 14,
             child: CustomPaint(
-              painter: _SlashCirclePainter(borderColor: colors.border.withValues(alpha: 0.5)),
+              painter: _SlashCirclePainter(
+                  borderColor: colors.border.withValues(alpha: 0.5)),
             ),
           )
         : Container(
@@ -222,7 +295,8 @@ class _UniformColorRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              border: Border.all(color: colors.border.withValues(alpha: 0.5), width: 1),
+              border: Border.all(
+                  color: colors.border.withValues(alpha: 0.5), width: 1),
             ),
           );
 
@@ -233,7 +307,8 @@ class _UniformColorRow extends StatelessWidget {
       children: [
         dot,
         const SizedBox(width: 4),
-        Text(name, style: AppTextStyles.heading15.copyWith(color: colors.textPrimary)),
+        Text(name,
+            style: AppTextStyles.heading15.copyWith(color: colors.textPrimary)),
       ],
     );
   }
@@ -251,7 +326,9 @@ class _UniformColorRow extends StatelessWidget {
         for (int i = 0; i < chips.length; i++) ...[
           chips[i],
           if (i < chips.length - 1)
-            Text(' / ', style: AppTextStyles.heading15.copyWith(color: AppColors.current.textSecondary)),
+            Text(' / ',
+                style: AppTextStyles.heading15
+                    .copyWith(color: AppColors.current.textSecondary)),
         ],
       ],
     );
@@ -291,4 +368,3 @@ class _SlashCirclePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

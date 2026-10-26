@@ -154,6 +154,7 @@ class EventDetailNotifier extends Notifier<EventDetailState> {
       uniformTopColor: event.uniformTopColor,
       uniformBottomColor: event.uniformBottomColor,
       uniformSocksColor: event.uniformSocksColor,
+      uniformDetails: event.uniformDetails,
       isGame: event.type == EventType.game,
       homeAway: (event.homeAwayLabel != null && event.homeAwayLabel!.isNotEmpty)
           ? event.homeAwayLabel!

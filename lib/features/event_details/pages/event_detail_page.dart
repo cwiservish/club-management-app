@@ -10,6 +10,7 @@ import '../../../core/shared_widgets/app_header.dart';
 import '../../../core/shared_widgets/sub_header.dart';
 import '../models/event_detail_model.dart';
 import '../providers/event_detail_provider.dart';
+import '../utils/edit_scope_dialog.dart';
 import '../widgets/event_detail_tab_bar.dart';
 import 'event_details_tab_page.dart';
 import 'event_availability_tab_page.dart';
@@ -50,6 +51,24 @@ class _EventDetailPageState extends ConsumerState<EventDetailPage> {
     });
   }
 
+  /// Edit: a recurring session first asks "Edit which events?", then opens the form with that choice.
+  Future<void> _openEdit() async {
+    final event = ref.read(eventDetailProvider(EventDetailArgs(widget.eventId, widget.initialEvent))).rawEvent ??
+        widget.initialEvent;
+    var choice = const EditScopeChoice('one');
+    if (event != null) {
+      final asked = await askEditScope(context, ref, event);
+      if (asked == null || !mounted) return;
+      choice = asked;
+    }
+    context.push(AppRoutes.eventEdit(widget.eventId), extra: {
+      'event': event,
+      'from': widget.from,
+      'editScope': choice.scope,
+      'seriesEdit': choice.seriesEdit,
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(themeModeProvider);
@@ -66,7 +85,7 @@ class _EventDetailPageState extends ConsumerState<EventDetailPage> {
               title:      'Event Details',
               rightText:  isCoach ? 'Edit' : null,
               onRightTap: isCoach
-                  ? (widget.onEditTap ?? () => context.push(AppRoutes.eventEdit(widget.eventId), extra: {'event': widget.initialEvent, 'from': widget.from}))
+                  ? (widget.onEditTap ?? _openEdit)
                   : null,
             ),
             EventDetailTabBar(eventId: widget.eventId, activeTab: widget.activeTab, from: widget.from, onEditTap: widget.onEditTap, initialEvent: widget.initialEvent),

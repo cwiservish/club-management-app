@@ -35,6 +35,15 @@ class EventLocationTabView extends StatelessWidget {
   final SavedLocationItem? selectedSavedLocationItem;
   final ValueChanged<SavedLocationItem?>? onSavedLocationItemChanged;
 
+  /// `location_types` from the dropdown options. Empty = the four default tabs.
+  final List<NewEventLocationType> locationTypes;
+
+  /// Validation messages by field id: 'facility', 'field', 'savedLocation', 'address'.
+  final Map<String, String> errors;
+
+  /// Returns the GlobalKey used to scroll a field into view (by the same ids as [errors]).
+  final GlobalKey Function(String id)? fieldKeyFor;
+
   const EventLocationTabView({
     super.key,
     required this.selectedMode,
@@ -58,7 +67,41 @@ class EventLocationTabView extends StatelessWidget {
     this.savedLocationItems = const [],
     this.selectedSavedLocationItem,
     this.onSavedLocationItemChanged,
+    this.locationTypes = const [],
+    this.errors = const {},
+    this.fieldKeyFor,
   });
+
+  static EventLocationMode? _modeForKey(int key) {
+    switch (key) {
+      case 1:
+        return EventLocationMode.ourLocations;
+      case 2:
+        return EventLocationMode.savedLocation;
+      case 3:
+        return EventLocationMode.offSiteAddress;
+      case 4:
+        return EventLocationMode.tbd;
+    }
+    return null;
+  }
+
+  /// Tabs to show, in API order. A key this app has no form for is skipped.
+  List<({String label, EventLocationMode mode})> get _tabs {
+    const fallback = [
+      NewEventLocationType(key: 1, value: 1, label: 'Our Facilities'),
+      NewEventLocationType(key: 2, value: 2, label: 'Saved Location'),
+      NewEventLocationType(key: 3, value: 3, label: 'Off-Site Address'),
+      NewEventLocationType(key: 4, value: 4, label: 'TBD'),
+    ];
+    final source = locationTypes.isEmpty ? fallback : locationTypes;
+    final tabs = <({String label, EventLocationMode mode})>[];
+    for (final t in source) {
+      final mode = _modeForKey(t.key);
+      if (mode != null && t.label.trim().isNotEmpty) tabs.add((label: t.label.trim(), mode: mode));
+    }
+    return tabs;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,56 +140,23 @@ class EventLocationTabView extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // ── 4 Segmented Location Type Buttons ──
+        // ── Segmented location type buttons: count and labels come from API `location_types` ──
         Row(
           children: [
-            Expanded(
-              child: _buildModeButton(
-                title: 'Our Locations',
-                mode: EventLocationMode.ourLocations,
-                yellowAccent: yellowAccent,
-                yellowBg: yellowBg,
-                borderColor: borderColor,
-                titleColor: titleColor,
-                isDark: isDark,
+            for (var i = 0; i < _tabs.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              Expanded(
+                child: _buildModeButton(
+                  title: _tabs[i].label,
+                  mode: _tabs[i].mode,
+                  yellowAccent: yellowAccent,
+                  yellowBg: yellowBg,
+                  borderColor: borderColor,
+                  titleColor: titleColor,
+                  isDark: isDark,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildModeButton(
-                title: 'Saved Location',
-                mode: EventLocationMode.savedLocation,
-                yellowAccent: yellowAccent,
-                yellowBg: yellowBg,
-                borderColor: borderColor,
-                titleColor: titleColor,
-                isDark: isDark,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildModeButton(
-                title: 'Off-Site\nAddress',
-                mode: EventLocationMode.offSiteAddress,
-                yellowAccent: yellowAccent,
-                yellowBg: yellowBg,
-                borderColor: borderColor,
-                titleColor: titleColor,
-                isDark: isDark,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildModeButton(
-                title: 'TBD',
-                mode: EventLocationMode.tbd,
-                yellowAccent: yellowAccent,
-                yellowBg: yellowBg,
-                borderColor: borderColor,
-                titleColor: titleColor,
-                isDark: isDark,
-              ),
-            ),
+            ],
           ],
         ),
         const SizedBox(height: 24),
@@ -263,7 +273,10 @@ class EventLocationTabView extends StatelessWidget {
         (selectedFieldItem?.fieldName.isNotEmpty == true ? selectedFieldItem!.fieldName : null);
 
     final bool hasFacilitySelected = selectedVenue != null;
-    final fieldsForFacility = selectedVenue?.fields ?? const <OurLocationField>[];
+    // The facility's fields plus a static last "TBD" option (field_id 0).
+    final fieldsForFacility = hasFacilitySelected
+        ? [...selectedVenue!.fields, OurLocationField.tbd]
+        : const <OurLocationField>[];
 
     return Column(
       key: const ValueKey('our_locations'),
@@ -276,6 +289,8 @@ class EventLocationTabView extends StatelessWidget {
           context,
           value: displayFacility,
           placeholder: ourLocationVenues.isEmpty ? 'No facilities available' : 'Select facility',
+          errorText: errors['facility'],
+          fieldKey: fieldKeyFor?.call('facility'),
           inputBg: inputBg,
           titleColor: titleColor,
           helperColor: helperColor,
@@ -302,19 +317,21 @@ class EventLocationTabView extends StatelessWidget {
         const SizedBox(height: 16),
 
         // Field (optional)
-        _buildFieldLabel('Field', isRequired: false, titleColor: titleColor),
+        _buildFieldLabel('Field', isRequired: true, titleColor: titleColor),
         const SizedBox(height: 8),
         _buildDropdownSelector(
           context,
           value: displayField,
           placeholder: !hasFacilitySelected
               ? 'Select a facility first'
-              : (fieldsForFacility.isEmpty ? 'No fields for this facility' : 'Select field'),
-          isDisabled: !hasFacilitySelected || fieldsForFacility.isEmpty,
+              : 'Select field',
+          isDisabled: !hasFacilitySelected,
+          errorText: errors['field'],
+          fieldKey: fieldKeyFor?.call('field'),
           inputBg: inputBg,
           titleColor: titleColor,
           helperColor: helperColor,
-          onTap: (!hasFacilitySelected || fieldsForFacility.isEmpty)
+          onTap: !hasFacilitySelected
               ? null
               : () {
                   _openFieldPickerSheet(
@@ -366,6 +383,8 @@ class EventLocationTabView extends StatelessWidget {
           context,
           value: displaySaved,
           placeholder: savedLocationItems.isEmpty ? 'No saved locations available' : 'Select saved location',
+          errorText: errors['savedLocation'],
+          fieldKey: fieldKeyFor?.call('savedLocation'),
           inputBg: inputBg,
           titleColor: titleColor,
           helperColor: helperColor,
@@ -414,13 +433,20 @@ class EventLocationTabView extends StatelessWidget {
       children: [
         _buildFieldLabel('Address', isRequired: true, titleColor: titleColor),
         const SizedBox(height: 8),
+        KeyedSubtree(
+          key: fieldKeyFor?.call('address'),
+          child: const SizedBox.shrink(),
+        ),
         CompositedTransformTarget(
           link: addressLayerLink,
           child: Container(
             key: addressFieldKey,
             decoration: BoxDecoration(
-              color: inputBg,
+              color: errors['address'] != null ? const Color(0xFFFDECEA) : inputBg,
               borderRadius: BorderRadius.circular(10),
+              border: errors['address'] != null
+                  ? Border.all(color: const Color(0xFFD32F2F), width: 1.5)
+                  : null,
             ),
             child: TextField(
               controller: addressController,
@@ -451,6 +477,11 @@ class EventLocationTabView extends StatelessWidget {
             ),
           ),
         ),
+        if (errors['address'] != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(errors['address']!, style: const TextStyle(fontSize: 12.5, color: Color(0xFFD32F2F))),
+          ),
         const SizedBox(height: 12),
         Text(
           'Pick the address from the suggestions, such as an away field or a park.',
@@ -516,42 +547,57 @@ class EventLocationTabView extends StatelessWidget {
     required Color titleColor,
     required Color helperColor,
     VoidCallback? onTap,
+    String? errorText,
+    Key? fieldKey,
   }) {
     final hasValue = value != null && value.isNotEmpty;
+    const errorColor = Color(0xFFD32F2F);
 
-    return GestureDetector(
-      onTap: isDisabled ? null : onTap,
-      child: Container(
-        height: 50,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: inputBg,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                hasValue ? value : placeholder,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: isDisabled
-                      ? helperColor.withValues(alpha: 0.6)
-                      : (hasValue ? titleColor : helperColor),
-                  fontWeight: hasValue ? FontWeight.w700 : FontWeight.w500,
+    return Column(
+      key: fieldKey,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: isDisabled ? null : onTap,
+          child: Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: errorText != null ? const Color(0xFFFDECEA) : inputBg,
+              borderRadius: BorderRadius.circular(10),
+              border: errorText != null ? Border.all(color: errorColor, width: 1.5) : null,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    hasValue ? value : placeholder,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: isDisabled
+                          ? helperColor.withValues(alpha: 0.6)
+                          : (hasValue ? titleColor : helperColor),
+                      fontWeight: hasValue ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  color: isDisabled ? helperColor.withValues(alpha: 0.4) : const Color(0xFF9CA3AF),
+                  size: 22,
+                ),
+              ],
             ),
-            Icon(
-              Icons.keyboard_arrow_down,
-              color: isDisabled ? helperColor.withValues(alpha: 0.4) : const Color(0xFF9CA3AF),
-              size: 22,
-            ),
-          ],
+          ),
         ),
-      ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(errorText, style: const TextStyle(fontSize: 12.5, color: errorColor)),
+          ),
+      ],
     );
   }
 

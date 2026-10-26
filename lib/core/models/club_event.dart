@@ -57,6 +57,20 @@ class ClubEvent {
   final String? eventName;
   final int eventFrom;
   final int eventId;
+  /// Series code shared by every date of one save; recurringType 2 weekly, 3 specific dates, 1 one date.
+  final String code;
+  final int recurringType;
+  final int? venueId;
+  final int? fieldId;
+  final int locationType;
+  /// Server flag: the signed-in user may set their own RSVP (false for drafts / cancelled).
+  final bool canRsvp;
+  /// Per-item uniform colours with server colour names (`uniform_details`).
+  final List<UniformDetail> uniformDetails;
+  /// False when one occurrence of a series is opened with `id` (date can't move).
+  final bool canChangeDate;
+  /// False when one occurrence of a series is opened with `id` (no repeat options).
+  final bool canChangeRecurrence;
 
   const ClubEvent({
     required this.id,
@@ -110,6 +124,15 @@ class ClubEvent {
     this.eventName,
     this.eventFrom = 0,
     this.eventId = 0,
+    this.code = '',
+    this.recurringType = 1,
+    this.venueId,
+    this.fieldId,
+    this.locationType = 1,
+    this.canRsvp = true,
+    this.uniformDetails = const [],
+    this.canChangeDate = true,
+    this.canChangeRecurrence = true,
   });
 
   ClubEvent copyWith({
@@ -164,6 +187,15 @@ class ClubEvent {
     String? eventName,
     int? eventFrom,
     int? eventId,
+    String? code,
+    int? recurringType,
+    int? venueId,
+    int? fieldId,
+    int? locationType,
+    bool? canRsvp,
+    List<UniformDetail>? uniformDetails,
+    bool? canChangeDate,
+    bool? canChangeRecurrence,
   }) {
     return ClubEvent(
       id: id ?? this.id,
@@ -217,6 +249,15 @@ class ClubEvent {
       eventName: eventName ?? this.eventName,
       eventFrom: eventFrom ?? this.eventFrom,
       eventId: eventId ?? this.eventId,
+      code: code ?? this.code,
+      recurringType: recurringType ?? this.recurringType,
+      venueId: venueId ?? this.venueId,
+      fieldId: fieldId ?? this.fieldId,
+      locationType: locationType ?? this.locationType,
+      canRsvp: canRsvp ?? this.canRsvp,
+      uniformDetails: uniformDetails ?? this.uniformDetails,
+      canChangeDate: canChangeDate ?? this.canChangeDate,
+      canChangeRecurrence: canChangeRecurrence ?? this.canChangeRecurrence,
     );
   }
 
@@ -273,4 +314,31 @@ class ClubEventRsvpTarget {
     required this.attendance,
     required this.notes,
   });
+}
+
+/// One entry of `uniform_details`. [colorLabel] is empty for non-standard hex values.
+class UniformDetail {
+  final String key;
+  final String label;
+  final String color;
+  final String colorLabel;
+
+  const UniformDetail({
+    required this.key,
+    required this.label,
+    required this.color,
+    this.colorLabel = '',
+  });
+
+  static List<UniformDetail> listFromJson(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw.whereType<Map>().map((m) {
+      return UniformDetail(
+        key: m['key']?.toString() ?? '',
+        label: m['label']?.toString() ?? '',
+        color: m['color']?.toString() ?? '',
+        colorLabel: m['color_label']?.toString() ?? '',
+      );
+    }).where((d) => d.color.isNotEmpty).toList();
+  }
 }

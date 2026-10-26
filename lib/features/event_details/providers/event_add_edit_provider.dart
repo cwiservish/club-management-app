@@ -214,7 +214,13 @@ class EventAddEditNotifier extends Notifier<EventAddEditState> {
     state = state.copyWith(newEventSelectedTimezone: tz);
   }
 
+  /// Details of the last save, read by the page after [saveNewEvent] returns.
+  bool lastSaveWasDraft = false;
+  List<Map<String, dynamic>> lastSaveConflicts = const [];
+
   Future<bool> saveNewEvent(NewEventSaveRequest request) async {
+    lastSaveWasDraft = false;
+    lastSaveConflicts = const [];
     state = state.copyWith(
       isSavingNewEvent: true,
       newEventSaveError: null,
@@ -223,6 +229,8 @@ class EventAddEditNotifier extends Notifier<EventAddEditState> {
     try {
       final eventService = ref.read(eventDetailServiceProvider);
       final response = await eventService.saveNewEvent(request);
+      lastSaveWasDraft = response.success && response.isDraft;
+      lastSaveConflicts = response.conflicts;
       if (response.success) {
         state = state.copyWith(
           isSavingNewEvent: false,
@@ -318,7 +326,7 @@ class EventAddEditNotifier extends Notifier<EventAddEditState> {
     }
   }
 
-  Future<bool> deleteEvent(dynamic id, {int schedulingMode = 1}) async {
+  Future<bool> deleteEvent(dynamic id, {int schedulingMode = 1, String? code}) async {
     final activeTeam = ref.read(selectedTeamProvider);
     if (activeTeam == null) {
       state = state.copyWith(saveError: 'No active team selected');
@@ -327,7 +335,7 @@ class EventAddEditNotifier extends Notifier<EventAddEditState> {
 
     state = state.copyWith(isSaving: true, saveError: null, saveSuccessMessage: null);
 
-    final request = EventDeleteRequest(teamUuid: activeTeam.uuid, id: id, schedulingMode: schedulingMode);
+    final request = EventDeleteRequest(teamUuid: activeTeam.uuid, id: id, schedulingMode: schedulingMode, code: code);
 
     try {
       final eventService = ref.read(eventDetailServiceProvider);

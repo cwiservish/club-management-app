@@ -65,6 +65,13 @@ class NewEventSaveRequest {
   final List<dynamic>? playerIds;
   final List<dynamic>? staffIds;
 
+  /// Rows from the type-1 conflict board (`date`, `start_time`, `end_time`, `field_id`).
+  /// When set they replace the dates the recurrence would produce.
+  List<Map<String, dynamic>>? slots;
+
+  /// Series code: edit the whole series from today on (send instead of `id`).
+  String? code;
+
   NewEventSaveRequest({
     required this.teamUuid,
     this.id = '',
@@ -218,7 +225,8 @@ class NewEventSaveRequest {
       if (venueId != null && venueId! > 0) {
         map['venue_id'] = venueId;
       }
-      if (fieldId != null && fieldId! > 0) {
+      // 0 = the "TBD" field option; sent as is.
+      if (fieldId != null && fieldId! >= 0) {
         map['field_id'] = fieldId;
       }
     } else if (locationType == 2) {
@@ -288,6 +296,8 @@ class NewEventSaveRequest {
 
     map['player_ids'] = effectivePlayerIds;
     map['staff_ids'] = effectiveStaffIds;
+    if (slots != null && slots!.isNotEmpty) map['slots'] = slots;
+    if (code != null && code!.isNotEmpty) map['code'] = code;
 
     return map;
   }
@@ -300,12 +310,39 @@ class NewEventSaveResponse {
   final bool success;
   final String message;
 
-  const NewEventSaveResponse({required this.success, required this.message});
+  /// Status of the saved session (1 scheduled, 2 cancelled, 5 draft); null if not returned.
+  final int? status;
+
+  /// Rows that clash with the field when a type-1 (Our Facilities) save is
+  /// refused: [{date, start_time, end_time, venue_id, field_id, warnings, message}].
+  final List<Map<String, dynamic>> conflicts;
+
+  const NewEventSaveResponse({
+    required this.success,
+    required this.message,
+    this.status,
+    this.conflicts = const [],
+  });
+
+  /// A coach's save is a draft until a manager confirms it.
+  bool get isDraft => status == 5;
 
   factory NewEventSaveResponse.fromJson(Map<String, dynamic> json) {
+    final data = json['data'];
+    int? status;
+    var conflicts = <Map<String, dynamic>>[];
+    if (data is Map) {
+      status = int.tryParse(data['status']?.toString() ?? '');
+      final raw = data['conflicts'];
+      if (raw is List) {
+        conflicts = raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    }
     return NewEventSaveResponse(
       success: json['success'] == true,
       message: json['message']?.toString() ?? '',
+      status: status,
+      conflicts: conflicts,
     );
   }
 }

@@ -33,6 +33,7 @@ class EventDetailModel {
   final String uniformTopColor;    // hex string, empty = no color
   final String uniformBottomColor;
   final String uniformSocksColor;
+  final List<UniformDetail> uniformDetails; // server uniform_details; preferred over the three hex fields
   final bool isGame;               // true for game/scrimmage — controls home/away + opponent visibility
   final String homeAway;           // "Home" | "Away" | "Neutral" | "-"
   final String opponent;
@@ -52,6 +53,7 @@ class EventDetailModel {
     this.uniformTopColor = '',
     this.uniformBottomColor = '',
     this.uniformSocksColor = '',
+    this.uniformDetails = const [],
     this.isGame = false,
     required this.homeAway,
     required this.opponent,
@@ -73,6 +75,7 @@ class EventDetailModel {
       uniformTopColor:     uniformTopColor,
       uniformBottomColor:  uniformBottomColor,
       uniformSocksColor:   uniformSocksColor,
+      uniformDetails:      uniformDetails,
       isGame:              isGame,
       homeAway:            homeAway,
       opponent:            opponent,

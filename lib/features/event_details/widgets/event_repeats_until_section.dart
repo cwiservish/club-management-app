@@ -36,6 +36,14 @@ class EventRepeatsUntilSection extends StatefulWidget {
   final TimeOfDay defaultStartTime;
   final TimeOfDay defaultEndTime;
 
+  /// Validation messages (null = fine) and scroll keys for the parent form.
+  final String? repeatUntilError;
+  final String? daysError;
+  final String? datesError;
+  final GlobalKey? repeatUntilKey;
+  final GlobalKey? daysKey;
+  final GlobalKey? datesKey;
+
   const EventRepeatsUntilSection({
     super.key,
     required this.isRepeating,
@@ -54,6 +62,12 @@ class EventRepeatsUntilSection extends StatefulWidget {
     required this.onSelectedMonthChanged,
     required this.defaultStartTime,
     required this.defaultEndTime,
+    this.repeatUntilError,
+    this.daysError,
+    this.datesError,
+    this.repeatUntilKey,
+    this.daysKey,
+    this.datesKey,
   });
 
   @override
@@ -94,26 +108,12 @@ class _EventRepeatsUntilSectionState extends State<EventRepeatsUntilSection> {
   /// No practical upper cap; only past dates are blocked.
   DateTime get _maxSelectableDate => DateTime(2100, 12, 31);
 
-  Future<void> _pickStartDate() async {
-    if (widget.onStartDateChanged == null) return;
-    final today = DateUtils.dateOnly(DateTime.now());
-    final initial = DateUtils.dateOnly(widget.startDate);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initial.isBefore(today)
-          ? today
-          : (initial.isAfter(_maxSelectableDate) ? _maxSelectableDate : initial),
-      firstDate: today,
-      lastDate: _maxSelectableDate,
-    );
-    if (picked != null) {
-      widget.onStartDateChanged!(picked);
-    }
-  }
 
   Future<void> _pickRepeatUntilDate() async {
     final firstDate = _minSelectableDate;
-    final maxDate = _maxSelectableDate;
+    // Weekly series: server allows at most 1 year after the start date.
+    final start = _minSelectableDate;
+    final maxDate = DateTime(start.year + 1, start.month, start.day);
     final current = widget.repeatUntilDate;
     var initial = current ?? firstDate.add(const Duration(days: 30));
     if (initial.isBefore(firstDate)) initial = firstDate;
@@ -325,54 +325,9 @@ class _EventRepeatsUntilSectionState extends State<EventRepeatsUntilSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Start Date Row
-        Row(
-          children: [
-            SizedBox(
-              width: 110,
-              child: Text(
-                'Start Date:',
-                style: TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w700,
-                  color: titleColor,
-                ),
-              ),
-            ),
-            Expanded(
-              child: GestureDetector(
-                onTap: widget.onStartDateChanged != null ? _pickStartDate : null,
-                child: Container(
-                  height: 44,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.calendar_today_outlined, size: 17, color: helperColor),
-                      const SizedBox(width: 8),
-                      Text(
-                        _formatDate(widget.startDate),
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
-                          color: titleColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
         // Repeat Until Row
         Row(
+          key: widget.repeatUntilKey,
           children: [
             SizedBox(
               width: 110,
@@ -392,9 +347,12 @@ class _EventRepeatsUntilSectionState extends State<EventRepeatsUntilSection> {
                   height: 44,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: widget.repeatUntilError != null ? const Color(0xFFFDECEA) : Colors.white,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: borderColor),
+                    border: Border.all(
+                      color: widget.repeatUntilError != null ? const Color(0xFFD32F2F) : borderColor,
+                      width: widget.repeatUntilError != null ? 1.5 : 1,
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -417,9 +375,22 @@ class _EventRepeatsUntilSectionState extends State<EventRepeatsUntilSection> {
             ),
           ],
         ),
+        if (widget.repeatUntilError != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 110),
+            child: Text(widget.repeatUntilError!,
+                style: const TextStyle(fontSize: 12.5, color: Color(0xFFD32F2F))),
+          ),
         const SizedBox(height: 16),
 
         // 7 Weekly Slots (Mon to Sun)
+        if (widget.daysError != null)
+          Padding(
+            key: widget.daysKey,
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(widget.daysError!,
+                style: const TextStyle(fontSize: 12.5, color: Color(0xFFD32F2F), fontWeight: FontWeight.w600)),
+          ),
         for (int i = 0; i < widget.weeklySlots.length; i++) ...[
           _buildWeeklySlotRow(
             context,
@@ -653,12 +624,22 @@ class _EventRepeatsUntilSectionState extends State<EventRepeatsUntilSection> {
         const SizedBox(height: 16),
 
         // Calendar Month Container
+        if (widget.datesError != null)
+          Padding(
+            key: widget.datesKey,
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(widget.datesError!,
+                style: const TextStyle(fontSize: 12.5, color: Color(0xFFD32F2F), fontWeight: FontWeight.w600)),
+          ),
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: borderColor),
+            border: Border.all(
+              color: widget.datesError != null ? const Color(0xFFD32F2F) : borderColor,
+              width: widget.datesError != null ? 1.5 : 1,
+            ),
           ),
           child: Column(
             children: [

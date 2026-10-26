@@ -13,12 +13,14 @@ import '../providers/event_add_edit_provider.dart';
 import '../models/new_event_dropdown_options_model.dart';
 import '../models/uniform_color.dart';
 import '../models/new_event_save_request_model.dart';
+import '../models/session_slot_models.dart';
+import '../widgets/slot_board_sheet.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
 import '../../../core/common_providers/event_refresh_provider.dart';
 import '../../../core/models/club_event.dart';
 import '../widgets/event_edit_danger_card.dart';
-import '../utils/duplicate_event_helper.dart';
 import '../widgets/event_location_tab_view.dart';
+import '../utils/edit_scope_dialog.dart';
 import '../widgets/event_repeats_until_section.dart';
 import '../../roster/providers/roster_provider.dart';
 import '../../roster/models/roster_member.dart';
@@ -68,9 +70,6 @@ class AddEditEventPage extends ConsumerStatefulWidget {
   /// Where the user came from — 'home' or 'schedule'. Used for post-save navigation.
   final String origin;
 
-  /// True → pre-fill from [editEvent] but save as a brand-new event (no id sent).
-  final bool isDuplicate;
-
   /// When set, hides the "What are you adding?" section and locks scheduling type to this value.
   final int? defaultSchedulingTypeKey;
 
@@ -85,15 +84,22 @@ class AddEditEventPage extends ConsumerStatefulWidget {
   /// Optional page title override. Defaults to 'New Event' in create mode.
   final String? title;
 
+  /// Choice already made in the "Edit which events?" dialog: 'one' | 'series' (null = ask here).
+  final String? editScope;
+
+  /// `session/detail` -> `data.edit` fetched by that dialog, reused for a series edit.
+  final Map<String, dynamic>? seriesEdit;
+
   const AddEditEventPage({
     super.key,
     this.editEvent,
     this.origin = 'home',
-    this.isDuplicate = false,
     this.defaultSchedulingTypeKey,
     this.defaultEventTypeKey,
     this.parentEvent,
     this.title,
+    this.editScope,
+    this.seriesEdit,
   });
 
   @override
@@ -163,11 +169,33 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         : '${venue.name} - ${field.fieldName}';
   }
 
+  /// Weekly series always start today: pin the date and keep the time valid.
+  void _startWeeklyFromToday() {
+    final today = DateUtils.dateOnly(DateTime.now());
+    _selectedDate = today;
+    _selectedMonth = DateTime(today.year, today.month, 1);
+    _selectedMonthlyDates = {today};
+    if (_repeatUntilDate != null && _repeatUntilDate!.isBefore(today)) {
+      _repeatUntilDate = null;
+    }
+    _clampStartTimeToNowIfToday();
+  }
+
+  /// Our Facilities needs a facility AND a field (server: "Select a field at the facility.").
+  /// Returns an error message, or null when the location is fine.
+  String? _facilityFieldError() {
+    if (_locationMode != EventLocationMode.ourLocations) return null;
+    final venue = _selectedVenue;
+    if (venue == null) return null; // "select a facility" is reported elsewhere
+    if (_selectedFieldItem == null) return 'Select a field at the facility';
+    return null;
+  }
+
   String? _resolveLocationText() {
     switch (_locationMode) {
       case EventLocationMode.ourLocations:
         if (_selectedVenue != null) {
-          if (_selectedFieldItem != null) {
+          if (_selectedFieldItem != null && !_selectedFieldItem!.isTbd) {
             return _venueFieldName(_selectedVenue!, _selectedFieldItem!);
           }
           return _selectedVenue!.name;
@@ -229,7 +257,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         if (_selectedVenue != null) {
           latitude = _selectedVenue!.latitude;
           longitude = _selectedVenue!.longitude;
-          locationName = _selectedFieldItem != null
+          locationName = _selectedFieldItem != null && !_selectedFieldItem!.isTbd
               ? _venueFieldName(_selectedVenue!, _selectedFieldItem!)
               : _selectedVenue!.name;
         }
@@ -330,7 +358,13 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   // Uniform Pickers State (Selected color index)
   // Dynamic: item name (from API `uniform_items`) -> index into kUniformColors
   final Map<String, int> _uniformColorIdx = {};
-  List<String> _uniformItems = const ['top', 'bottom', 'socks'];
+  List<UniformItemDef> _uniformDefs = UniformItemDef.defaults;
+  // Optional (non-fixed) items the user chose to set a color for.
+  final Set<String> _optionalUniformKeys = {};
+  List<String> get _uniformItems => _uniformDefs.map((d) => d.key).toList();
+  /// Items with a color picker shown: all fixed ones + chosen optional ones.
+  List<UniformItemDef> get _visibleUniformDefs =>
+      _uniformDefs.where((d) => d.isFixed || _optionalUniformKeys.contains(d.key)).toList();
   int get _topColorIndex => _uniformColorIdx['top'] ?? 0;
   set _topColorIndex(int v) => _uniformColorIdx['top'] = v;
   int get _bottomColorIndex => _uniformColorIdx['bottom'] ?? 0;
@@ -340,8 +374,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
   /// Hex (or '' for none) for every uniform item currently selected.
   Map<String, String> _currentUniformHex() => {
-        for (final item in _uniformItems)
-          item: uniformColorToHex(kUniformColors[_uniformColorIdx[item] ?? 0]),
+        for (final d in _uniformDefs)
+          d.key: (d.isFixed || _optionalUniformKeys.contains(d.key))
+              ? uniformColorToHex(kUniformColors[_uniformColorIdx[d.key] ?? 0])
+              : '',
       };
 
   /// `uniform` payload: {item: "#hex" | null}. Null when a template id is sent
@@ -593,6 +629,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           _latitude = details?['geometry']?['location']?['lat']?.toString() ?? '';
           _longitude = details?['geometry']?['location']?['lng']?.toString() ?? '';
           _locationController.text = formattedAddress;
+          _fieldErrors.remove('address');
           _isLoadingLocation = false;
         });
         _hideLocationOverlay();
@@ -628,7 +665,11 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                     onTap: () {},
                     child: _buildCustomTimePickerCard(
                       onTimeChanged: () {
-                        setState(() => _clampStartTimeToNowIfToday());
+                        setState(() {
+                          _clampStartTimeToNowIfToday();
+                          // Weekly series send per-day times: keep them on the new start time.
+                          _syncWeeklySlotTimes();
+                        });
                         _timePickerOverlay?.markNeedsBuild();
                       },
                     ),
@@ -654,15 +695,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   /// True when editing an existing child game (event_from 1 or 2 = linked to a parent league/tournament).
   /// Used to auto-hide scheduling type and event type sections — values are derived from the event itself.
   bool get _isChildGameEdit {
-    if (widget.isDuplicate || widget.editEvent == null) return false;
-    final ef = widget.editEvent!.eventFrom;
-    return ef == 1 || ef == 2;
-  }
-
-  /// True when duplicating a child game (event_from 1 or 2).
-  /// Same hiding behaviour as _isChildGameEdit and the Add Game button.
-  bool get _isChildDuplicate {
-    if (!widget.isDuplicate || widget.editEvent == null) return false;
+    if (widget.editEvent == null) return false;
     final ef = widget.editEvent!.eventFrom;
     return ef == 1 || ef == 2;
   }
@@ -708,7 +741,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     final e = widget.editEvent!;
     setState(() {
       _hasPrefilledEdit = true;
-      _isCancelled = !widget.isDuplicate && e.status == 2;
+      _isCancelled = e.status == 2;
 
       // Scheduling / event type
       _schedulingTypeKey = e.schedulingMode;
@@ -779,7 +812,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         if (matchingVenue != null) {
           _locationMode = EventLocationMode.ourLocations;
           _selectedVenue = matchingVenue;
-          _selectedFieldItem = matchingField;
+          // A facility with no field in its text was saved with the "TBD" field.
+          _selectedFieldItem = matchingField ?? (loc.contains(' - ') ? null : OurLocationField.tbd);
           _latitude = matchingVenue.latitude;
           _longitude = matchingVenue.longitude;
         } else if (matchingSaved != null) {
@@ -832,7 +866,17 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       }
 
       // Uniform
-      _uniformItems = dropdowns.uniformItems;
+      _uniformDefs = dropdowns.uniformItems;
+      for (final entry in {
+        'top': e.uniformTopColor,
+        'bottom': e.uniformBottomColor,
+        'socks': e.uniformSocksColor,
+      }.entries) {
+        final def = _uniformDefs.where((d) => d.key == entry.key).firstOrNull;
+        if (def != null && !def.isFixed && entry.value.isNotEmpty) {
+          _optionalUniformKeys.add(def.key);
+        }
+      }
       if (e.uniformTemplateId > 0) {
         final template = dropdowns.uniformTemplates
             .where((t) => t.id == e.uniformTemplateId)
@@ -858,6 +902,181 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         _selectedUniformMode = 'New combo';
       }
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _askEditScope());
+  }
+
+  // ── Series edit scope ──────────────────────────────────────────────────────
+
+  /// 'one' = only this date (or a one-off session), 'series' = every upcoming date.
+  String _editScope = 'one';
+
+  /// From `session/detail` (by id) for one date of a series: false locks the date picker / hides Repeats.
+  bool _canChangeDate = true;
+  bool _canChangeRecurrence = true;
+  bool get _isSeriesEdit => _editScope == 'series';
+
+  /// Editing one date of a weekly / specific-dates series.
+  bool get _isSeriesMember {
+    final e = widget.editEvent;
+    if (e == null) return false;
+    return e.schedulingMode == 1 && e.code.isNotEmpty && e.recurringType != 1;
+  }
+
+  Future<void> _askEditScope() async {
+    if (!mounted || !_isSeriesMember) return;
+    // The dialog normally runs before this page opens (Event Details -> Edit); this covers
+    // other entry points that open the page directly.
+    var scope = widget.editScope;
+    var seriesEdit = widget.seriesEdit;
+    if (scope == null) {
+      final choice = await askEditScope(context, ref, widget.editEvent!);
+      if (!mounted) return;
+      if (choice == null) {
+        context.pop();
+        return;
+      }
+      scope = choice.scope;
+      seriesEdit = choice.seriesEdit;
+    }
+    if (scope == 'series') {
+      await _loadSeriesForEdit(prefetched: seriesEdit);
+    } else {
+      await _loadOccurrenceFlags();
+    }
+  }
+
+  /// "This date only": `session/detail` with `id` says whether the date / recurrence can change.
+  /// A series member that can't be read is treated as locked (the server refuses a date change anyway).
+  Future<void> _loadOccurrenceFlags() async {
+    final e = widget.editEvent!;
+    final team = ref.read(selectedTeamProvider);
+    var canDate = false;
+    var canRecurrence = false;
+    if (team != null && e.dbId != null) {
+      try {
+        final detail = await ref.read(eventDetailServiceProvider).fetchSessionDetail(teamUuid: team.uuid, id: e.dbId);
+        bool? flag(String key) {
+          final v = detail[key] ?? (detail['session'] is Map ? (detail['session'] as Map)[key] : null);
+          if (v == null) return null;
+          return v == true || v == 1 || v.toString() == 'true' || v.toString() == '1';
+        }
+
+        canDate = flag('can_change_date') ?? false;
+        canRecurrence = flag('can_change_recurrence') ?? false;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    setState(() {
+      _canChangeDate = canDate;
+      _canChangeRecurrence = canRecurrence;
+    });
+  }
+
+  /// The series' main place (`edit.location_type / venue_id / field_id`), so unchanged edits send it back as is
+  /// and each date keeps its own field on the sheet.
+  void _applySeriesPlace(Map<String, dynamic> edit) {
+    final type = int.tryParse(edit['location_type']?.toString() ?? '');
+    if (type != 1) return;
+    final venueId = int.tryParse(edit['venue_id']?.toString() ?? '');
+    final fieldId = int.tryParse(edit['field_id']?.toString() ?? '');
+    final dropdowns = ref.read(eventAddEditProvider).newEventDropdowns;
+    if (venueId == null || dropdowns == null) return;
+    for (final v in dropdowns.ourLocations) {
+      if (v.venueId != venueId) continue;
+      _locationMode = EventLocationMode.ourLocations;
+      _selectedVenue = v;
+      _latitude = v.latitude;
+      _longitude = v.longitude;
+      _selectedFieldItem = fieldId == 0 ? OurLocationField.tbd : null;
+      for (final f in v.fields) {
+        if (f.fieldId == fieldId) _selectedFieldItem = f;
+      }
+      return;
+    }
+  }
+
+  /// Series start time and duration from `edit` (the form otherwise holds the tapped date's own time).
+  void _applySeriesTime(Map<String, dynamic> edit) {
+    final p = (edit['start_time']?.toString() ?? '').split(':');
+    if (p.length >= 2) {
+      final h = int.tryParse(p[0]);
+      final m = int.tryParse(p[1]);
+      if (h != null && m != null) _startTime = TimeOfDay(hour: h, minute: m);
+    }
+    final dur = int.tryParse(edit['duration']?.toString() ?? '');
+    if (dur != null && dur > 0) {
+      _durationHours = dur ~/ 60;
+      _durationMinutes = dur % 60;
+    }
+  }
+
+  /// Pre-fills the repeat section from `session/detail` (series code) -> `data.edit`.
+  Future<void> _loadSeriesForEdit({Map<String, dynamic>? prefetched}) async {
+    final e = widget.editEvent!;
+    final team = ref.read(selectedTeamProvider);
+    if (team == null) return;
+    try {
+      Map<String, dynamic> edit;
+      if (prefetched != null) {
+        edit = prefetched;
+      } else {
+        final detail = await ref
+            .read(eventDetailServiceProvider)
+            .fetchSessionDetail(teamUuid: team.uuid, code: e.code);
+        edit = detail['edit'] is Map ? Map<String, dynamic>.from(detail['edit'] as Map) : <String, dynamic>{};
+      }
+      if (!mounted) return;
+      final recurring = int.tryParse(edit['recurring_type']?.toString() ?? '') ?? e.recurringType;
+      final today = DateUtils.dateOnly(DateTime.now());
+      final days = edit['days'] is List ? edit['days'] as List : const [];
+
+      TimeOfDay parseT(dynamic v, TimeOfDay fallback) {
+        final p = (v?.toString() ?? '').split(':');
+        if (p.length < 2) return fallback;
+        return TimeOfDay(hour: int.tryParse(p[0]) ?? fallback.hour, minute: int.tryParse(p[1]) ?? fallback.minute);
+      }
+
+      setState(() {
+        _editScope = 'series';
+        _canChangeDate = true;
+        _canChangeRecurrence = true;
+        _isRepeating = true;
+        _applySeriesPlace(edit);
+        _applySeriesTime(edit);
+        if (recurring == 3) {
+          _repeatType = 'Monthly';
+          final dates = days
+              .map((d) => DateTime.tryParse(d.toString()))
+              .whereType<DateTime>()
+              .map(DateUtils.dateOnly)
+              .where((d) => !d.isBefore(today))
+              .toSet();
+          if (dates.isNotEmpty) {
+            _selectedMonthlyDates = dates;
+            final first = (dates.toList()..sort()).first;
+            _selectedMonth = DateTime(first.year, first.month, 1);
+          }
+        } else {
+          _repeatType = 'Weekly';
+          _startWeeklyFromToday();
+          final endStr = edit['session_end_date']?.toString() ?? '';
+          final end = DateTime.tryParse(endStr);
+          if (end != null && !end.isBefore(today)) _repeatUntilDate = DateUtils.dateOnly(end);
+          for (final slot in _weeklySlots) {
+            final match = days.whereType<Map>().where((d) => d['day']?.toString() == slot.dayName);
+            slot.isChecked = match.isNotEmpty;
+            if (match.isNotEmpty) {
+              slot.startTime = parseT(match.first['start_time'], slot.startTime);
+              slot.endTime = parseT(match.first['end_time'], slot.endTime);
+            }
+          }
+        }
+      });
+    } catch (err) {
+      if (!mounted) return;
+      _showErrorDialog(err.toString());
+      context.pop();
+    }
   }
 
   // Event page loads team-only staff into the shared roster state; restore the
@@ -959,6 +1178,11 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   /// Clamps _startTime to now+1 min if today is selected. Pure mutation — call inside setState.
   void _clampStartTimeToNowIfToday() {
     if (!_isToday()) return;
+    // Editing a session on its own date: it may already be past or about to start, so any time stays editable.
+    final original = widget.editEvent;
+    if (original != null && _selectedDate != null && DateUtils.dateOnly(original.dateTime) == DateUtils.dateOnly(_selectedDate!)) {
+      return;
+    }
     final now = DateTime.now();
     final minAllowed = DateTime(now.year, now.month, now.day, now.hour, now.minute + 1);
     final selected = DateTime(
@@ -976,6 +1200,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   // Pickers
   Future<void> _pickDate(BuildContext context) async {
     _closeAllDropdowns(unfocus: true);
+    if (!_canChangeDate) return;
     final today = DateUtils.dateOnly(DateTime.now());
     final parent = widget.parentEvent;
 
@@ -1084,6 +1309,136 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     );
   }
 
+  // ── Field-level validation ─────────────────────────────────────────────────
+  // Missing fields are highlighted in red (with a message) and the form jumps to the
+  // first one, instead of showing a toast.
+
+  static const Color _errorRed = Color(0xFFD32F2F);
+  static const Color _errorBg = Color(0xFFFDECEA);
+
+  /// Field id -> message. Ids: title, opponent, opponentName, startDate, endDate, repeatUntil,
+  /// repeatDays, repeatDates, facility, field, savedLocation, address, templateName.
+  final Map<String, String> _fieldErrors = {};
+  final Map<String, GlobalKey> _fieldKeys = {};
+
+  GlobalKey _keyFor(String id) => _fieldKeys.putIfAbsent(id, () => GlobalKey());
+
+  /// Removes an error without rebuilding (use inside an existing setState).
+  void _dropErrors(List<String> ids) {
+    for (final id in ids) {
+      _fieldErrors.remove(id);
+    }
+  }
+
+  /// Clears one error as soon as the user fixes the field.
+  void _clearErrorNow(String id) {
+    if (_fieldErrors.containsKey(id)) setState(() => _fieldErrors.remove(id));
+  }
+
+  /// Checks everything the current form needs. Returns true when it is all filled in;
+  /// otherwise marks every missing field, switches to the tab of the first one and scrolls to it.
+  bool _validateForm() {
+    final errors = <String, String>{}; // insertion order = order on screen
+    final tabOf = <String, int>{};
+    void add(String id, String message, int tab) {
+      errors.putIfAbsent(id, () => message);
+      tabOf.putIfAbsent(id, () => tab);
+    }
+
+    final isMultiDay = _schedulingTypeKey == 2 || _schedulingTypeKey == 3;
+    final isSession = !isMultiDay || _knowsSchedule;
+
+    void checkLocation(int tab) {
+      switch (_locationMode) {
+        case EventLocationMode.ourLocations:
+          if (_selectedVenue == null) {
+            add('facility', 'Select a facility', tab);
+          } else if (_selectedVenue!.fields.isEmpty) {
+            add('field', 'This facility has no fields to book', tab);
+          } else if (_selectedFieldItem == null) {
+            add('field', 'Select a field at the facility', tab);
+          }
+        case EventLocationMode.savedLocation:
+          if (_selectedSavedLocationItem == null) add('savedLocation', 'Select a saved location', tab);
+        case EventLocationMode.offSiteAddress:
+          if (_locationController.text.trim().isEmpty) add('address', 'Enter an address', tab);
+        case EventLocationMode.tbd:
+          break;
+      }
+    }
+
+    // [optional]: Practice / Team Event / Camp sessions get a default title from the server.
+    void checkTitle(int tab, {bool optional = false}) {
+      final title = _titleController.text.trim();
+      if (title.isEmpty) {
+        if (!optional) add('title', 'Enter a title', tab);
+      } else if (!RegExp(r'[a-zA-Z]').hasMatch(title)) {
+        add('title', 'Title must contain at least one letter', tab);
+      }
+    }
+
+    if (!isSession) {
+      // Tournament / League placeholder: title, date range, location.
+      checkTitle(0);
+      if (_startDate == null) add('startDate', 'Select a start date', 0);
+      if (_endDate == null) add('endDate', 'Select an end date', 0);
+      checkLocation(0);
+    } else {
+      // Details tab
+      if (_schedulingTypeKey == 1 && _isRepeating) {
+        if (_repeatType == 'Weekly') {
+          if (_repeatUntilDate == null) add('repeatUntil', 'Select a repeat until date', 0);
+          if (!_weeklySlots.any((s) => s.isChecked)) add('repeatDays', 'Select at least one day', 0);
+        } else if (_repeatType == 'Monthly' && _selectedMonthlyDates.isEmpty) {
+          add('repeatDates', 'Select at least one date', 0);
+        }
+      }
+      final isGame = isMultiDay || _eventTypeKey == 1 || _eventTypeKey == 3;
+      if (isGame) {
+        if (_selectedOpponentId.isEmpty) {
+          add('opponent', 'Select or add an opponent', 0);
+        } else if (_selectedOpponentId == '__new__' && _newOpponentNameController.text.trim().isEmpty) {
+          add('opponentName', 'Enter the opponent name', 0);
+        }
+      } else {
+        checkTitle(0, optional: true);
+      }
+      // Location tab
+      checkLocation(1);
+      // Uniform tab
+      if (_selectedApiTemplate == null && _showSaveTemplateForm) {
+        final name = _templateNameController.text.trim();
+        if (name.isEmpty) {
+          add('templateName', 'Enter a template name', 2);
+        } else if (!RegExp(r'^[a-zA-Z0-9 ]+$').hasMatch(name)) {
+          add('templateName', 'Use only letters, numbers and spaces', 2);
+        }
+      }
+    }
+
+    setState(() {
+      _fieldErrors
+        ..clear()
+        ..addAll(errors);
+      if (errors.isNotEmpty && isSession) _selectedTabIndex = tabOf[errors.keys.first]!;
+    });
+    if (errors.isEmpty) return true;
+
+    final firstId = errors.keys.first;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _fieldKeys[firstId]?.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          alignment: 0.15,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+    return false;
+  }
+
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1119,6 +1474,54 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     );
   }
 
+  /// For a recurring event: ask whether [action] applies to this date or all upcoming dates.
+  /// Returns 'one', 'series', or null when cancelled. One-off events return 'one' without asking.
+  Future<String?> _askSeriesScope(String action) async {
+    if (!_isSeriesMember) return 'one';
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('$action recurring event'),
+        content: Text('Apply to this date only, or to all upcoming dates of the series?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'one'), child: const Text('This date only')),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'series'), child: const Text('All upcoming')),
+        ],
+      ),
+    );
+  }
+
+  /// Cancel / reinstate through the dedicated status endpoint (status 2 / 1).
+  Future<void> _handleCancelChanged(bool cancel) async {
+    final e = widget.editEvent;
+    final team = ref.read(selectedTeamProvider);
+    if (e == null || team == null) return;
+    if (e.schedulingMode != 1) {
+      // Tournaments / leagues keep the old behaviour: the toggle is saved with the form.
+      setState(() => _isCancelled = cancel);
+      return;
+    }
+    final scope = await _askSeriesScope(cancel ? 'Cancel' : 'Reinstate');
+    if (scope == null || !mounted) return;
+
+    final result = await ref.read(eventDetailServiceProvider).setSessionStatus(
+          teamUuid: team.uuid,
+          id: scope == 'series' ? null : e.dbId,
+          code: scope == 'series' ? e.code : null,
+          status: cancel ? 2 : 1,
+        );
+    if (!mounted) return;
+    if (result.success) {
+      setState(() => _isCancelled = cancel);
+      ref.read(eventRefreshSignalProvider.notifier).signal();
+      context.go(widget.origin == 'schedule' ? AppRoutes.schedule : AppRoutes.home);
+    } else {
+      // Reinstating can clash with another booking: the message lists the dates.
+      _showErrorDialog(result.message.isNotEmpty ? result.message : 'Could not update the event');
+    }
+  }
+
   Future<void> _handleDeleteEvent() async {
     final colors = AppColors.current;
     final confirm = await showDialog<bool>(
@@ -1149,9 +1552,13 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
     if (confirm != true || !mounted) return;
 
+    final scope = await _askSeriesScope('Delete');
+    if (scope == null || !mounted) return;
+
     final success = await ref.read(eventAddEditProvider.notifier).deleteEvent(
       widget.editEvent?.dbId,
       schedulingMode: widget.editEvent?.schedulingMode ?? 1,
+      code: scope == 'series' ? widget.editEvent?.code : null,
     );
 
     if (!mounted) return;
@@ -1175,9 +1582,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     if (!mounted) return;
     if (success) {
       ref.read(eventRefreshSignalProvider.notifier).signal();
+      final savedAsDraft = ref.read(eventAddEditProvider.notifier).lastSaveWasDraft;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Event saved - families will be notified'),
+          content: Text(savedAsDraft
+              ? 'Saved as draft: Waiting for approval'
+              : 'Event saved - families will be notified'),
           backgroundColor: AppColors.current.success,
           behavior: SnackBarBehavior.floating,
         ),
@@ -1192,40 +1602,26 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   }
 
   /// Returns the original event title for comparison and fallback pre-fill.
-  String get _originalEventTitle => DuplicateEventHelper.getOriginalEventTitle(widget.editEvent);
+  /// Name the server gives a session saved without a title (Practice 2, Team Event 4, Camp 5).
+  String get _defaultTitleHint {
+    switch (_eventTypeKey) {
+      case 4:
+        return 'Team Event';
+      case 5:
+        return 'Camp';
+      default:
+        return 'Practice';
+    }
+  }
 
-  /// Checks whether all relevant event details of the duplicated event are
-  /// 100% identical to the original event [widget.editEvent].
-  bool _isDuplicatedEventIdentical() {
+  /// The edited event's own title (titleRaw, then title, then event name) for the Title field.
+  String get _originalEventTitle {
     final e = widget.editEvent;
-    if (e == null) return false;
-    return DuplicateEventHelper.isDuplicatedEventIdentical(
-      originalEvent: e,
-      schedulingTypeKey: _schedulingTypeKey,
-      eventTypeKey: _eventTypeKey,
-      location: _resolveLocationText() ?? (_locationName.isNotEmpty ? _locationName : _locationController.text),
-      notes: _notesController.text,
-      isCancelled: _isCancelled,
-      selectedDate: _selectedDate,
-      startTime: _startTime,
-      durationMinutes: _durationHours * 60 + _durationMinutes,
-      homeAwayKey: _homeAwayKey,
-      arrivalTimeKey: _arrivalTimeKey,
-      selectedOpponentId: _selectedOpponentId,
-      newOpponentName: _newOpponentNameController.text,
-      title: _titleController.text,
-      selectedApiTemplate: _selectedApiTemplate,
-      topColorIndex: _topColorIndex,
-      bottomColorIndex: _bottomColorIndex,
-      socksColorIndex: _socksColorIndex,
-      showSaveTemplateForm: _showSaveTemplateForm,
-      templateName: _templateNameController.text,
-      knowsSchedule: _knowsSchedule,
-      startDate: _startDate,
-      endDate: _endDate,
-      latitude: _latitude,
-      longitude: _longitude,
-    );
+    if (e == null) return '';
+    if (e.titleRaw.trim().isNotEmpty) return e.titleRaw.trim();
+    if (e.title.trim().isNotEmpty && e.title.trim().toLowerCase() != 'event') return e.title.trim();
+    if (e.eventName != null && e.eventName!.trim().isNotEmpty) return e.eventName!.trim();
+    return e.title.trim();
   }
 
   void _onSave() => _doSave();
@@ -1246,6 +1642,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       }
     }
 
+    if (!_validateForm()) return;
+
     // Uniform template name validation — if toggle is shown, name is required and must be alphanumeric
     if (_selectedApiTemplate == null && _showSaveTemplateForm) {
       final name = _templateNameController.text.trim();
@@ -1259,13 +1657,17 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       }
     }
 
-    // Edit-mode values ('' for create/duplicate mode)
-    final editId = (!widget.isDuplicate) ? (widget.editEvent?.dbId?.toString() ?? '') : '';
-    final existingSchedulingMode = (!widget.isDuplicate) ? (widget.editEvent?.existingSchedulingMode ?? '') : '';
-    final editStatus = widget.isDuplicate ? 1 : (widget.editEvent != null ? (_isCancelled ? 2 : 1) : '');
+    // Edit-mode values ('' for create mode)
+    final editId = !_isSeriesEdit ? (widget.editEvent?.dbId?.toString() ?? '') : '';
+    final existingSchedulingMode = widget.editEvent?.existingSchedulingMode ?? '';
+    final editStatus = widget.editEvent != null ? (_isCancelled ? 2 : 1) : '';
 
     // ── Flow 1: Single Session ─────────────────────────────────────────────
     if (_schedulingTypeKey == 1) {
+      // Weekly repeat always starts today; the start date isn't user-editable.
+      if (_isRepeating && _repeatType == 'Weekly') {
+        _selectedDate = DateUtils.dateOnly(DateTime.now());
+      }
       if (_selectedDate == null) {
         setState(() => _selectedTabIndex = 0);
         _showError('Please select a date');
@@ -1307,6 +1709,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         }
         return;
       }
+      final fieldError = _facilityFieldError();
+      if (fieldError != null) {
+        setState(() => _selectedTabIndex = 1);
+        _showError(fieldError);
+        return;
+      }
 
       // Title vs Opponent depending on event type
       String title = '';
@@ -1332,28 +1740,13 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           _showError('Please select or add an opponent');
           return;
         }
-
-        // Duplicate naming logic for game/scrimmage
-        if (widget.isDuplicate && _isDuplicatedEventIdentical()) {
-          final origTitle = _originalEventTitle;
-          title = origTitle.isNotEmpty ? 'Copy of - $origTitle' : 'Copy of - Event';
-        }
       } else {
         // Flow 2: Practice, Team Event, Camp — title is required, no opponent
+        // Title is optional here: the server names the session "Practice" / "Team Event" / "Camp".
         title = _titleController.text.trim();
-        if (title.isEmpty) {
-          _showError('Please enter a title');
-          return;
-        }
-        if (!RegExp(r'[a-zA-Z]').hasMatch(title)) {
+        if (title.isNotEmpty && !RegExp(r'[a-zA-Z]').hasMatch(title)) {
           _showError('Title must contain at least one letter');
           return;
-        }
-
-        // Duplicate naming logic: prepend "Copy of - " only if 100% identical to original
-        if (widget.isDuplicate && _isDuplicatedEventIdentical()) {
-          title = 'Copy of - $title';
-          _titleController.text = title;
         }
         allowForFutureGames = false;
       }
@@ -1466,8 +1859,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         staffIds: staffIds,
       );
 
-      final success = await ref.read(eventAddEditProvider.notifier).saveNewEvent(request);
-      _handleSaveResult(success);
+      await _submitSession(request);
       return;
     }
 
@@ -1483,6 +1875,13 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             EventLocationMode.offSiteAddress => 'Please enter an address',
             EventLocationMode.tbd => 'Please set a location',
           });
+        } else {
+          final fieldError = _facilityFieldError();
+          if (fieldError != null) {
+            if (_knowsSchedule) setState(() => _selectedTabIndex = 1);
+            _showError(fieldError);
+            return null;
+          }
         }
         return t;
       }
@@ -1498,12 +1897,6 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         if (!RegExp(r'[a-zA-Z]').hasMatch(title)) {
           _showError('Title must contain at least one letter');
           return;
-        }
-
-        // Duplicate naming logic: prepend "Copy of - " only if 100% identical to original
-        if (widget.isDuplicate && _isDuplicatedEventIdentical()) {
-          title = 'Copy of - $title';
-          _titleController.text = title;
         }
         if (_startDate == null) {
           _showError('Please select a start date');
@@ -1619,11 +2012,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         return;
       }
 
-      var flow4Title = '';
-      if (widget.isDuplicate && _isDuplicatedEventIdentical()) {
-        final origTitle = _originalEventTitle;
-        flow4Title = origTitle.isNotEmpty ? 'Copy of - $origTitle' : 'Copy of - Event';
-      }
+      const flow4Title = '';
 
       final totalDurationMinutes = _durationHours * 60 + _durationMinutes;
       final startDateTime = DateTime(2000, 1, 1, _startTime.hour, _startTime.minute);
@@ -1694,9 +2083,76 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         staffIds: staffIds,
       );
 
-      final success = await ref.read(eventAddEditProvider.notifier).saveNewEvent(request);
-      _handleSaveResult(success);
+      await _submitSession(request);
     }
+  }
+
+  /// Saves a session. For "Our Facilities" (location_type 1) it first builds the
+  /// conflict board (every date + availability), lets the user fix clashes in a
+  /// bottom sheet, then saves with `slots`. The server re-checks on save; if it
+  /// still finds a clash the fresh board is shown again.
+  Future<void> _submitSession(NewEventSaveRequest request) async {
+    final notifier = ref.read(eventAddEditProvider.notifier);
+    if (_isSeriesEdit) request.code = widget.editEvent!.code;
+
+    // Field "TBD" (id 0) has nothing to clash-check, so no board.
+    if (request.locationType == 1 && _selectedVenue != null && request.fieldId != 0) {
+      for (var attempt = 0; attempt < 3; attempt++) {
+        final slots = await _reviewBoard(request, _selectedVenue!);
+        if (slots == null) return; // cancelled, or the board call failed (error already shown)
+        request.slots = slots.isEmpty ? null : slots.map((s) => s.toSaveJson()).toList();
+
+        final ok = await notifier.saveNewEvent(request);
+        if (ok || notifier.lastSaveConflicts.isEmpty) {
+          _handleSaveResult(ok);
+          return;
+        }
+        // Someone booked the field meanwhile: show the board again with fresh results.
+        _showError('Some dates now clash - please review them');
+      }
+      return;
+    }
+
+    _handleSaveResult(await notifier.saveNewEvent(request));
+  }
+
+  /// Returns the rows to save, an empty list when no board is needed
+  /// (one date, available), or null if the user backed out / the call failed.
+  Future<List<SessionSlot>?> _reviewBoard(NewEventSaveRequest request, OurLocationVenue venue) async {
+    final service = ref.read(eventDetailServiceProvider);
+    final activeTeam = ref.read(selectedTeamProvider);
+    if (activeTeam == null) return null;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    SlotBoard board;
+    try {
+      board = await service.generateSlots(request.toJson());
+    } catch (e) {
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      _showErrorDialog(e.toString());
+      return null;
+    }
+    if (!mounted) return null;
+    Navigator.of(context, rootNavigator: true).pop();
+
+    // One date of a series: no sheet when clash-free, but it must carry its own row so its time / field are stored.
+    final isOneDateOfSeries = _isSeriesMember && !_isSeriesEdit;
+    if (isOneDateOfSeries && board.slots.length <= 1 && !board.hasConflicts) return board.slots;
+    // A one-day session shows the "Check availability" sheet with its single row, like a series does.
+    if (board.slots.isEmpty && !board.hasConflicts) return <SessionSlot>[];
+
+    return SlotBoardSheet.show(
+      context,
+      service: service,
+      teamUuid: activeTeam.uuid,
+      venue: venue,
+      board: board,
+      saveLabel: widget.editEvent != null ? 'Update event' : 'Save event',
+    );
   }
 
   @override
@@ -1704,18 +2160,17 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     ref.watch(themeModeProvider);
     final colors = AppColors.current;
     final dropdownState = ref.watch(eventAddEditProvider);
-    final isEditMode = widget.editEvent != null && !widget.isDuplicate;
-    final isDuplicateMode = widget.editEvent != null && widget.isDuplicate;
+    final isEditMode = widget.editEvent != null;
 
-    // Pre-fill once dropdowns are ready in edit or duplicate mode
-    if ((isEditMode || isDuplicateMode) && dropdownState.newEventDropdowns != null && !_hasPrefilledEdit) {
+    // Pre-fill once dropdowns are ready in edit mode
+    if (isEditMode && dropdownState.newEventDropdowns != null && !_hasPrefilledEdit) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _prefillFromEvent(dropdownState.newEventDropdowns!);
       });
     }
 
     // Create mode: default homeAwayKey to 1 (Home) once options load, but only if options exist
-    if (!isEditMode && !isDuplicateMode && dropdownState.newEventDropdowns != null && _homeAwayKey == 0) {
+    if (!isEditMode && dropdownState.newEventDropdowns != null && _homeAwayKey == 0) {
       final opts = dropdownState.newEventDropdowns!.homeAwayOptions;
       if (opts.isNotEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1725,7 +2180,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     }
 
     final subHeader = SubHeader(
-      title: isDuplicateMode ? 'Duplicate Event' : isEditMode ? 'Edit Event' : (widget.title ?? 'New Event'),
+      title: isEditMode ? 'Edit Event' : (widget.title ?? 'New Event'),
       leftIcon: Icons.close,
       leftLabel: 'Close',
       onLeftTap: () {
@@ -1805,7 +2260,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
     final dropdowns = dropdownState.newEventDropdowns!;
 
-    final showCategoryHeader = widget.defaultSchedulingTypeKey == null && !_isChildGameEdit && !_isChildDuplicate;
+    final showCategoryHeader = widget.defaultSchedulingTypeKey == null && !_isChildGameEdit;
 
     return Scaffold(
       backgroundColor: colors.isDark ? colors.background : const Color(0xFFF8F9FA),
@@ -1866,12 +2321,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                           _buildRsvpTabContent(dropdowns),
                       ],
                     ],
-                    if (isEditMode && !isDuplicateMode) ...[
+                    if (isEditMode) ...[
                       const SizedBox(height: 16),
                       EventEditDangerCard(
                         isEdit: true,
                         isCancelled: _isCancelled,
-                        onCancelledChanged: (v) => setState(() => _isCancelled = v),
+                        onCancelledChanged: _handleCancelChanged,
                         onDelete: _handleDeleteEvent,
                       ),
                       const SizedBox(height: 8),
@@ -1890,13 +2345,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   Widget _buildWebHeader(BuildContext context) {
     final colors = AppColors.current;
     final isDark = colors.isDark;
-    final isDuplicateMode = widget.editEvent != null && widget.isDuplicate;
-    final isEditMode = widget.editEvent != null && !widget.isDuplicate;
-    final title = isDuplicateMode
-        ? 'Duplicate Event'
-        : isEditMode
-            ? 'Edit Event'
-            : (widget.title ?? 'Add Event');
+    final isEditMode = widget.editEvent != null;
+    final title = isEditMode ? 'Edit Event' : (widget.title ?? 'Add Event');
 
     return Padding(
       padding: const EdgeInsets.only(left: 20, right: 8, top: 8, bottom: 4),
@@ -1999,7 +2449,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     final isSaving = ref.watch(eventAddEditProvider).isSavingNewEvent;
     const yellowBtn = Color(0xFFF5BD1F);
 
-    final isEditMode = widget.editEvent != null && !widget.isDuplicate;
+    final isEditMode = widget.editEvent != null;
     final saveButtonLabel = isEditMode
         ? 'Update Event'
         : (_schedulingTypeKey == 1 ? 'Save & Send RSVP' : 'Save Event');
@@ -2095,10 +2545,17 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   /// Shared "Where is this happening?" selector (single session, tournament, league).
   Widget _buildLocationView(NewEventDropdownOptions dropdowns) {
     return EventLocationTabView(
+        locationTypes: dropdowns.locationTypes,
+        errors: {
+          for (final id in const ['facility', 'field', 'savedLocation', 'address'])
+            if (_fieldErrors.containsKey(id)) id: _fieldErrors[id]!,
+        },
+        fieldKeyFor: _keyFor,
         selectedMode: _locationMode,
         onModeChanged: (mode) {
           _closeAllDropdowns(unfocus: true);
           setState(() {
+            _dropErrors(['facility', 'field', 'savedLocation', 'address']);
             _locationMode = mode;
             if (mode == EventLocationMode.tbd) {
               _locationController.clear();
@@ -2112,6 +2569,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         selectedVenue: _selectedVenue,
         onVenueChanged: (venue) {
           setState(() {
+            _dropErrors(['facility', 'field']);
             _selectedVenue = venue;
             _selectedFieldItem = null;
             if (venue != null) {
@@ -2123,6 +2581,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         selectedFieldItem: _selectedFieldItem,
         onFieldItemChanged: (field) {
           setState(() {
+            _dropErrors(['field']);
             _selectedFieldItem = field;
           });
         },
@@ -2130,6 +2589,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         selectedSavedLocationItem: _selectedSavedLocationItem,
         onSavedLocationItemChanged: (saved) {
           setState(() {
+            _dropErrors(['savedLocation']);
             _selectedSavedLocationItem = saved;
             if (saved != null) {
               _address = saved.address;
@@ -2144,7 +2604,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           });
         },
         addressController: _locationController,
-        onAddressChanged: _onLocationChanged,
+        onAddressChanged: (v) {
+          _clearErrorNow('address');
+          _onLocationChanged(v);
+        },
         addressFieldKey: _locationFieldKey,
         addressLayerLink: _locationLayerLink,
         onClearAddress: () {
@@ -2166,7 +2629,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   }
 
   Widget _buildCategoryHeaderCard(NewEventDropdownOptions dropdowns) {
-    if (widget.defaultSchedulingTypeKey != null || _isChildGameEdit || _isChildDuplicate) {
+    if (widget.defaultSchedulingTypeKey != null || _isChildGameEdit) {
       return const SizedBox.shrink();
     }
 
@@ -2678,7 +3141,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Event Type — hidden when event type is pre-set or editing a child game
-        if (!isMultiDayGame && widget.defaultEventTypeKey == null && !_isChildGameEdit && !_isChildDuplicate) ...[
+        if (!isMultiDayGame && widget.defaultEventTypeKey == null && !_isChildGameEdit) ...[
           _buildFieldLabel('Event type', isRequired: true),
           const SizedBox(height: 12),
           Wrap(
@@ -2695,9 +3158,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         ] else ...[
           _buildTextField(
             label: 'Title',
-            hintText: 'e.g. Practice',
+            hintText: _defaultTitleHint,
             controller: _titleController,
-            isRequired: true,
+            isRequired: false,
+            errorId: 'title',
             onTap: () => _closeAllDropdowns(),
           ),
         ],
@@ -2713,6 +3177,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             isPlaceholder: false,
             icon: Icons.calendar_today_outlined,
             iconOnLeft: true,
+            enabled: _canChangeDate,
             onTap: () => _pickDate(context),
           ),
           const SizedBox(height: 20),
@@ -2842,30 +3307,56 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         const SizedBox(height: 20),
 
         // Repeats Until section (Weekly & Monthly modes)
-        if (!isMultiDayGame) EventRepeatsUntilSection(
+        if (!isMultiDayGame && _canChangeRecurrence) EventRepeatsUntilSection(
           isRepeating: _isRepeating,
-          onRepeatingChanged: (v) => setState(() => _isRepeating = v),
-          repeatType: _repeatType,
-          onRepeatTypeChanged: (v) => setState(() => _repeatType = v),
-          startDate: _selectedDate ?? DateTime.now(),
-          onStartDateChanged: (d) => setState(() {
-            _selectedDate = d;
-            _selectedMonth = DateTime(d.year, d.month, 1);
-            _selectedMonthlyDates = {DateUtils.dateOnly(d)};
-            if (_repeatUntilDate != null && _repeatUntilDate!.isBefore(d)) {
-              _repeatUntilDate = null;
-            }
+          onRepeatingChanged: (v) => setState(() {
+            _isRepeating = v;
+            if (v && _repeatType == 'Weekly') _selectedDate = DateUtils.dateOnly(DateTime.now());
           }),
+          repeatType: _repeatType,
+          onRepeatTypeChanged: (v) => setState(() {
+            _repeatType = v;
+            if (_isRepeating && v == 'Weekly') _selectedDate = DateUtils.dateOnly(DateTime.now());
+          }),
+          startDate: (_isRepeating && _repeatType == 'Weekly')
+              ? DateTime.now()
+              : (_selectedDate ?? DateTime.now()),
+          // Weekly series always start today (server rule): show it, don't let it change.
+          onStartDateChanged: (_isRepeating && _repeatType == 'Weekly')
+              ? null
+              : (d) => setState(() {
+                    _selectedDate = d;
+                    _selectedMonth = DateTime(d.year, d.month, 1);
+                    _selectedMonthlyDates = {DateUtils.dateOnly(d)};
+                    if (_repeatUntilDate != null && _repeatUntilDate!.isBefore(d)) {
+                      _repeatUntilDate = null;
+                    }
+                  }),
           repeatUntilDate: _repeatUntilDate,
-          onRepeatUntilDateChanged: (d) => setState(() => _repeatUntilDate = d),
+          onRepeatUntilDateChanged: (d) => setState(() {
+            _repeatUntilDate = d;
+            _fieldErrors.remove('repeatUntil');
+          }),
           weeklySlots: _weeklySlots,
-          onWeeklySlotsChanged: (slots) => setState(() => _weeklySlots = slots),
+          onWeeklySlotsChanged: (slots) => setState(() {
+            _weeklySlots = slots;
+            _fieldErrors.remove('repeatDays');
+          }),
           selectedMonthlyDates: _selectedMonthlyDates,
-          onMonthlyDatesChanged: (dates) => setState(() => _selectedMonthlyDates = dates),
+          onMonthlyDatesChanged: (dates) => setState(() {
+            _selectedMonthlyDates = dates;
+            _fieldErrors.remove('repeatDates');
+          }),
           selectedMonth: _selectedMonth,
           onSelectedMonthChanged: (m) => setState(() => _selectedMonth = m),
           defaultStartTime: _startTime,
           defaultEndTime: _computeEndTime(_startTime, _durationHours, _durationMinutes),
+          repeatUntilError: _fieldErrors['repeatUntil'],
+          daysError: _fieldErrors['repeatDays'],
+          datesError: _fieldErrors['repeatDates'],
+          repeatUntilKey: _keyFor('repeatUntil'),
+          daysKey: _keyFor('repeatDays'),
+          datesKey: _keyFor('repeatDates'),
         ),
         if (!isMultiDayGame) const SizedBox(height: 20),
 
@@ -2947,6 +3438,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             label: 'Title',
             hintText: titlePlaceholder,
             controller: _titleController,
+            errorId: 'title',
             onTap: () => _closeAllDropdowns(),
           ),
         ] else ...[
@@ -2983,6 +3475,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
               Expanded(
                 child: _buildPickerField(
                   label: 'Start date',
+                  errorId: 'startDate',
                   valueText: startStr,
                   isPlaceholder: _startDate == null,
                   icon: Icons.calendar_today_outlined,
@@ -2993,6 +3486,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
               Expanded(
                 child: _buildPickerField(
                   label: 'End date',
+                  errorId: 'endDate',
                   valueText: endStr,
                   isPlaceholder: _endDate == null,
                   icon: Icons.calendar_today_outlined,
@@ -3291,13 +3785,18 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     bool isRequired = false,
     ValueChanged<String>? onChanged,
     VoidCallback? onTap,
+    String? errorId,
   }) {
     final colors = AppColors.current;
+    final error = errorId != null ? _fieldErrors[errorId] : null;
     Widget textField = TextField(
       key: fieldKey,
       controller: controller,
       maxLines: maxLines,
-      onChanged: onChanged,
+      onChanged: (v) {
+        if (errorId != null) _clearErrorNow(errorId);
+        onChanged?.call(v);
+      },
       onTap: onTap,
       style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
       cursorColor: colors.primary,
@@ -3308,14 +3807,14 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         suffixIcon: suffixIcon,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         filled: true,
-        fillColor: colors.isDark ? colors.background : Colors.white,
+        fillColor: error != null ? _errorBg : (colors.isDark ? colors.background : Colors.white),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: colors.border),
+          borderSide: BorderSide(color: error != null ? _errorRed : colors.border, width: error != null ? 1.5 : 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: colors.border),
+          borderSide: BorderSide(color: error != null ? _errorRed : colors.border, width: error != null ? 1.5 : 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -3332,11 +3831,17 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     }
 
     return Column(
+      key: errorId != null ? _keyFor(errorId) : null,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildFieldLabel(label, isRequired: isRequired),
         const SizedBox(height: 8),
         textField,
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(error, style: const TextStyle(fontSize: 12.5, color: _errorRed)),
+          ),
       ],
     );
   }
@@ -3351,19 +3856,25 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     required VoidCallback onTap,
     bool iconOnLeft = false,
     bool isRequired = false,
+    String? errorId,
+    bool enabled = true,
   }) {
     final colors = AppColors.current;
+    final error = errorId != null ? _fieldErrors[errorId] : null;
     Widget picker = InkWell(
       key: fieldKey,
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(10),
       child: Container(
         height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: colors.isDark ? colors.background : Colors.white,
+          color: error != null ? _errorBg : (colors.isDark ? colors.background : Colors.white),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: colors.isDark ? colors.border : const Color(0xFFD1D5DB)),
+          border: Border.all(
+            color: error != null ? _errorRed : (colors.isDark ? colors.border : const Color(0xFFD1D5DB)),
+            width: error != null ? 1.5 : 1,
+          ),
         ),
         child: Row(
           children: [
@@ -3389,6 +3900,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       ),
     );
 
+    if (!enabled) picker = Opacity(opacity: 0.5, child: picker);
+
     if (layerLink != null) {
       picker = CompositedTransformTarget(
         link: layerLink,
@@ -3397,11 +3910,17 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     }
 
     return Column(
+      key: errorId != null ? _keyFor(errorId) : null,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildFieldLabel(label, isRequired: isRequired),
         const SizedBox(height: 8),
         picker,
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(error, style: const TextStyle(fontSize: 12.5, color: _errorRed)),
+          ),
       ],
     );
   }
@@ -3413,15 +3932,17 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     required ValueChanged<T?> onChanged,
     EdgeInsetsGeometry? padding,
     TextStyle? textStyle,
+    String? errorId,
   }) {
     final colors = AppColors.current;
-    return Container(
+    final error = errorId != null ? _fieldErrors[errorId] : null;
+    final box = Container(
       height: 48,
       padding: padding ?? const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: colors.isDark ? colors.background : Colors.white,
+        color: error != null ? _errorBg : (colors.isDark ? colors.background : Colors.white),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: colors.border),
+        border: Border.all(color: error != null ? _errorRed : colors.border, width: error != null ? 1.5 : 1),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
@@ -3442,12 +3963,26 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           }).toList(),
           onChanged: (val) {
             _closeAllDropdowns(unfocus: true);
+            if (errorId != null) _fieldErrors.remove(errorId);
             onChanged(val);
           },
           icon: Icon(Icons.keyboard_arrow_down, color: colors.textSecondary, size: 18),
           dropdownColor: colors.isDark ? colors.card : Colors.white,
         ),
       ),
+    );
+    if (errorId == null) return box;
+    return Column(
+      key: _keyFor(errorId),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        box,
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(error, style: const TextStyle(fontSize: 12.5, color: _errorRed)),
+          ),
+      ],
     );
   }
 
@@ -3569,7 +4104,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   Widget _buildUniformFormContent(NewEventDropdownOptions dropdowns) {
     final colors = AppColors.current;
     final apiTemplates = dropdowns.uniformTemplates;
-    _uniformItems = dropdowns.uniformItems;
+    _uniformDefs = dropdowns.uniformItems;
     final hasAnyTemplates = apiTemplates.isNotEmpty || _localTemplates.isNotEmpty;
     final isNewCombo = _selectedApiTemplate == null && _selectedUniformMode == 'New combo';
     final showColorPickers = isNewCombo || !hasAnyTemplates;
@@ -3643,15 +4178,16 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             style: AppTextStyles.body13.copyWith(color: colors.textSecondary, height: 1.4),
           ),
           const SizedBox(height: 20),
-          for (int i = 0; i < _uniformItems.length; i++) ...[
-            if (i > 0) const SizedBox(height: 20),
+          for (final def in _visibleUniformDefs) ...[
             _buildUniformColorSelector(
-              label: _uniformItems[i].toUpperCase(),
-              selectedIndex: _uniformColorIdx[_uniformItems[i]] ?? 0,
+              label: def.label.toUpperCase(),
+              selectedIndex: _uniformColorIdx[def.key] ?? 0,
               onColorSelected: (idx) =>
-                  setState(() => _uniformColorIdx[_uniformItems[i]] = idx),
+                  setState(() => _uniformColorIdx[def.key] = idx),
             ),
+            const SizedBox(height: 20),
           ],
+          if (_uniformDefs.any((d) => !d.isFixed)) _buildOptionalUniformPicker(),
           const SizedBox(height: 16),
 
           GestureDetector(
@@ -3669,13 +4205,15 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           ),
           if (_showSaveTemplateForm) ...[
             const SizedBox(height: 12),
-            TextField(
+            KeyedSubtree(
+              key: _keyFor('templateName'),
+              child: TextField(
               controller: _templateNameController,
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9 ]')),
               ],
               onTap: () => _closeAllDropdowns(),
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) => setState(() => _fieldErrors.remove('templateName')),
               style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
               cursorColor: colors.primary,
               decoration: InputDecoration(
@@ -3683,24 +4221,104 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                 hintStyle: AppTextStyles.body16.copyWith(color: colors.textSecondary.withValues(alpha: 0.5)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 filled: true,
-                fillColor: colors.isDark ? colors.background : Colors.white,
+                fillColor: _fieldErrors.containsKey('templateName')
+                    ? _errorBg
+                    : (colors.isDark ? colors.background : Colors.white),
+                errorText: _fieldErrors['templateName'],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: colors.primary, width: 1.5),
+                  borderSide: BorderSide(color: _fieldErrors.containsKey('templateName') ? _errorRed : colors.primary, width: 1.5),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: colors.primary, width: 1.5),
+                  borderSide: BorderSide(color: _fieldErrors.containsKey('templateName') ? _errorRed : colors.primary, width: 1.5),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: colors.primary, width: 2.0),
+                  borderSide: BorderSide(color: _fieldErrors.containsKey('templateName') ? _errorRed : colors.primary, width: 2.0),
                 ),
               ),
+            ),
             ),
           ],
         ],
       ],
+    );
+  }
+
+  Widget _buildOptionalUniformPicker() {
+    final colors = AppColors.current;
+    final optional = _uniformDefs.where((d) => !d.isFixed).toList();
+    final selectedLabels = optional
+        .where((d) => _optionalUniformKeys.contains(d.key))
+        .map((d) => d.label)
+        .join(', ');
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: GestureDetector(
+        onTap: () async {
+          _closeAllDropdowns(unfocus: true);
+          await showModalBottomSheet<void>(
+            context: context,
+            backgroundColor: colors.isDark ? colors.background : Colors.white,
+            builder: (ctx) => StatefulBuilder(
+              builder: (ctx, setSheet) => SafeArea(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Text(
+                        'Select items to set a color for',
+                        style: AppTextStyles.heading14.copyWith(color: colors.textPrimary),
+                      ),
+                    ),
+                    for (final d in optional)
+                      CheckboxListTile(
+                        value: _optionalUniformKeys.contains(d.key),
+                        title: Text(d.label, style: AppTextStyles.body16.copyWith(color: colors.textPrimary)),
+                        activeColor: colors.primary,
+                        onChanged: (v) {
+                          setSheet(() {});
+                          setState(() {
+                            if (v == true) {
+                              _optionalUniformKeys.add(d.key);
+                            } else {
+                              _optionalUniformKeys.remove(d.key);
+                            }
+                          });
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: colors.isDark ? colors.background : Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: colors.primary, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  selectedLabels.isEmpty ? 'Add more items (helmet, belt…)' : selectedLabels,
+                  style: AppTextStyles.body16.copyWith(
+                    color: selectedLabels.isEmpty ? colors.textSecondary : colors.textPrimary,
+                  ),
+                ),
+              ),
+              Icon(Icons.keyboard_arrow_down, color: colors.textSecondary),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -3748,6 +4366,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         _buildFieldLabel('Opponent Team', isRequired: false),
         const SizedBox(height: 8),
         _buildDropdownField<String>(
+          errorId: 'opponent',
           value: _selectedOpponentId,
           items: [
             '',
@@ -3804,8 +4423,11 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             ),
           ),
           const SizedBox(height: 8),
-          TextField(
+          KeyedSubtree(
+            key: _keyFor('opponentName'),
+            child: TextField(
             controller: _newOpponentNameController,
+            onChanged: (_) => _clearErrorNow('opponentName'),
             onTap: () => _closeAllDropdowns(),
             style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
             cursorColor: colors.primary,
@@ -3814,20 +4436,27 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
               hintStyle: AppTextStyles.body16.copyWith(color: colors.textSecondary.withValues(alpha: 0.5)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               filled: true,
-              fillColor: colors.isDark ? colors.background : Colors.white,
+              fillColor: _fieldErrors.containsKey('opponentName')
+                  ? _errorBg
+                  : (colors.isDark ? colors.background : Colors.white),
+              errorText: _fieldErrors['opponentName'],
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: colors.primary, width: 1.5),
+                borderSide: BorderSide(
+                    color: _fieldErrors.containsKey('opponentName') ? _errorRed : colors.primary, width: 1.5),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: colors.primary, width: 1.5),
+                borderSide: BorderSide(
+                    color: _fieldErrors.containsKey('opponentName') ? _errorRed : colors.primary, width: 1.5),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: colors.primary, width: 2.0),
+                borderSide: BorderSide(
+                    color: _fieldErrors.containsKey('opponentName') ? _errorRed : colors.primary, width: 2.0),
               ),
             ),
+          ),
           ),
           const SizedBox(height: 12),
           GestureDetector(

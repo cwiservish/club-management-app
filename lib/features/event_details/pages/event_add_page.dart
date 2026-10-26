@@ -28,13 +28,11 @@ import '../../../core/models/club_event.dart';
 
 class EventEditPage extends ConsumerStatefulWidget {
   final String eventId;
-  final bool duplicate;
   final String from;
 
   const EventEditPage({
     super.key,
     required this.eventId,
-    this.duplicate = false,
     this.from = 'home',
   });
 
@@ -118,8 +116,8 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
         debugPrint('============================================');
 
         setState(() {
-          _dbId = widget.duplicate ? null : event.dbId;
-          _isScheduledGame = widget.duplicate ? false : (event.scheduleGameId != null);
+          _dbId = event.dbId;
+          _isScheduledGame = (event.scheduleGameId != null);
           _eventNameController.text = event.title;
           _timeTbd = event.timeTbd;
           _selectedDateTime = event.dateTime;
@@ -135,7 +133,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
           _notifyTeam = event.notificationEnabled;
           _arrivalEarlyMinutes = event.arrivalEarly;
           _uniformColorController.text = event.uniformColor ?? '';
-          _isCancelled = widget.duplicate ? false : (event.status == 2);
+          _isCancelled = (event.status == 2);
 
           // Map flag color robustly
           final parsedFlagColor = event.flagColor;
@@ -1567,7 +1565,7 @@ class _EventEditPageState extends ConsumerState<EventEditPage> {
     final timezoneState = ref.watch(eventAddEditProvider);
     final notifier = ref.read(eventAddEditProvider.notifier);
     final colors = AppColors.current;
-    final isEdit = widget.eventId != 'new' && !widget.duplicate;
+    final isEdit = widget.eventId != 'new';
 
     // Pre-select matching timezone for existing event
     final hasExistingEvent = widget.eventId != 'new';

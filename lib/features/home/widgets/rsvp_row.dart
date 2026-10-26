@@ -11,6 +11,9 @@ class RsvpRow extends StatelessWidget {
   final int noCount;
   final HomeRsvp selected;
   final bool isLoading;
+
+  /// False when the server says this user can't RSVP (`can_rsvp`): buttons are shown dimmed and inert.
+  final bool enabled;
   final ValueChanged<HomeRsvp> onSelect;
 
   const RsvpRow({
@@ -20,6 +23,7 @@ class RsvpRow extends StatelessWidget {
     required this.noCount,
     required this.selected,
     this.isLoading = false,
+    this.enabled = true,
     required this.onSelect,
   });
 
@@ -30,51 +34,58 @@ class RsvpRow extends StatelessWidget {
     return Stack(
       alignment: Alignment.center,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: RsvpBtn(
-                label:       '$goingCount Going',
-                activeColor: colors.rsvpGoing,
-                isActive:    selected == HomeRsvp.going,
-                radius:      const BorderRadius.only(
-                  topLeft:    Radius.circular(8),
-                  bottomLeft: Radius.circular(8),
+        Opacity(
+          opacity: enabled ? 1 : 0.45,
+          child: IgnorePointer(
+            ignoring: !enabled,
+            child: Row(
+              children: [
+                Expanded(
+                  child: RsvpBtn(
+                    label: '$goingCount Going',
+                    activeColor: colors.rsvpGoing,
+                    isActive: selected == HomeRsvp.going,
+                    radius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      bottomLeft: Radius.circular(8),
+                    ),
+                    hasDivider: true,
+                    onTap: isLoading ? () {} : () => onSelect(HomeRsvp.going),
+                  ),
                 ),
-                hasDivider: true,
-                onTap:      isLoading ? () {} : () => onSelect(HomeRsvp.going),
-              ),
-            ),
-            Expanded(
-              child: RsvpBtn(
-                label:       '$maybeCount Maybe',
-                activeColor: colors.rsvpMaybe,
-                isActive:    selected == HomeRsvp.maybe,
-                radius:      BorderRadius.zero,
-                hasDivider:  true,
-                onTap:       isLoading ? () {} : () => onSelect(HomeRsvp.maybe),
-              ),
-            ),
-            Expanded(
-              child: RsvpBtn(
-                label:       '$noCount No',
-                activeColor: colors.rsvpNo,
-                isActive:    selected == HomeRsvp.no,
-                radius:      const BorderRadius.only(
-                  topRight:    Radius.circular(8),
-                  bottomRight: Radius.circular(8),
+                Expanded(
+                  child: RsvpBtn(
+                    label: '$maybeCount Maybe',
+                    activeColor: colors.rsvpMaybe,
+                    isActive: selected == HomeRsvp.maybe,
+                    radius: BorderRadius.zero,
+                    hasDivider: true,
+                    onTap: isLoading ? () {} : () => onSelect(HomeRsvp.maybe),
+                  ),
                 ),
-                hasDivider: false,
-                onTap:      isLoading ? () {} : () => onSelect(HomeRsvp.no),
-              ),
+                Expanded(
+                  child: RsvpBtn(
+                    label: '$noCount No',
+                    activeColor: colors.rsvpNo,
+                    isActive: selected == HomeRsvp.no,
+                    radius: const BorderRadius.only(
+                      topRight: Radius.circular(8),
+                      bottomRight: Radius.circular(8),
+                    ),
+                    hasDivider: false,
+                    onTap: isLoading ? () {} : () => onSelect(HomeRsvp.no),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
         if (isLoading)
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: (colors.isDark ? Colors.black : Colors.white).withValues(alpha: 0.5),
+                color: (colors.isDark ? Colors.black : Colors.white)
+                    .withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
@@ -121,17 +132,17 @@ class RsvpBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration:  const Duration(milliseconds: 180),
-        curve:     Curves.easeInOut,
-        height:    37,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeInOut,
+        height: 37,
         decoration: BoxDecoration(
-          color:         bg,
+          color: bg,
           borderRadius: radius,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 2,
-              offset:     const Offset(0, 1),
+              offset: const Offset(0, 1),
             ),
           ],
           border: hasDivider
@@ -144,7 +155,7 @@ class RsvpBtn extends StatelessWidget {
         child: Text(
           label,
           style: AppTextStyles.heading16.copyWith(
-            color:      Colors.white,
+            color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
           textAlign: TextAlign.center,

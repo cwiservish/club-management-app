@@ -308,11 +308,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       return AddEditEventPage(
                         editEvent: extra?['event'] as ClubEvent?,
                         origin: (extra?['from'] as String?) ?? 'home',
-                        isDuplicate: (extra?['duplicate'] as bool?) ?? false,
                         defaultSchedulingTypeKey: extra?['defaultSchedulingTypeKey'] as int?,
                         defaultEventTypeKey: extra?['defaultEventTypeKey'] as int?,
                         parentEvent: extra?['parentEvent'] as ClubEvent?,
                         title: extra?['title'] as String?,
+                        editScope: extra?['editScope'] as String?,
+                        seriesEdit: extra?['seriesEdit'] as Map<String, dynamic>?,
                       );
                     },
                   ),

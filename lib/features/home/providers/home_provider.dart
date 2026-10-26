@@ -107,6 +107,8 @@ class HomeState {
         scheduleGameId: event.scheduleGameId,
         homeAwayLabel: event.homeAwayLabel?.isNotEmpty == true ? event.homeAwayLabel : null,
         eventName: event.eventName?.isNotEmpty == true ? event.eventName : null,
+        isDraft: event.status == 5,
+        canRsvp: event.canRsvp,
       );
     }).toList();
   }
