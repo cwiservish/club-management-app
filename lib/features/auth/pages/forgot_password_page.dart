@@ -23,9 +23,18 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     super.dispose();
   }
 
+  String? _emailError;
+
   Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
-    await ref.read(forgotPasswordProvider.notifier).forgotPassword(_emailController.text.trim());
+    final email = _emailController.text.trim();
+    setState(() {
+      _emailError = email.isEmpty
+          ? 'Enter your email'
+          : (RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email) ? null : 'Enter a valid email');
+    });
+    if (_emailError != null) return;
+    FocusScope.of(context).unfocus();
+    await ref.read(forgotPasswordProvider.notifier).forgotPassword(email);
   }
 
   @override
@@ -94,6 +103,11 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 controller: _emailController,
                 hintText: 'Enter your email',
                 autofocus: true,
+                keyboardType: TextInputType.emailAddress,
+                errorText: _emailError,
+                onChanged: (_) {
+                  if (_emailError != null) setState(() => _emailError = null);
+                },
               ),
               const SizedBox(height: 32),
               ElevatedButton(

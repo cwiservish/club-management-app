@@ -11,6 +11,9 @@ class AppTextField extends StatelessWidget {
   final bool obscureText;
   final Widget? suffixIcon;
   final ValueChanged<String>? onChanged;
+  /// Shown under the field with a red border; null = no error.
+  final String? errorText;
+  final TextInputType? keyboardType;
 
   const AppTextField({
     super.key,
@@ -22,6 +25,8 @@ class AppTextField extends StatelessWidget {
     this.obscureText = false,
     this.suffixIcon,
     this.onChanged,
+    this.errorText,
+    this.keyboardType,
   });
 
   @override
@@ -40,10 +45,12 @@ class AppTextField extends StatelessWidget {
       minLines: minLines,
       maxLines: maxLines,
       onChanged: onChanged,
+      keyboardType: keyboardType,
       cursorColor: colors.primary,
       style: AppTextStyles.body16.copyWith(color: colors.textPrimary),
       decoration: InputDecoration(
         hintText: hintText,
+        errorText: errorText,
         hintStyle: AppTextStyles.body16.copyWith(color: colors.textSecondary),
         suffixIcon: suffixIcon,
         filled: true,
@@ -60,6 +67,14 @@ class AppTextField extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colors.primary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.error, width: 1.2),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.error, width: 1.5),
         ),
       ),
       ),

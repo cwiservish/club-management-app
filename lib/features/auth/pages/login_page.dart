@@ -19,6 +19,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   final _formKey = GlobalKey<FormState>();
+  String? _emailError;
+  String? _passwordError;
 
   @override
   void dispose() {
@@ -28,10 +30,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
-
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+
+    // Never call the login API with missing fields.
+    setState(() {
+      _emailError = email.isEmpty
+          ? 'Enter your email'
+          : (RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email) ? null : 'Enter a valid email');
+      _passwordError = password.isEmpty ? 'Enter your password' : null;
+    });
+    if (_emailError != null || _passwordError != null) return;
+    FocusScope.of(context).unfocus();
 
     await ref.read(loginProvider.notifier).login(email, password);
   }
@@ -124,6 +134,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   AppTextField(
                     controller: _emailController,
                     hintText: 'Enter your email',
+                    keyboardType: TextInputType.emailAddress,
+                    errorText: _emailError,
+                    onChanged: (_) {
+                      if (_emailError != null) setState(() => _emailError = null);
+                    },
                   ),
                   const SizedBox(height: 20),
 
@@ -137,6 +152,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     controller: _passwordController,
                     hintText: 'Enter your password',
                     obscureText: _obscurePassword,
+                    errorText: _passwordError,
+                    onChanged: (_) {
+                      if (_passwordError != null) setState(() => _passwordError = null);
+                    },
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword ? Icons.visibility_off : Icons.visibility,

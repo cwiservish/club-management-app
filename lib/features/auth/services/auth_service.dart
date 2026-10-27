@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import '../../../core/config/environment_config.dart';
 import '../../../core/models/user_model.dart';
@@ -7,6 +9,17 @@ class AuthService {
   final Dio _dio;
 
   AuthService(this._dio);
+
+  static const noInternetMessage = 'No internet connection. Check your network and try again.';
+
+  /// No network, DNS failure or a timeout (this Dio has no ErrorInterceptor).
+  static bool _isNetworkError(DioException e) {
+    return e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        (e.type == DioExceptionType.unknown && e.error is SocketException);
+  }
 
   Future<({AppUser user, String token})> login(String email, String password) async {
     try {
@@ -43,6 +56,7 @@ class AuthService {
 
       return (user: user, token: token);
     } on DioException catch (e) {
+      if (_isNetworkError(e)) throw noInternetMessage;
       if (e.response?.statusCode == 404) throw 'Invalid email or password';
       throw e.message ?? 'Login failed';
     }
@@ -63,6 +77,7 @@ class AuthService {
         ),
       );
     } on DioException catch (e) {
+      if (_isNetworkError(e)) throw noInternetMessage;
       throw 'Failed to send reset email: ${e.message}';
     }
   }
