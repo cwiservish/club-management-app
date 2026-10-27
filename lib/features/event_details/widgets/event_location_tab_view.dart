@@ -44,6 +44,14 @@ class EventLocationTabView extends StatelessWidget {
   /// Returns the GlobalKey used to scroll a field into view (by the same ids as [errors]).
   final GlobalKey Function(String id)? fieldKeyFor;
 
+  /// Off-site: saved location picked in the address search (null = a new address).
+  final SavedLocationItem? pickedSavedLocation;
+  /// Off-site: "Save this location for future events" + its required Location Name.
+  final bool saveForFuture;
+  final ValueChanged<bool>? onSaveForFutureChanged;
+  final TextEditingController? locationNameController;
+  final ValueChanged<String>? onLocationNameChanged;
+
   const EventLocationTabView({
     super.key,
     required this.selectedMode,
@@ -70,6 +78,11 @@ class EventLocationTabView extends StatelessWidget {
     this.locationTypes = const [],
     this.errors = const {},
     this.fieldKeyFor,
+    this.pickedSavedLocation,
+    this.saveForFuture = false,
+    this.onSaveForFutureChanged,
+    this.locationNameController,
+    this.onLocationNameChanged,
   });
 
   static EventLocationMode? _modeForKey(int key) {
@@ -488,14 +501,100 @@ class EventLocationTabView extends StatelessWidget {
             child: Text(errors['address']!, style: const TextStyle(fontSize: 12.5, color: Color(0xFFD32F2F))),
           ),
         const SizedBox(height: 12),
-        Text(
-          'Pick the address from the suggestions, such as an away field or a park.',
-          style: TextStyle(
-            fontSize: 13,
-            color: helperColor,
-            fontWeight: FontWeight.w400,
+        if (pickedSavedLocation != null)
+          Text(
+            pickedSavedLocation!.isTeamLocation ? 'Saved location (Team)' : 'Saved location (Club)',
+            style: TextStyle(fontSize: 13, color: helperColor, fontWeight: FontWeight.w600),
+          )
+        else
+          Text(
+            'Search your saved locations or pick an address from the suggestions, such as an away field or a park.',
+            style: TextStyle(
+              fontSize: 13,
+              color: helperColor,
+              fontWeight: FontWeight.w400,
+            ),
           ),
-        ),
+
+        // New address only: offer to save it as a named location for this team.
+        if (pickedSavedLocation == null &&
+            addressController.text.trim().isNotEmpty &&
+            onSaveForFutureChanged != null &&
+            locationNameController != null) ...[
+          const SizedBox(height: 14),
+          InkWell(
+            onTap: () => onSaveForFutureChanged!(!saveForFuture),
+            borderRadius: BorderRadius.circular(8),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: saveForFuture,
+                    onChanged: (v) => onSaveForFutureChanged!(v ?? false),
+                    activeColor: const Color(0xFFF5BD1F),
+                    checkColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Save this location for future events',
+                    style: TextStyle(fontSize: 14, color: titleColor, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (saveForFuture) ...[
+            const SizedBox(height: 14),
+            _buildFieldLabel('Location Name', isRequired: true, titleColor: titleColor),
+            const SizedBox(height: 8),
+            KeyedSubtree(
+              key: fieldKeyFor?.call('locationName'),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: errors['locationName'] != null ? const Color(0xFFFDECEA) : inputBg,
+                  borderRadius: BorderRadius.circular(10),
+                  border: errors['locationName'] != null
+                      ? Border.all(color: const Color(0xFFD32F2F), width: 1.5)
+                      : null,
+                ),
+                child: TextField(
+                  controller: locationNameController,
+                  onChanged: onLocationNameChanged,
+                  maxLength: 255,
+                  style: TextStyle(fontSize: 15, color: titleColor, fontWeight: FontWeight.w600),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                    hintText: 'e.g. Downtown Turf Field',
+                    hintStyle: TextStyle(
+                      fontSize: 14.5,
+                      color: helperColor.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.w400,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                ),
+              ),
+            ),
+            if (errors['locationName'] != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6, left: 4),
+                child: Text(errors['locationName']!, style: const TextStyle(fontSize: 12.5, color: Color(0xFFD32F2F))),
+              ),
+            const SizedBox(height: 6),
+            Text(
+              'Saved for this team only, under Saved Locations.',
+              style: TextStyle(fontSize: 13, color: helperColor, fontWeight: FontWeight.w400),
+            ),
+          ],
+        ],
       ],
     );
   }

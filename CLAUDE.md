@@ -199,6 +199,21 @@ cancel, delete and confirm with real QA data.
 - **One occurrence ("This date only")**: `session/detail` by `id` -> `can_change_date` / `can_change_recurrence` (unreadable = false). False hides Repeats and disables the Date picker.
 - Not yet verified against live QA data (response shape of those flags assumed top-level in `data`).
 
+## 7c. Team saved locations from Off-Site Address (built, not yet verified on emulator)
+
+- Source: dropdown `saved_locations` (already club + this team's own; `location/list` with `team_id` returns the same and is not called).
+  `SavedLocationItem.teamId` (`team_id`: null = Club badge, number = Team badge). Unnamed off-site addresses are no longer listed. No delete.
+- Off-Site search (`_onLocationChanged`): saved locations matching name or address are listed first with a Club/Team badge;
+  Google/Radar is called only when none match. A Google pick whose `place_id` equals a saved one becomes that saved location (`_selectOffSiteSaved`).
+- Picked saved location (`_offSiteSavedLocation`) saves `location_type: 3, saved_location_id` and no address fields
+  (`NewEventSaveRequest.toJson`). Typing or clearing the field drops it.
+- New address: "Save this location for future events" checkbox + required Location Name (max 255, error id `locationName`,
+  "Location name is required to save it for future events.") -> `allow_for_future_locations: 1, location_name`
+  (`request.allowForFutureLocations / locationName`, set by `_applyLocationSave` for sessions and the Tournament/League placeholder).
+- Edit: rows carry `is_saved_location` / `saved_location_id` (`ClubEvent.isSavedLocation / savedLocationId`, parsed in home_service and
+  schedule_response). Type 3 + true -> field shows the saved name, keeps the id, checkbox hidden; false -> address + checkbox.
+  Server errors: "Location not found." (other team's id) come back as the normal save error dialog.
+
 ## 8. Testing on the Android emulator (what worked)
 
 - App runs from Android Studio (hot restart needed for state/const changes; a hot reload is not enough).

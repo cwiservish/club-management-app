@@ -106,5 +106,38 @@ void main() {
       expect(series['code'], 'ABC123');
       expect(series.containsKey('id'), isFalse);
     });
+
+    NewEventSaveRequest offSite({int? savedLocationId}) => NewEventSaveRequest(
+          teamUuid: 't', schedulingMode: 1, eventType: 2, title: 'x', location: '4820 Cross Creek Rd',
+          sessionStartDate: '2026-11-03', startTime: '17:00', duration: 90, homeAway: 1, arrivalEarly: 0,
+          locationType: 3, savedLocationId: savedLocationId, address: '4820 Cross Creek Rd',
+          city: 'Easley', placeId: 'ChIJ1',
+        );
+
+    test('off-site saved location sends saved_location_id and no address', () {
+      final json = offSite(savedLocationId: 88).toJson();
+      expect(json['location_type'], 3);
+      expect(json['saved_location_id'], 88);
+      expect(json.containsKey('address'), isFalse);
+      expect(json.containsKey('place_id'), isFalse);
+      expect(json.containsKey('allow_for_future_locations'), isFalse);
+    });
+
+    test('off-site new address sends save-for-future fields only when checked', () {
+      final plain = offSite().toJson();
+      expect(plain['address'], '4820 Cross Creek Rd');
+      expect(plain.containsKey('saved_location_id'), isFalse);
+      expect(plain.containsKey('allow_for_future_locations'), isFalse);
+      expect(plain.containsKey('location_name'), isFalse);
+
+      final saved = (offSite()
+            ..allowForFutureLocations = true
+            ..locationName = ' Downtown Turf Field ')
+          .toJson();
+      expect(saved['address'], '4820 Cross Creek Rd');
+      expect(saved['place_id'], 'ChIJ1');
+      expect(saved['allow_for_future_locations'], 1);
+      expect(saved['location_name'], 'Downtown Turf Field');
+    });
   });
 }

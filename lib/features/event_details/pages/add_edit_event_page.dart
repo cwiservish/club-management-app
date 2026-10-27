@@ -148,6 +148,14 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   final GlobalKey _locationFieldKey = GlobalKey();
   final LayerLink _locationLayerLink = LayerLink();
 
+  // Off-site address: saved locations (club + this team) matched while typing, shown before Google results.
+  List<SavedLocationItem> _savedLocationMatches = [];
+  /// Saved location picked in the off-site search: saved as `saved_location_id` only (no address).
+  SavedLocationItem? _offSiteSavedLocation;
+  /// "Save this location for future events" for a new off-site address (+ required name).
+  bool _saveLocationForFuture = false;
+  final _newLocationNameController = TextEditingController();
+
   // Web UI Tab Navigation: 0=Details, 1=Location, 2=Uniform, 3=RSVP
   int _selectedTabIndex = 0;
 
@@ -299,6 +307,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
       case EventLocationMode.offSiteAddress:
         locationType = 3;
+        if (_offSiteSavedLocation != null) {
+          // Saved location picked in the search: sent as saved_location_id only.
+          savedLocationId = _offSiteSavedLocation!.savedLocationId;
+          locationName = _savedLocationTitle(_offSiteSavedLocation!);
+          break;
+        }
         final rawAddr = _locationController.text.trim();
         if (address.isEmpty) {
           address = rawAddr;
@@ -477,9 +491,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
                         : ListView.builder(
                             shrinkWrap: true,
                             padding: EdgeInsets.zero,
-                            itemCount: _locationSuggestions.length,
+                            itemCount: _savedLocationMatches.length + _locationSuggestions.length,
                             itemBuilder: (ctx, i) {
-                              final item = _locationSuggestions[i] as Map;
+                              if (i < _savedLocationMatches.length) {
+                                return _buildSavedMatchRow(_savedLocationMatches[i]);
+                              }
+                              final item = _locationSuggestions[i - _savedLocationMatches.length] as Map;
                               final name = item['structured_formatting']?['main_text'] ?? item['description'] ?? '';
                               final subtitle = item['structured_formatting']?['secondary_text'] ?? '';
                               return InkWell(
@@ -535,17 +552,115 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     Overlay.of(context).insert(_locationOverlay!);
   }
 
+  /// Saved location row in the off-site suggestions: name, address and a Club / Team badge.
+  Widget _buildSavedMatchRow(SavedLocationItem s) {
+    final colors = AppColors.current;
+    final title = _savedLocationTitle(s);
+    final badgeColor = s.isTeamLocation ? const Color(0xFF2F54EB) : const Color(0xFF2E7D32);
+    return InkWell(
+      onTap: () => _selectOffSiteSaved(s),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: colors.border.withValues(alpha: 0.3))),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.bookmark_outline, color: colors.primary, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body15.copyWith(color: colors.textPrimary, fontWeight: FontWeight.w500),
+                  ),
+                  if (s.address.isNotEmpty && s.address != title) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      s.address,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.body13.copyWith(color: colors.textSecondary),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: badgeColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                s.isTeamLocation ? 'Team' : 'Club',
+                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: badgeColor),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _hideLocationOverlay() {
     _locationOverlay?.remove();
     _locationOverlay = null;
   }
 
+  /// Saved locations whose name or address contains [query].
+  List<SavedLocationItem> _matchSavedLocations(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    final all = ref.read(eventAddEditProvider).newEventDropdowns?.savedLocations ?? const [];
+    return all.where((s) {
+      return _savedLocationTitle(s).toLowerCase().contains(q) || s.address.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  String _savedLocationTitle(SavedLocationItem s) =>
+      s.name.isNotEmpty ? s.name : (s.location.isNotEmpty ? s.location : s.address);
+
+  /// Picks a saved location from the off-site search (also used when a Google pick has its place_id).
+  void _selectOffSiteSaved(SavedLocationItem s) {
+    setState(() {
+      _offSiteSavedLocation = s;
+      _saveLocationForFuture = false;
+      _newLocationNameController.clear();
+      _fieldErrors.remove('locationName');
+      _locationName = _savedLocationTitle(s);
+      _address = s.address;
+      _city = s.city;
+      _state = s.state;
+      _country = s.country;
+      _postalCode = s.postalCode;
+      _placeId = s.placeId;
+      _latitude = s.latitude;
+      _longitude = s.longitude;
+      _locationController.text = _locationName;
+      _savedLocationMatches = [];
+      _locationSuggestions = [];
+      _fieldErrors.remove('address');
+      _isLoadingLocation = false;
+    });
+    _hideLocationOverlay();
+  }
+
   void _onLocationChanged(String val) {
     _removeTimePickerOverlay();
     _locationDebounceTimer?.cancel();
+    // Typing replaces a picked saved location with a new address.
+    if (_offSiteSavedLocation != null) setState(() => _offSiteSavedLocation = null);
     if (val.trim().isEmpty) {
       _hideLocationOverlay();
       setState(() {
+        _savedLocationMatches = [];
         _locationSuggestions = [];
         _locationName = '';
         _latitude = '';
@@ -553,6 +668,18 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       });
       return;
     }
+    // Saved locations first; the address provider is called only when none match.
+    final saved = _matchSavedLocations(val);
+    if (saved.isNotEmpty) {
+      setState(() {
+        _savedLocationMatches = saved;
+        _locationSuggestions = [];
+        _isLoadingLocation = false;
+      });
+      _showLocationOverlay();
+      return;
+    }
+    if (_savedLocationMatches.isNotEmpty) setState(() => _savedLocationMatches = []);
     _locationDebounceTimer = Timer(const Duration(milliseconds: 400), () async {
       final service = ref.read(eventDetailServiceProvider);
       setState(() => _isLoadingLocation = true);
@@ -578,6 +705,16 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
   Future<void> _selectLocation(Map item) async {
     final service = ref.read(eventDetailServiceProvider);
+    // A suggestion with a saved location's place_id is that saved location.
+    final pickedPlaceId = item['place_id']?.toString() ?? '';
+    if (pickedPlaceId.isNotEmpty) {
+      final all = ref.read(eventAddEditProvider).newEventDropdowns?.savedLocations ?? const [];
+      final saved = all.where((s) => s.placeId == pickedPlaceId).firstOrNull;
+      if (saved != null) {
+        _selectOffSiteSaved(saved);
+        return;
+      }
+    }
     if (item.containsKey('latitude')) {
       setState(() {
         _locationName = item['name']?.toString() ?? '';
@@ -785,6 +922,38 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         _selectedVenue = null;
         _selectedFieldItem = null;
         _selectedSavedLocationItem = null;
+      } else if (e.locationType == 3) {
+        // Off-site: a saved location (is_saved_location) keeps its id and shows its name; otherwise the address.
+        _locationMode = EventLocationMode.offSiteAddress;
+        _locationController.text = loc;
+        _locationName = loc;
+        _latitude = e.latitude ?? '';
+        _longitude = e.longitude ?? '';
+        if (e.isSavedLocation == true && (e.savedLocationId ?? 0) > 0) {
+          final id = e.savedLocationId!;
+          _offSiteSavedLocation = dropdowns.savedLocations
+                  .where((s) => s.savedLocationId == id || s.id == id)
+                  .firstOrNull ??
+              SavedLocationItem(
+                id: id,
+                savedLocationId: id,
+                uuid: '',
+                organizationId: 0,
+                location: loc,
+                address: '',
+                latitude: e.latitude ?? '',
+                longitude: e.longitude ?? '',
+                city: '',
+                state: '',
+                country: '',
+                postalCode: '',
+                placeId: '',
+                name: loc,
+                organizationName: '',
+              );
+        } else {
+          _address = loc;
+        }
       } else {
         // 1. Try matching with our locations from API
         OurLocationVenue? matchingVenue;
@@ -1116,6 +1285,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     _locationDebounceTimer?.cancel();
     _titleController.dispose();
     _locationController.dispose();
+    _newLocationNameController.dispose();
     _notesController.dispose();
     _templateNameController.dispose();
     _newOpponentNameController.dispose();
@@ -1383,6 +1553,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           if (_selectedSavedLocationItem == null) add('savedLocation', 'Select a saved location', tab);
         case EventLocationMode.offSiteAddress:
           if (_locationController.text.trim().isEmpty) add('address', 'Enter an address', tab);
+          if (_offSiteSavedLocation == null && _saveLocationForFuture && _newLocationNameController.text.trim().isEmpty) {
+            add('locationName', 'Location name is required to save it for future events.', tab);
+          }
         case EventLocationMode.tbd:
           break;
       }
@@ -1984,6 +2157,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           staffIds: staffIds,
         );
 
+        _applyLocationSave(request);
         final success = await ref.read(eventAddEditProvider.notifier).saveNewEvent(request);
         _handleSaveResult(success);
         return;
@@ -2102,7 +2276,17 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   /// conflict board (every date + availability), lets the user fix clashes in a
   /// bottom sheet, then saves with `slots`. The server re-checks on save; if it
   /// still finds a clash the fresh board is shown again.
+  /// New off-site address with "Save this location for future events" checked.
+  void _applyLocationSave(NewEventSaveRequest request) {
+    final save = _locationMode == EventLocationMode.offSiteAddress &&
+        _offSiteSavedLocation == null &&
+        _saveLocationForFuture;
+    request.allowForFutureLocations = save;
+    request.locationName = save ? _newLocationNameController.text.trim() : '';
+  }
+
   Future<void> _submitSession(NewEventSaveRequest request) async {
+    _applyLocationSave(request);
     final notifier = ref.read(eventAddEditProvider.notifier);
     if (_isSeriesEdit) request.code = widget.editEvent!.code;
 
@@ -2566,10 +2750,18 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     return EventLocationTabView(
         locationTypes: dropdowns.locationTypes,
         errors: {
-          for (final id in const ['facility', 'field', 'savedLocation', 'address'])
+          for (final id in const ['facility', 'field', 'savedLocation', 'address', 'locationName'])
             if (_fieldErrors.containsKey(id)) id: _fieldErrors[id]!,
         },
         fieldKeyFor: _keyFor,
+        pickedSavedLocation: _offSiteSavedLocation,
+        saveForFuture: _saveLocationForFuture,
+        onSaveForFutureChanged: (v) => setState(() {
+          _saveLocationForFuture = v;
+          if (!v) _fieldErrors.remove('locationName');
+        }),
+        locationNameController: _newLocationNameController,
+        onLocationNameChanged: (_) => _clearErrorNow('locationName'),
         selectedMode: _locationMode,
         onModeChanged: (mode) {
           _closeAllDropdowns(unfocus: true);
@@ -2632,6 +2824,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         onClearAddress: () {
           setState(() {
             _locationController.clear();
+            _offSiteSavedLocation = null;
+            _savedLocationMatches = [];
             _locationName = '';
             _address = '';
             _city = '';

@@ -175,6 +175,8 @@ class ScheduleEvent {
   final int venueId;
   final int fieldId;
   final int locationType;
+  final bool? isSavedLocation;
+  final int savedLocationId;
 
   const ScheduleEvent({
     required this.id,
@@ -238,6 +240,8 @@ class ScheduleEvent {
     this.venueId = 0,
     this.fieldId = 0,
     this.locationType = 1,
+    this.isSavedLocation,
+    this.savedLocationId = 0,
     this.canRsvp = true,
     this.uniformDetails = const [],
     this.canChangeDate = true,
@@ -374,6 +378,8 @@ class ScheduleEvent {
       venueId: _parseInt(json['venue_id']),
       fieldId: _parseInt(json['field_id']),
       locationType: json['location_type'] != null ? _parseInt(json['location_type']) : 1,
+      isSavedLocation: json.containsKey('is_saved_location') ? _parseBool(json['is_saved_location']) : null,
+      savedLocationId: _parseInt(json['saved_location_id']),
       canRsvp: json.containsKey('can_rsvp') ? _parseBool(json['can_rsvp']) : true,
       uniformDetails: UniformDetail.listFromJson(json['uniform_details']),
       canChangeDate: json.containsKey('can_change_date') ? _parseBool(json['can_change_date']) : true,
@@ -551,6 +557,8 @@ class ScheduleEvent {
       venueId: venueId > 0 ? venueId : null,
       fieldId: fieldId > 0 ? fieldId : null,
       locationType: locationType,
+      isSavedLocation: isSavedLocation,
+      savedLocationId: savedLocationId > 0 ? savedLocationId : null,
       canRsvp: canRsvp,
       uniformDetails: uniformDetails,
       canChangeDate: canChangeDate,

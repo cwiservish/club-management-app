@@ -279,6 +279,10 @@ class SavedLocationItem {
   final String name;
   final String organizationName;
 
+  /// API `team_id`: null = club location, a number = this team's own location.
+  final int? teamId;
+  bool get isTeamLocation => (teamId ?? 0) > 0;
+
   const SavedLocationItem({
     required this.id,
     required this.savedLocationId,
@@ -295,6 +299,7 @@ class SavedLocationItem {
     required this.placeId,
     required this.name,
     required this.organizationName,
+    this.teamId,
   });
 
   factory SavedLocationItem.fromJson(Map<String, dynamic> json) {
@@ -315,6 +320,7 @@ class SavedLocationItem {
       placeId: json['place_id']?.toString() ?? '',
       name: json['name']?.toString() ?? json['location']?.toString() ?? '',
       organizationName: json['organization_name']?.toString() ?? '',
+      teamId: int.tryParse(json['team_id']?.toString() ?? ''),
     );
   }
 }

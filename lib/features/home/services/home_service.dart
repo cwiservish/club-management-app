@@ -339,6 +339,8 @@ class HomeService {
         venueId: venueIdVal > 0 ? venueIdVal : null,
         fieldId: fieldIdVal > 0 ? fieldIdVal : null,
         locationType: locationTypeVal,
+        isSavedLocation: json.containsKey('is_saved_location') ? _parseBool(json['is_saved_location']) : null,
+        savedLocationId: _parseInt(json['saved_location_id']) > 0 ? _parseInt(json['saved_location_id']) : null,
         canRsvp: canRsvp,
         uniformDetails: UniformDetail.listFromJson(json['uniform_details']),
         canChangeDate: json.containsKey('can_change_date') ? _parseBool(json['can_change_date']) : true,

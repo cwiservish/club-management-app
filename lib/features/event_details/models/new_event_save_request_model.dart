@@ -72,6 +72,10 @@ class NewEventSaveRequest {
   /// Series code: edit the whole series from today on (send instead of `id`).
   String? code;
 
+  /// Off-site (type 3) new address saved as a named team location: `allow_for_future_locations: 1` + `location_name`.
+  bool allowForFutureLocations = false;
+  String locationName = '';
+
   NewEventSaveRequest({
     required this.teamUuid,
     this.id = '',
@@ -239,7 +243,14 @@ class NewEventSaveRequest {
       if (country != null && country!.isNotEmpty) map['country'] = country;
       if (postalCode != null && postalCode!.isNotEmpty) map['postal_code'] = postalCode;
       if (placeId != null && placeId!.isNotEmpty) map['place_id'] = placeId;
+    } else if (locationType == 3 && savedLocationId != null && savedLocationId! > 0) {
+      // Saved location picked in the off-site search: the id only, no address fields.
+      map['saved_location_id'] = savedLocationId;
     } else if (locationType == 3) {
+      if (allowForFutureLocations && locationName.trim().isNotEmpty) {
+        map['allow_for_future_locations'] = 1;
+        map['location_name'] = locationName.trim();
+      }
       if (address != null && address!.isNotEmpty) {
         map['address'] = address;
       } else if (location.isNotEmpty) {

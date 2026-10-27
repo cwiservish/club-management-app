@@ -71,6 +71,9 @@ class ClubEvent {
   final bool canChangeDate;
   /// False when one occurrence of a series is opened with `id` (no repeat options).
   final bool canChangeRecurrence;
+  /// Off-site (type 3) row that points at a saved location (`is_saved_location`); [location] is its name.
+  final bool? isSavedLocation;
+  final int? savedLocationId;
 
   const ClubEvent({
     required this.id,
@@ -133,6 +136,8 @@ class ClubEvent {
     this.uniformDetails = const [],
     this.canChangeDate = true,
     this.canChangeRecurrence = true,
+    this.isSavedLocation,
+    this.savedLocationId,
   });
 
   ClubEvent copyWith({
@@ -196,6 +201,8 @@ class ClubEvent {
     List<UniformDetail>? uniformDetails,
     bool? canChangeDate,
     bool? canChangeRecurrence,
+    bool? isSavedLocation,
+    int? savedLocationId,
   }) {
     return ClubEvent(
       id: id ?? this.id,
@@ -258,6 +265,8 @@ class ClubEvent {
       uniformDetails: uniformDetails ?? this.uniformDetails,
       canChangeDate: canChangeDate ?? this.canChangeDate,
       canChangeRecurrence: canChangeRecurrence ?? this.canChangeRecurrence,
+      isSavedLocation: isSavedLocation ?? this.isSavedLocation,
+      savedLocationId: savedLocationId ?? this.savedLocationId,
     );
   }
 
