@@ -115,6 +115,20 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
   /// Title last filled in from an event type chip; replaced on the next pick unless the user typed their own.
   String _autoTitle = '';
+  bool _hasPrefilledTypeTitle = false;
+
+  /// Fills the title with the event type's label (Practice / Team Event / Camp; Game 1 and Scrimmage 3 have
+  /// no title field) unless the user typed their own. Call inside setState.
+  void _applyTypeTitle(int typeKey) {
+    if (typeKey == 1 || typeKey == 3) return;
+    final types = ref.read(eventAddEditProvider).newEventDropdowns?.eventTypes ?? const [];
+    final label = types.where((t) => t.key == typeKey).map((t) => t.label.trim()).firstOrNull ?? '';
+    final current = _titleController.text.trim();
+    if (label.isEmpty || (current.isNotEmpty && current != _autoTitle)) return;
+    _autoTitle = label;
+    _titleController.text = label;
+    _fieldErrors.remove('title');
+  }
 
   // Cancel Event toggle — status 2 = cancelled, 1 = active
   bool _isCancelled = false;
@@ -2166,6 +2180,14 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       });
     }
 
+    // Create mode: prefill the title for the preselected event type (Practice) once options load.
+    if (!isEditMode && dropdownState.newEventDropdowns != null && !_hasPrefilledTypeTitle) {
+      _hasPrefilledTypeTitle = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _schedulingTypeKey == 1) setState(() => _applyTypeTitle(_eventTypeKey));
+      });
+    }
+
     // Create mode: default homeAwayKey to 1 (Home) once options load, but only if options exist
     if (!isEditMode && dropdownState.newEventDropdowns != null && _homeAwayKey == 0) {
       final opts = dropdownState.newEventDropdowns!.homeAwayOptions;
@@ -3088,9 +3110,15 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
               _selectedTabIndex = 0;
               // Single Session → default to Practice if no event type set
               if (_eventTypeKey == 0) _eventTypeKey = 2;
+              if (widget.editEvent == null) _applyTypeTitle(_eventTypeKey);
             }
             // Tournament / League → reset event type to 0 (not applicable)
-            if (key == 2 || key == 3) _eventTypeKey = 0;
+            if (key == 2 || key == 3) {
+              _eventTypeKey = 0;
+              // Their title box is shared: drop the event-type title, keep one the user typed.
+              if (_autoTitle.isNotEmpty && _titleController.text.trim() == _autoTitle) _titleController.clear();
+              _autoTitle = '';
+            }
           });
         },
         child: Container(
@@ -3703,13 +3731,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         _closeAllDropdowns(unfocus: true);
         setState(() {
           _eventTypeKey = type.key;
-          // Title field is shown for Practice / Team Event / Camp (not Game 1 / Scrimmage 3).
-          final current = _titleController.text.trim();
-          if (type.key != 1 && type.key != 3 && (current.isEmpty || current == _autoTitle)) {
-            _autoTitle = type.label.trim();
-            _titleController.text = _autoTitle;
-            _fieldErrors.remove('title');
-          }
+          _applyTypeTitle(type.key);
         });
       },
       child: Container(
