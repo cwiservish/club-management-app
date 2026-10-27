@@ -43,23 +43,37 @@ Future<EditScopeChoice?> askEditScope(
     barrierDismissible: false,
     builder: (ctx) {
       final colors = AppColors.current;
-      Widget option(String label, String value) => Padding(
+      Widget option(String label, String value, {String? subtitle}) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 50),
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(ctx, value),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: colors.border),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.heading15
-                      .copyWith(color: colors.textPrimary),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.heading15
+                          .copyWith(color: colors.textPrimary),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.body14
+                            .copyWith(color: colors.textSecondary),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
@@ -90,7 +104,8 @@ Future<EditScopeChoice?> askEditScope(
                       .copyWith(color: colors.textSecondary, height: 1.4)),
               const SizedBox(height: 16),
               option('This event only', 'one'),
-              option('All upcoming events (past events are kept)', 'series'),
+              option('All upcoming events', 'series',
+                  subtitle: '(past events are kept)'),
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.pop(ctx, 'cancel'),

@@ -113,6 +113,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   // Event type key from API (2=Practice default)
   int _eventTypeKey = 2;
 
+  /// Title last filled in from an event type chip; replaced on the next pick unless the user typed their own.
+  String _autoTitle = '';
+
   // Cancel Event toggle — status 2 = cancelled, 1 = active
   bool _isCancelled = false;
 
@@ -910,6 +913,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   /// 'one' = only this date (or a one-off session), 'series' = every upcoming date.
   String _editScope = 'one';
 
+  /// What the user picked in "Edit which events?" ('one' / 'series'); delete reuses it instead of asking again.
+  String _chosenScope = 'one';
+
   /// From `session/detail` (by id) for one date of a series: false locks the date picker / hides Repeats.
   bool _canChangeDate = true;
   bool _canChangeRecurrence = true;
@@ -938,6 +944,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       scope = choice.scope;
       seriesEdit = choice.seriesEdit;
     }
+    _chosenScope = scope;
     if (scope == 'series') {
       await _loadSeriesForEdit(prefetched: seriesEdit);
     } else {
@@ -1367,11 +1374,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       }
     }
 
-    // [optional]: Practice / Team Event / Camp sessions get a default title from the server.
-    void checkTitle(int tab, {bool optional = false}) {
+    void checkTitle(int tab) {
       final title = _titleController.text.trim();
       if (title.isEmpty) {
-        if (!optional) add('title', 'Enter a title', tab);
+        add('title', 'Enter a title', tab);
       } else if (!RegExp(r'[a-zA-Z]').hasMatch(title)) {
         add('title', 'Title must contain at least one letter', tab);
       }
@@ -1401,7 +1407,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           add('opponentName', 'Enter the opponent name', 0);
         }
       } else {
-        checkTitle(0, optional: true);
+        checkTitle(0);
       }
       // Location tab
       checkLocation(1);
@@ -1524,13 +1530,17 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
   Future<void> _handleDeleteEvent() async {
     final colors = AppColors.current;
+    // Series scope was already chosen in "Edit which events?" when the page opened.
+    final deleteSeries = _isSeriesMember && _chosenScope == 'series';
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: colors.background,
         title: Text('Delete Event', style: AppTextStyles.heading18.copyWith(color: colors.textPrimary)),
         content: Text(
-          'Are you sure you want to permanently delete this event?',
+          deleteSeries
+              ? 'Are you sure you want to permanently delete all upcoming events in this series? Past events are kept.'
+              : 'Are you sure you want to permanently delete this event?',
           style: AppTextStyles.body16.copyWith(color: colors.textSecondary),
         ),
         actions: [
@@ -1552,13 +1562,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
     if (confirm != true || !mounted) return;
 
-    final scope = await _askSeriesScope('Delete');
-    if (scope == null || !mounted) return;
-
     final success = await ref.read(eventAddEditProvider.notifier).deleteEvent(
       widget.editEvent?.dbId,
       schedulingMode: widget.editEvent?.schedulingMode ?? 1,
-      code: scope == 'series' ? widget.editEvent?.code : null,
+      code: deleteSeries ? widget.editEvent?.code : null,
     );
 
     if (!mounted) return;
@@ -1598,19 +1605,6 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       _showErrorDialog(
         ref.read(eventAddEditProvider).newEventSaveError ?? 'Failed to create event',
       );
-    }
-  }
-
-  /// Returns the original event title for comparison and fallback pre-fill.
-  /// Name the server gives a session saved without a title (Practice 2, Team Event 4, Camp 5).
-  String get _defaultTitleHint {
-    switch (_eventTypeKey) {
-      case 4:
-        return 'Team Event';
-      case 5:
-        return 'Camp';
-      default:
-        return 'Practice';
     }
   }
 
@@ -1742,9 +1736,12 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         }
       } else {
         // Flow 2: Practice, Team Event, Camp — title is required, no opponent
-        // Title is optional here: the server names the session "Practice" / "Team Event" / "Camp".
         title = _titleController.text.trim();
-        if (title.isNotEmpty && !RegExp(r'[a-zA-Z]').hasMatch(title)) {
+        if (title.isEmpty) {
+          _showError('Please enter a title');
+          return;
+        }
+        if (!RegExp(r'[a-zA-Z]').hasMatch(title)) {
           _showError('Title must contain at least one letter');
           return;
         }
@@ -3158,9 +3155,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         ] else ...[
           _buildTextField(
             label: 'Title',
-            hintText: _defaultTitleHint,
+            hintText: 'Enter a title',
             controller: _titleController,
-            isRequired: false,
+            isRequired: true,
             errorId: 'title',
             onTap: () => _closeAllDropdowns(),
           ),
@@ -3438,6 +3435,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
             label: 'Title',
             hintText: titlePlaceholder,
             controller: _titleController,
+            isRequired: true,
             errorId: 'title',
             onTap: () => _closeAllDropdowns(),
           ),
@@ -3703,7 +3701,16 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     return GestureDetector(
       onTap: () {
         _closeAllDropdowns(unfocus: true);
-        setState(() => _eventTypeKey = type.key);
+        setState(() {
+          _eventTypeKey = type.key;
+          // Title field is shown for Practice / Team Event / Camp (not Game 1 / Scrimmage 3).
+          final current = _titleController.text.trim();
+          if (type.key != 1 && type.key != 3 && (current.isEmpty || current == _autoTitle)) {
+            _autoTitle = type.label.trim();
+            _titleController.text = _autoTitle;
+            _fieldErrors.remove('title');
+          }
+        });
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
@@ -4112,62 +4119,9 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Template tabs — only shown when there's at least 1 template
+        // Template dropdown — only shown when there's at least 1 template
         if (hasAnyTemplates) ...[
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final t in apiTemplates) ...[
-                  _buildUniformTemplateTab(
-                    label: t.templateName,
-                    isSelected: _selectedApiTemplate?.id == t.id,
-                    onTap: () {
-                      _closeAllDropdowns(unfocus: true);
-                      setState(() {
-                        _selectedUniformMode = t.templateName;
-                        _selectedApiTemplate = t;
-                        _applyTemplateColors(t);
-                        _showSaveTemplateForm = false;
-                        _templateNameController.clear();
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 10),
-                ],
-                for (final t in _localTemplates) ...[
-                  _buildUniformTemplateTab(
-                    label: t.name,
-                    isSelected: _selectedApiTemplate == null && _selectedUniformMode == t.name,
-                    onTap: () {
-                      _closeAllDropdowns(unfocus: true);
-                      setState(() {
-                        _selectedUniformMode = t.name;
-                        _selectedApiTemplate = null;
-                        _topColorIndex = t.topIndex;
-                        _bottomColorIndex = t.bottomIndex;
-                        _socksColorIndex = t.socksIndex;
-                        _showSaveTemplateForm = false;
-                        _templateNameController.clear();
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 10),
-                ],
-                _buildUniformTemplateTab(
-                  label: 'New combo',
-                  isSelected: isNewCombo,
-                  onTap: () {
-                    _closeAllDropdowns(unfocus: true);
-                    setState(() {
-                      _selectedUniformMode = 'New combo';
-                      _selectedApiTemplate = null;
-                    });
-                  },
-                ),
-              ],
-            ),
-          ),
+          _buildUniformTemplateDropdown(apiTemplates, isNewCombo: isNewCombo),
         ],
 
         // Color pickers — shown in new combo mode or when no templates exist
@@ -4322,37 +4276,118 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     );
   }
 
-  Widget _buildUniformTemplateTab({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    final colors = AppColors.current;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (colors.isDark ? colors.primary : const Color(0xFF2F54EB))
-              : (colors.isDark ? colors.background : Colors.white),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected
-                ? (colors.isDark ? colors.primary : const Color(0xFF2F54EB))
-                : colors.border,
-            width: 1.2,
-          ),
+  /// Uniform template picker: API templates, local templates, then "New combo".
+  Widget _buildUniformTemplateDropdown(List<NewEventUniformTemplate> apiTemplates, {required bool isNewCombo}) {
+    // key -> (label, apply selection)
+    final options = <String, (String, VoidCallback)>{
+      for (final t in apiTemplates)
+        'api:${t.id}': (
+          t.templateName,
+          () {
+            _selectedUniformMode = t.templateName;
+            _selectedApiTemplate = t;
+            _applyTemplateColors(t);
+            _showSaveTemplateForm = false;
+            _templateNameController.clear();
+          },
         ),
-        child: Text(
-          label,
-          style: AppTextStyles.body14.copyWith(
-            color: isSelected
-                ? (colors.isDark ? Colors.black : Colors.white)
-                : colors.textPrimary,
-            fontWeight: FontWeight.bold,
+      for (final t in _localTemplates)
+        'local:${t.name}': (
+          t.name,
+          () {
+            _selectedUniformMode = t.name;
+            _selectedApiTemplate = null;
+            _topColorIndex = t.topIndex;
+            _bottomColorIndex = t.bottomIndex;
+            _socksColorIndex = t.socksIndex;
+            _showSaveTemplateForm = false;
+            _templateNameController.clear();
+          },
+        ),
+      'new': (
+        'New combo',
+        () {
+          _selectedUniformMode = 'New combo';
+          _selectedApiTemplate = null;
+        },
+      ),
+    };
+    final selected = _selectedApiTemplate != null
+        ? 'api:${_selectedApiTemplate!.id}'
+        : isNewCombo
+            ? 'new'
+            : 'local:$_selectedUniformMode';
+    final value = options.containsKey(selected) ? selected : 'new';
+    final colors = AppColors.current;
+    final fieldBg = colors.isDark ? colors.background : Colors.white;
+
+    // MenuAnchor (not DropdownButton) so the list opens below the field with rounded corners.
+    return LayoutBuilder(
+      builder: (context, constraints) => MenuAnchor(
+        alignmentOffset: const Offset(0, 6),
+        style: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(fieldBg),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+          elevation: const WidgetStatePropertyAll(6),
+          padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 6)),
+          minimumSize: WidgetStatePropertyAll(Size(constraints.maxWidth, 0)),
+          maximumSize: WidgetStatePropertyAll(Size(constraints.maxWidth, 320)),
+          shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: colors.border),
+          )),
+        ),
+        menuChildren: [
+          for (final k in options.keys)
+            MenuItemButton(
+              onPressed: () => setState(options[k]!.$2),
+              style: ButtonStyle(
+                minimumSize: WidgetStatePropertyAll(Size(constraints.maxWidth, 46)),
+                padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16)),
+                backgroundColor: WidgetStatePropertyAll(
+                  k == value ? const Color(0xFFF5BD1F).withValues(alpha: 0.18) : Colors.transparent,
+                ),
+              ),
+              child: Text(
+                options[k]!.$1,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.body14.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: k == value ? FontWeight.w700 : FontWeight.w400,
+                ),
+              ),
+            ),
+        ],
+        builder: (context, controller, _) => GestureDetector(
+          onTap: () {
+            _closeAllDropdowns(unfocus: true);
+            controller.isOpen ? controller.close() : controller.open();
+          },
+          child: Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: fieldBg,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: controller.isOpen ? const Color(0xFFF5BD1F) : colors.border),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    options[value]!.$1,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body14.copyWith(color: colors.textPrimary),
+                  ),
+                ),
+                Icon(
+                  controller.isOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  color: colors.textSecondary,
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -168,26 +168,63 @@ class _SlotBoardSheetState extends State<SlotBoardSheet> {
     await _recheck(index, slot.copyWith(startTime: _fmt24(start), endTime: _fmt24(end)));
   }
 
-  Future<void> _pickField(int index) async {
+  Future<void> _pickField(int index, int chosen) async {
     final slot = _slots[index];
-    final chosen = await showModalBottomSheet<int>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            for (final f in widget.venue.fields)
-              ListTile(
-                title: Text(f.fieldName.isNotEmpty ? f.fieldName : f.label),
-                trailing: f.fieldId == slot.fieldId ? const Icon(Icons.check, color: Color(0xFFF5BD1F)) : null,
-                onTap: () => Navigator.pop(ctx, f.fieldId),
+    if (chosen == slot.fieldId) return;
+    await _recheck(index, slot.copyWith(fieldId: chosen));
+  }
+
+  /// Field chip with its list anchored to it (opens below, or above when there's no room).
+  Widget _fieldMenu(int i, String label, bool disabled) {
+    final slot = _slots[i];
+    return LayoutBuilder(
+      builder: (context, constraints) => MenuAnchor(
+        alignmentOffset: const Offset(0, 6),
+        style: MenuStyle(
+          backgroundColor: const WidgetStatePropertyAll(Colors.white),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+          elevation: const WidgetStatePropertyAll(6),
+          padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 6)),
+          minimumSize: WidgetStatePropertyAll(Size(constraints.maxWidth, 0)),
+          maximumSize: WidgetStatePropertyAll(Size(constraints.maxWidth, 300)),
+          shape: const WidgetStatePropertyAll(RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            side: BorderSide(color: Color(0xFFD1D5DB)),
+          )),
+        ),
+        menuChildren: [
+          for (final f in widget.venue.fields)
+            MenuItemButton(
+              onPressed: () => _pickField(i, f.fieldId),
+              trailingIcon: f.fieldId == slot.fieldId ? const Icon(Icons.check, size: 18, color: Color(0xFFF5BD1F)) : null,
+              style: ButtonStyle(
+                minimumSize: WidgetStatePropertyAll(Size(constraints.maxWidth, 44)),
+                padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 14)),
+                backgroundColor: WidgetStatePropertyAll(
+                  f.fieldId == slot.fieldId ? const Color(0xFFF5BD1F).withValues(alpha: 0.18) : Colors.transparent,
+                ),
               ),
-          ],
+              child: Text(
+                f.fieldName.isNotEmpty ? f.fieldName : f.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: const Color(0xFF1A1D20),
+                  fontWeight: f.fieldId == slot.fieldId ? FontWeight.w700 : FontWeight.w400,
+                ),
+              ),
+            ),
+        ],
+        builder: (context, controller, _) => _tapChip(
+          label,
+          Icons.place_outlined,
+          () => controller.isOpen ? controller.close() : controller.open(),
+          disabled,
+          expand: true,
         ),
       ),
     );
-    if (chosen == null || chosen == slot.fieldId) return;
-    await _recheck(index, slot.copyWith(fieldId: chosen));
   }
 
   // ── UI ─────────────────────────────────────────────────────────────────────
@@ -347,7 +384,7 @@ class _SlotBoardSheetState extends State<SlotBoardSheet> {
               ],
             ),
             const SizedBox(height: 8),
-            _tapChip(widget.readOnly && widget.venue.fields.isEmpty ? widget.venue.name : fieldLabel, Icons.place_outlined, () => _pickField(i), checking || widget.readOnly, expand: true),
+            _fieldMenu(i, widget.readOnly && widget.venue.fields.isEmpty ? widget.venue.name : fieldLabel, checking || widget.readOnly),
           ],
           if (clash && s.warnings.isNotEmpty) ...[
             const SizedBox(height: 8),

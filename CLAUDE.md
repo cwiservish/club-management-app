@@ -180,7 +180,7 @@ placeholder; coaches' saves show "Saved as draft"; managers (organization role 1
 
 **Phase 4 - cancel / delete / draft / confirm (cancel, reinstate, series delete verified on emulator; draft + confirm need a coach-only login to test)**
 - Cancel / reinstate use `teams/event/session/status` (`EventDetailService.setSessionStatus`) with the same this-date/series choice;
-  Tournament/League keep the old toggle behaviour. Delete sends `code` for a series (`EventDeleteRequest.code`).
+  Tournament/League keep the old toggle behaviour. Delete sends `code` for a series (`EventDeleteRequest.code`); it shows one red-button confirm and reuses the "Edit which events?" choice (`_chosenScope`) instead of asking this date / series again.
 - Draft (status 5): "Draft - waiting for manager" pill on Home cards and a banner on Schedule tiles; Event Details shows a
   Draft banner, RSVP disabled; managers get **Confirm session** (board in read-only mode for type 1, then
   `teams/event/session/confirm`; series asks this date / all dates).
@@ -191,7 +191,7 @@ cancel, delete and confirm with real QA data.
 
 ## 7b. Session row flags (Oct 2026 backend change, built)
 
-- **Title**: optional for Practice (2) / Team Event (4) / Camp (5); server defaults it. Field hint shows the default. Tournament/League placeholder title is still required.
+- **Title**: required wherever the Title field is shown (Practice / Team Event / Camp sessions and the Tournament/League placeholder). Game / Scrimmage show Opponent instead, so no title check there. (The server can still default a missing title, but the app no longer relies on it.) Tapping an event type chip (Practice / Team Event / Camp) prefills the title with the chip label (`_autoTitle`); a title the user typed is never overwritten.
 - **Uniform**: rows carry `uniform_details` (`ClubEvent.uniformDetails`); Event Details shows swatch + "Top: Black", swatch only when `color_label` is empty. Old hex fields remain the fallback (tournament/league rows have `[]`). Never send `uniform_details` back.
 - **RSVP**: `can_rsvp` -> `ClubEvent.canRsvp` (missing = true). Home `RsvpRow(enabled:)`, Schedule tile and Event Details dim/disable buttons when false. Targets come from top-level `rsvp_targets` (fallback `my_rsvp.targets`); picker when more than one. Availability screen is untouched.
 - **One-day type-1 session**: `generate_slots` then the Check availability sheet with the single row (only one date of a series with no clash still skips the sheet).

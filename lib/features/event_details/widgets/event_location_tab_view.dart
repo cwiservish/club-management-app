@@ -140,25 +140,30 @@ class EventLocationTabView extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // ── Segmented location type buttons: count and labels come from API `location_types` ──
-        Row(
-          children: [
-            for (var i = 0; i < _tabs.length; i++) ...[
-              if (i > 0) const SizedBox(width: 8),
-              Expanded(
-                child: _buildModeButton(
-                  title: _tabs[i].label,
-                  mode: _tabs[i].mode,
-                  yellowAccent: yellowAccent,
-                  yellowBg: yellowBg,
-                  borderColor: borderColor,
-                  titleColor: titleColor,
-                  isDark: isDark,
+        // ── Location type buttons in a 2-column grid: count and labels come from API `location_types` ──
+        for (var r = 0; r < _tabs.length; r += 2) ...[
+          if (r > 0) const SizedBox(height: 8),
+          Row(
+            children: [
+              for (var i = r; i < r + 2; i++) ...[
+                if (i > r) const SizedBox(width: 8),
+                Expanded(
+                  child: i < _tabs.length
+                      ? _buildModeButton(
+                          title: _tabs[i].label,
+                          mode: _tabs[i].mode,
+                          yellowAccent: yellowAccent,
+                          yellowBg: yellowBg,
+                          borderColor: borderColor,
+                          titleColor: titleColor,
+                          isDark: isDark,
+                        )
+                      : const SizedBox.shrink(),
                 ),
-              ),
+              ],
             ],
-          ],
-        ),
+          ),
+        ],
         const SizedBox(height: 24),
 
         // ── Dynamic Body based on Selected Mode ──
