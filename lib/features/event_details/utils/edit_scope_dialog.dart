@@ -18,6 +18,19 @@ class EditScopeChoice {
 bool isSeriesMember(ClubEvent e) =>
     e.schedulingMode == 1 && e.code.isNotEmpty && e.recurringType != 1;
 
+/// Fetches the series (`session/detail` by code) so a dialog can describe it; null when unavailable.
+Future<Map<String, dynamic>?> _loadSeriesEdit(WidgetRef ref, ClubEvent e) async {
+  final team = ref.read(selectedTeamProvider);
+  if (team == null) return null;
+  try {
+    final detail = await ref
+        .read(eventDetailServiceProvider)
+        .fetchSessionDetail(teamUuid: team.uuid, code: e.code);
+    if (detail['edit'] is Map) return Map<String, dynamic>.from(detail['edit'] as Map);
+  } catch (_) {}
+  return null;
+}
+
 /// Asks which events to edit before the edit page opens. Not a series: answers 'one' without a dialog.
 /// Returns null when the user closes the dialog or taps "Never mind".
 Future<EditScopeChoice?> askEditScope(
@@ -25,19 +38,46 @@ Future<EditScopeChoice?> askEditScope(
   if (!isSeriesMember(e)) return const EditScopeChoice('one');
 
   // Fetch the series first so the dialog can describe it (weekly days / dates, range, count).
-  Map<String, dynamic>? seriesEdit;
-  final team = ref.read(selectedTeamProvider);
-  if (team != null) {
-    try {
-      final detail = await ref
-          .read(eventDetailServiceProvider)
-          .fetchSessionDetail(teamUuid: team.uuid, code: e.code);
-      if (detail['edit'] is Map)
-        seriesEdit = Map<String, dynamic>.from(detail['edit'] as Map);
-    } catch (_) {}
-  }
+  final seriesEdit = await _loadSeriesEdit(ref, e);
   if (!context.mounted) return null;
-  final summary = seriesSummary(e, seriesEdit);
+  final choice = await showSeriesScopeDialog(
+    context,
+    title: 'Edit which events?',
+    summary: seriesSummary(e, seriesEdit),
+    oneLabel: 'This event only',
+    seriesLabel: 'All upcoming events',
+    seriesSubtitle: '(past events are kept)',
+  );
+  if (choice == null) return null;
+  return EditScopeChoice(choice, seriesEdit);
+}
+
+/// Manager confirming a draft that belongs to a series: this date or every draft date.
+/// Returns 'one' / 'series', or null when cancelled.
+Future<String?> askConfirmScope(
+    BuildContext context, WidgetRef ref, ClubEvent e) async {
+  final seriesEdit = await _loadSeriesEdit(ref, e);
+  if (!context.mounted) return null;
+  return showSeriesScopeDialog(
+    context,
+    title: 'Confirm which events?',
+    summary: seriesSummary(e, seriesEdit, action: 'confirm'),
+    oneLabel: 'This event only',
+    seriesLabel: 'All draft events',
+    seriesSubtitle: '(every draft date of the series)',
+  );
+}
+
+/// Shared "which events?" dialog: summary, two outlined options and "Never mind".
+/// Returns 'one' / 'series', or null when closed.
+Future<String?> showSeriesScopeDialog(
+  BuildContext context, {
+  required String title,
+  required String summary,
+  required String oneLabel,
+  required String seriesLabel,
+  String? seriesSubtitle,
+}) async {
   final choice = await showDialog<String>(
     context: context,
     barrierDismissible: false,
@@ -85,7 +125,7 @@ Future<EditScopeChoice?> askEditScope(
         title: Row(
           children: [
             Expanded(
-              child: Text('Edit which events?',
+              child: Text(title,
                   style: AppTextStyles.heading18
                       .copyWith(color: colors.textPrimary)),
             ),
@@ -103,9 +143,8 @@ Future<EditScopeChoice?> askEditScope(
                   style: AppTextStyles.body14
                       .copyWith(color: colors.textSecondary, height: 1.4)),
               const SizedBox(height: 16),
-              option('This event only', 'one'),
-              option('All upcoming events', 'series',
-                  subtitle: '(past events are kept)'),
+              option(oneLabel, 'one'),
+              option(seriesLabel, 'series', subtitle: seriesSubtitle),
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.pop(ctx, 'cancel'),
@@ -121,7 +160,7 @@ Future<EditScopeChoice?> askEditScope(
     },
   );
   if (choice == null || choice == 'cancel') return null;
-  return EditScopeChoice(choice, seriesEdit);
+  return choice;
 }
 
 const _monthNames = [
@@ -144,7 +183,7 @@ String _shortDate(DateTime d, {bool year = false}) =>
 
 /// "This practice repeats (Weekly · Mon, Tue · Oct 26 – Oct 30, 2026 · 5 sessions). Choose what to change."
 /// Built from `session/detail` -> `data.edit`; falls back to a plain sentence when it isn't available.
-String seriesSummary(ClubEvent e, Map<String, dynamic>? edit) {
+String seriesSummary(ClubEvent e, Map<String, dynamic>? edit, {String action = 'change'}) {
   const typeNames = {
     1: 'game',
     2: 'practice',
@@ -153,7 +192,7 @@ String seriesSummary(ClubEvent e, Map<String, dynamic>? edit) {
     5: 'camp'
   };
   final what = typeNames[e.eventTypeKey] ?? 'event';
-  if (edit == null) return 'This $what repeats. Choose what to change.';
+  if (edit == null) return 'This $what repeats. Choose what to $action.';
 
   final recurring =
       int.tryParse(edit['recurring_type']?.toString() ?? '') ?? e.recurringType;
@@ -200,5 +239,5 @@ String seriesSummary(ClubEvent e, Map<String, dynamic>? edit) {
     }
   }
   if (count > 0) parts.add('$count session${count == 1 ? '' : 's'}');
-  return 'This $what repeats (${parts.join(' · ')}). Choose what to change.';
+  return 'This $what repeats (${parts.join(' · ')}). Choose what to $action.';
 }

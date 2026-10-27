@@ -1369,6 +1369,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   /// Clamps _startTime to now+1 min if today is selected. Pure mutation — call inside setState.
   void _clampStartTimeToNowIfToday() {
     if (!_isToday()) return;
+    // Repeating events cover later dates too, so an earlier time today is allowed.
+    if (_isRepeating) return;
     // Editing a session on its own date: it may already be past or about to start, so any time stays editable.
     final original = widget.editEvent;
     if (original != null && _selectedDate != null && DateUtils.dateOnly(original.dateTime) == DateUtils.dateOnly(_selectedDate!)) {
@@ -3531,6 +3533,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           onRepeatingChanged: (v) => setState(() {
             _isRepeating = v;
             if (v && _repeatType == 'Weekly') _selectedDate = DateUtils.dateOnly(DateTime.now());
+            // Back to a one-off: a past time today is no longer allowed.
+            if (!v) _clampStartTimeToNowIfToday();
           }),
           repeatType: _repeatType,
           onRepeatTypeChanged: (v) => setState(() {

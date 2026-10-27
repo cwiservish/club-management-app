@@ -183,7 +183,8 @@ placeholder; coaches' saves show "Saved as draft"; managers (organization role 1
   Tournament/League keep the old toggle behaviour. Delete sends `code` for a series (`EventDeleteRequest.code`); it shows one red-button confirm and reuses the "Edit which events?" choice (`_chosenScope`) instead of asking this date / series again.
 - Draft (status 5): "Draft - waiting for manager" pill on Home cards and a banner on Schedule tiles; Event Details shows a
   Draft banner, RSVP disabled; managers get **Confirm session** (board in read-only mode for type 1, then
-  `teams/event/session/confirm`; series asks this date / all dates).
+  `teams/event/session/confirm`; series asks this date / all dates with `askConfirmScope` — same dialog as "Edit which events?",
+built by `showSeriesScopeDialog` in `utils/edit_scope_dialog.dart`).
 
 **Phase 5 - tests**: `test/session_slots_test.dart` (board parsing, draft/conflicts, request shapes) and
 `test/event_repeats_until_section_test.dart` pass (`flutter test`). Still to do: emulator walk-through of edit-series,

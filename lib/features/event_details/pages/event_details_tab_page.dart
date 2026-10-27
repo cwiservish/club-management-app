@@ -15,6 +15,7 @@ import '../../../core/models/club_event.dart';
 import '../../../core/common_providers/event_refresh_provider.dart';
 import '../models/new_event_dropdown_options_model.dart';
 import '../services/event_detail_service.dart';
+import '../utils/edit_scope_dialog.dart';
 import '../widgets/slot_board_sheet.dart';
 
 class EventDetailsTabPage extends ConsumerWidget {
@@ -108,18 +109,7 @@ class EventDetailsTabPage extends ConsumerWidget {
       // A recurring draft: confirm just this date or every draft of the series.
       var useSeries = false;
       if (event.recurringType != 1 && event.code.isNotEmpty) {
-        final choice = await showDialog<String>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Confirm recurring event'),
-            content: const Text('Confirm this date only, or every draft date of the series?'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-              TextButton(onPressed: () => Navigator.pop(ctx, 'one'), child: const Text('This date only')),
-              TextButton(onPressed: () => Navigator.pop(ctx, 'series'), child: const Text('All dates')),
-            ],
-          ),
-        );
+        final choice = await askConfirmScope(context, ref, event);
         if (choice == null || !context.mounted) return;
         useSeries = choice == 'series';
       }
