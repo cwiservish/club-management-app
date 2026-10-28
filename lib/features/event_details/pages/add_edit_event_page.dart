@@ -2320,6 +2320,11 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     final activeTeam = ref.read(selectedTeamProvider);
     if (activeTeam == null) return null;
 
+    // One date of a series ("This date only"): check just that date's facility + field with
+    // field_availability (its own row excluded) and always show the sheet with the result.
+    final isOneDateOfSeries = _isSeriesMember && !_isSeriesEdit;
+    final ownId = widget.editEvent?.dbId;
+
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -2327,7 +2332,30 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     );
     SlotBoard board;
     try {
-      board = await service.generateSlots(request.toJson());
+      if (isOneDateOfSeries && request.fieldId != null) {
+        final excludeIds = [if (ownId != null) ownId];
+        final checked = await service.checkFieldAvailability(
+          teamUuid: activeTeam.uuid,
+          venueId: venue.venueId,
+          fieldId: request.fieldId!,
+          excludeIds: excludeIds,
+          slot: SessionSlot(
+            date: request.sessionStartDate,
+            startTime: request.startTime,
+            endTime: request.endTime ?? request.startTime,
+            venueId: venue.venueId,
+            fieldId: request.fieldId,
+          ),
+        );
+        board = SlotBoard(
+          slots: [checked],
+          hasConflicts: checked.isBlocking,
+          conflictCount: checked.isBlocking ? 1 : 0,
+          excludeIds: excludeIds,
+        );
+      } else {
+        board = await service.generateSlots(request.toJson());
+      }
     } catch (e) {
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
       _showErrorDialog(e.toString());
@@ -2336,9 +2364,6 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     if (!mounted) return null;
     Navigator.of(context, rootNavigator: true).pop();
 
-    // One date of a series: no sheet when clash-free, but it must carry its own row so its time / field are stored.
-    final isOneDateOfSeries = _isSeriesMember && !_isSeriesEdit;
-    if (isOneDateOfSeries && board.slots.length <= 1 && !board.hasConflicts) return board.slots;
     // A one-day session shows the "Check availability" sheet with its single row, like a series does.
     if (board.slots.isEmpty && !board.hasConflicts) return <SessionSlot>[];
 
@@ -3152,7 +3177,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
 
           // ── Footer Note ──
           Text(
-            'Everyone picked here is invited to every date of this event and answers the RSVP in the Playbook Club Management App.',
+            'Everyone picked up here will be notified for each date of this event.',
             style: TextStyle(
               fontSize: 13.5,
               height: 1.45,

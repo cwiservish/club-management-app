@@ -78,7 +78,9 @@ class AuthService {
       );
     } on DioException catch (e) {
       if (_isNetworkError(e)) throw noInternetMessage;
-      throw 'Failed to send reset email: ${e.message}';
+      // FusionAuth: 404 = no user with this login id.
+      if (e.response?.statusCode == 404) throw 'No account found with this email';
+      throw 'Failed to send reset email. Please try again.';
     }
   }
 
