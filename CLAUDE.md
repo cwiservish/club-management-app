@@ -90,7 +90,7 @@ Scheduling types: 1 Single Session, 2 Tournament, 3 League (`_schedulingTypeKey`
 **RSVP**: players/staff from roster. Staff list on this page is requested with `staff_type: "team"`;
 the roster notifier remembers the filter and ignores stale responses; the Roster tab is refreshed unfiltered
 when the page closes. IDs sent: `player_ids` = player id, `staff_ids` = staff **`customer_id`**
-(server rejects the staff row id). If the RSVP tab is never opened, "everyone invited" is applied at save time.
+(server rejects the staff row id). New event: everyone is selected. Edit of a session (`scheduling_mode 1` with `dbId`): `session/detail` by `id` -> `invitees {player_ids, staff_ids, customer_ids}` is loaded in initState (`_loadInvitees`) and only those are preselected (staff matched on `customer_ids`, fallback `staff_ids`); the RSVP tab shows a spinner until it arrives; unreadable = everyone. If the RSVP tab is never opened, the same default (`_applyDefaultRsvpSelection`) is applied at save time.
 
 **Validation (no toasts for missing fields)**: `_validateForm()` runs at the start of `_doSave`. It collects every missing
 field for the current mode (Single Session, Tournament/League placeholder, or a Tournament/League game) into `_fieldErrors`
@@ -130,6 +130,7 @@ bar for paths ending `/edit`.
 - `POST teams/event/save`: `staff_ids` must be integers matching staff `customer_id`; type 1 needs `venue_id` + `field_id`.
 - `arrival_time` in event lists is filled even when `arrival_early` is 0 — only trust it when `arrival_early > 0`.
 - `POST team/player/profile` needs the player **uuid**.
+- `session/detail` returns `invitees: {player_ids, staff_ids, customer_ids}`; `player_ids` = roster `player_id`, staff ids are the staff `customer_id` (FM Team: staff row 26 -> customer 6 -> `[6]`).
 
 ### Session/location guide (from the Postman collection `ClubAppAPis.postman_collection.json`)
 
@@ -165,7 +166,9 @@ placeholder; coaches' saves show "Saved as draft"; managers (organization role 1
 - Models: `models/session_slot_models.dart` (`SessionSlot`, `SlotBoard`, `SlotApiException`).
 - API (`EventDetailService`): `generateSlots(body)`, `checkFieldAvailability(...)`; endpoints in `ApiEndpoints`.
 - UI: `widgets/slot_board_sheet.dart` (bottom sheet: row per date, Available/Clash/Locked chips, change time or field -> only
-  that row is re-checked, Save disabled while any row clashes). `readOnly` mode is used for the manager confirm board.
+  that row is re-checked, Save disabled while any row clashes). A clashing row has **Remove this date** (greyed row with Undo; not offered
+  when it is the only date left, nor in `readOnly`); removed rows are left out of the returned `slots`, so that date is not saved.
+  `readOnly` mode is used for the manager confirm board. Widget test: `test/slot_board_sheet_test.dart`.
 - Flow: `_submitSession` in `add_edit_event_page.dart` -> for `locationType == 1` calls `_reviewBoard` (generate_slots, then
   the sheet; one clash-free date skips the sheet) -> sets `request.slots` -> saves. If the server still returns
   `data.conflicts` the fresh board is shown again (max 3 tries).

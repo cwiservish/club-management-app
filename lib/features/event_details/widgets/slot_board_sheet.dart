@@ -8,7 +8,9 @@ import '../services/event_detail_service.dart';
 /// availability. The user can change a row's time or field (only that row is re-checked)
 /// and saves once nothing is blocking.
 ///
-/// Pops with the rows to send as `slots` (locked rows removed), or null if cancelled.
+/// A clashing date can be removed (with Undo) so the rest can still be saved.
+///
+/// Pops with the rows to send as `slots` (locked and removed rows left out), or null if cancelled.
 class SlotBoardSheet extends StatefulWidget {
   final EventDetailService service;
   final String teamUuid;
@@ -63,14 +65,24 @@ class _SlotBoardSheetState extends State<SlotBoardSheet> {
   late List<SessionSlot> _slots;
   final Set<int> _checking = {};
 
+  /// Rows the user removed: not saved. Indexes into [_slots] (rows are never deleted, so Undo works).
+  final Set<int> _removed = {};
+
   @override
   void initState() {
     super.initState();
     _slots = List.of(widget.board.slots);
   }
 
-  int get _blockingCount => _slots.where((s) => !s.locked && s.isBlocking).length;
-  bool get _canSave => _blockingCount == 0 && _checking.isEmpty;
+  Iterable<int> get _activeIndexes => [for (var i = 0; i < _slots.length; i++) if (!_removed.contains(i)) i];
+  int get _blockingCount => _activeIndexes.where((i) => !_slots[i].locked && _slots[i].isBlocking).length;
+  /// Dates that will be written (not locked, not removed).
+  int get _saveCount => _activeIndexes.where((i) => !_slots[i].locked).length;
+  bool get _canSave => _blockingCount == 0 && _checking.isEmpty && _saveCount > 0;
+
+  /// A clashing row can be removed as long as another date is left to save.
+  bool _canRemove(int i) =>
+      !widget.readOnly && !_slots[i].locked && _slots[i].isBlocking && !_checking.contains(i) && _saveCount > 1;
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -270,11 +282,10 @@ class _SlotBoardSheetState extends State<SlotBoardSheet> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   _blockingCount == 0
-                      ? '${_slots.length} date${_slots.length == 1 ? '' : 's'} at ${widget.venue.name} — all available'
-                      : '$_blockingCount of ${_slots.length} dates clash at ${widget.venue.name}. ' +
-                          (widget.readOnly
-                          ? 'These dates clash. Edit the event to change them before confirming.'
-                              : 'Change the time or field for the red dates.'),
+                      ? '$_saveCount date${_saveCount == 1 ? '' : 's'} at ${widget.venue.name} — all available'
+                          '${_removed.isEmpty ? '' : ' (${_removed.length} removed)'}'
+                      : '$_blockingCount of ${_activeIndexes.length} dates clash at ${widget.venue.name}. '
+                          '${widget.readOnly ? 'These dates clash. Edit the event to change them before confirming.' : 'Change the time or field for the red dates, or remove them.'}',
                   style: TextStyle(
                     fontSize: 13.5,
                     color: _blockingCount == 0 ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F),
@@ -311,7 +322,10 @@ class _SlotBoardSheetState extends State<SlotBoardSheet> {
                     flex: 2,
                     child: ElevatedButton(
                       onPressed: _canSave
-                          ? () => Navigator.pop(context, _slots.where((s) => !s.locked).toList())
+                          ? () => Navigator.pop(context, [
+                                for (final i in _activeIndexes)
+                                  if (!_slots[i].locked) _slots[i],
+                              ])
                           : null,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(48),
@@ -334,6 +348,7 @@ class _SlotBoardSheetState extends State<SlotBoardSheet> {
   }
 
   Widget _buildRow(int i, Color titleColor, Color subColor, bool isDark) {
+    if (_removed.contains(i)) return _buildRemovedRow(i, titleColor, subColor, isDark);
     final s = _slots[i];
     final checking = _checking.contains(i);
     final clash = !s.locked && s.isBlocking;
@@ -394,6 +409,63 @@ class _SlotBoardSheetState extends State<SlotBoardSheet> {
                 child: Text(w, style: const TextStyle(fontSize: 12.5, color: Color(0xFFB71C1C), height: 1.3)),
               ),
           ],
+          if (_canRemove(i)) ...[
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => setState(() => _removed.add(i)),
+                icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFD32F2F)),
+                label: const Text(
+                  'Remove this date',
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Color(0xFFD32F2F)),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: const Size(0, 36),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// A removed date: greyed out, won't be saved, with Undo.
+  Widget _buildRemovedRow(int i, Color titleColor, Color subColor, bool isDark) {
+    final s = _slots[i];
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : const Color(0xFFF4F5F7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _fmtDate(s.date),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: subColor,
+                    decoration: TextDecoration.lineThrough,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text('Removed — this date will not be saved', style: TextStyle(fontSize: 12.5, color: subColor)),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => setState(() => _removed.remove(i)),
+            child: const Text('Undo', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
         ],
       ),
     );

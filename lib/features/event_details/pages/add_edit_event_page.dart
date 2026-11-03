@@ -164,6 +164,44 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   Set<String> _selectedStaffIds = {};
   bool _hasInitializedRsvpSelection = false;
 
+  /// Edit: the session's saved invitees (`session/detail` -> `invitees`), so the RSVP tab starts with
+  /// only them selected. Null = not loaded (or not a session): everyone is selected, as for a new event.
+  Set<String>? _savedPlayerIds;
+  Set<String>? _savedStaffIds;
+  Future<void>? _inviteesFuture;
+  bool _inviteesPending = false;
+
+  Future<void> _loadInvitees() async {
+    final e = widget.editEvent!;
+    final team = ref.read(selectedTeamProvider);
+    try {
+      if (team == null) return;
+      final detail = await ref.read(eventDetailServiceProvider).fetchSessionDetail(teamUuid: team.uuid, id: e.dbId);
+      final inv = detail['invitees'];
+      if (inv is Map) {
+        Set<String> ids(dynamic v) => v is List ? v.map((x) => x.toString()).toSet() : <String>{};
+        _savedPlayerIds = ids(inv['player_ids']);
+        // Staff are matched by customer_id (what save sends as staff_ids); staff_ids is the fallback.
+        _savedStaffIds = inv['customer_ids'] is List ? ids(inv['customer_ids']) : ids(inv['staff_ids']);
+      }
+    } catch (_) {
+      // Unreadable: fall back to everyone selected.
+    } finally {
+      if (mounted) setState(() => _inviteesPending = false);
+    }
+  }
+
+  /// Default RSVP selection: the saved invitees when editing a session, everyone otherwise.
+  void _applyDefaultRsvpSelection(Iterable<RosterMember> athletes, Iterable<RosterMember> staff) {
+    final players = _savedPlayerIds;
+    final staffIds = _savedStaffIds;
+    _selectedAthleteIds =
+        athletes.map((a) => a.apiId).where((id) => players == null || players.contains(id)).toSet();
+    _selectedStaffIds =
+        staff.map((m) => m.apiId).where((id) => staffIds == null || staffIds.contains(id)).toSet();
+    _hasInitializedRsvpSelection = true;
+  }
+
   // Repeats Until state
   bool _isRepeating = false;
   String _repeatType = 'Weekly'; // 'Weekly' or 'Monthly'
@@ -858,6 +896,11 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final edit = widget.editEvent;
+    if (edit != null && edit.schedulingMode == 1 && edit.dbId != null) {
+      _inviteesPending = true;
+      _inviteesFuture = _loadInvitees();
+    }
     if (widget.defaultSchedulingTypeKey != null) _schedulingTypeKey = widget.defaultSchedulingTypeKey!;
     if (widget.defaultEventTypeKey != null) _eventTypeKey = widget.defaultEventTypeKey!;
 
@@ -1812,17 +1855,15 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   Future<void> _doSave() async {
     if (ref.read(eventAddEditProvider).isSavingNewEvent) return;
 
-    // The "everyone invited" default is normally set when the RSVP tab is built.
-    // If the user never opened it, apply the same default so invitees aren't lost.
+    // The default selection (saved invitees on edit, everyone otherwise) is normally set when the
+    // RSVP tab is built. If the user never opened it, apply the same default so invitees aren't lost.
     if (!_hasInitializedRsvpSelection) {
+      await _inviteesFuture;
+      if (!mounted) return;
       final members = ref.read(rosterProvider).allMembers;
       final athletes = members.where((m) => m.role == MemberRole.player);
       final staff = members.where((m) => m.role == MemberRole.staff);
-      if (athletes.isNotEmpty || staff.isNotEmpty) {
-        _selectedAthleteIds = athletes.map((a) => a.apiId).toSet();
-        _selectedStaffIds = staff.map((s) => s.apiId).toSet();
-        _hasInitializedRsvpSelection = true;
-      }
+      if (athletes.isNotEmpty || staff.isNotEmpty) _applyDefaultRsvpSelection(athletes, staff);
     }
 
     if (!_validateForm()) return;
@@ -3004,7 +3045,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     final isDark = colors.isDark;
     final rosterState = ref.watch(rosterProvider);
 
-    if (rosterState.isLoading) {
+    if (rosterState.isLoading || (_inviteesPending && !_hasInitializedRsvpSelection)) {
       return Container(
         height: 260,
         alignment: Alignment.center,
@@ -3021,9 +3062,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
     final apiStaff = rosterMembers.where((m) => m.role == MemberRole.staff).toList();
 
     if (!_hasInitializedRsvpSelection && (apiAthletes.isNotEmpty || apiStaff.isNotEmpty)) {
-      _selectedAthleteIds = apiAthletes.map((a) => a.apiId).toSet();
-      _selectedStaffIds = apiStaff.map((s) => s.apiId).toSet();
-      _hasInitializedRsvpSelection = true;
+      _applyDefaultRsvpSelection(apiAthletes, apiStaff);
     }
 
     final allAthletesSelected = _selectedAthleteIds.length == apiAthletes.length && apiAthletes.isNotEmpty;
