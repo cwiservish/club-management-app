@@ -8,6 +8,10 @@ String _asString(dynamic v) => v == null ? '' : v.toString();
 /// One date of a session (a row on the board).
 class SessionSlot {
   final String date; // yyyy-MM-dd
+
+  /// The date this row was generated for. Never changes, even when the user moves [date];
+  /// the server uses it to tell a moved date from a generated one.
+  final String originalDate;
   final String startTime; // HH:mm
   final String endTime; // HH:mm
   final int locationType;
@@ -26,8 +30,12 @@ class SessionSlot {
   final String lockedLabel;
   final bool confirmOnly;
 
+  /// Locked rows: the date the row was moved from (null when it wasn't moved).
+  final String? occurrenceDate;
+
   const SessionSlot({
     required this.date,
+    String? originalDate,
     required this.startTime,
     required this.endTime,
     this.locationType = 1,
@@ -41,12 +49,16 @@ class SessionSlot {
     this.locked = false,
     this.lockedLabel = '',
     this.confirmOnly = false,
-  });
+    this.occurrenceDate,
+  }) : originalDate = originalDate ?? date;
 
   factory SessionSlot.fromJson(Map<String, dynamic> json, {SessionSlot? fallback}) {
     final warnings = json['warnings'];
     return SessionSlot(
       date: _asString(json['date']).isNotEmpty ? _asString(json['date']) : (fallback?.date ?? ''),
+      originalDate: _asString(json['original_date']).isNotEmpty
+          ? _asString(json['original_date'])
+          : (fallback?.originalDate ?? (_asString(json['date']).isNotEmpty ? _asString(json['date']) : null)),
       startTime: _asString(json['start_time']).isNotEmpty
           ? _asString(json['start_time'])
           : (fallback?.startTime ?? ''),
@@ -64,10 +76,12 @@ class SessionSlot {
       locked: _asBool(json['locked']),
       lockedLabel: _asString(json['locked_label']),
       confirmOnly: _asBool(json['confirm_only']),
+      occurrenceDate: _asString(json['occurrence_date']).isNotEmpty ? _asString(json['occurrence_date']) : null,
     );
   }
 
   SessionSlot copyWith({
+    String? date,
     String? startTime,
     String? endTime,
     int? fieldId,
@@ -78,7 +92,8 @@ class SessionSlot {
     String? message,
   }) {
     return SessionSlot(
-      date: date,
+      date: date ?? this.date,
+      originalDate: originalDate,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       locationType: locationType,
@@ -92,12 +107,14 @@ class SessionSlot {
       locked: locked,
       lockedLabel: lockedLabel,
       confirmOnly: confirmOnly,
+      occurrenceDate: occurrenceDate,
     );
   }
 
   /// Row as the save endpoint expects it inside `slots`.
   Map<String, dynamic> toSaveJson() => {
         'date': date,
+        'original_date': originalDate,
         'start_time': startTime,
         'end_time': endTime,
         if (fieldId != null) 'field_id': fieldId,

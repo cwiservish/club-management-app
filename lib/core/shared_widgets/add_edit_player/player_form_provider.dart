@@ -14,6 +14,8 @@ class PlayerFormState {
   final List<PlayerPositionModel> positions;
   final PlayerPositionModel? selectedPosition;
   final bool isLoadingPositions;
+  /// The positions call has answered successfully (an empty list then means the sport has no positions).
+  final bool positionsLoaded;
   final String? positionsError;
   final bool isDropdownOpen;
   final bool isSaving;
@@ -24,6 +26,7 @@ class PlayerFormState {
     this.positions = const [],
     this.selectedPosition,
     this.isLoadingPositions = false,
+    this.positionsLoaded = false,
     this.positionsError,
     this.isDropdownOpen = false,
     this.isSaving = false,
@@ -36,6 +39,7 @@ class PlayerFormState {
     PlayerPositionModel? selectedPosition,
     bool clearSelectedPosition = false,
     bool? isLoadingPositions,
+    bool? positionsLoaded,
     String? positionsError,
     bool clearPositionsError = false,
     bool? isDropdownOpen,
@@ -47,6 +51,7 @@ class PlayerFormState {
       positions: positions ?? this.positions,
       selectedPosition: clearSelectedPosition ? null : (selectedPosition ?? this.selectedPosition),
       isLoadingPositions: isLoadingPositions ?? this.isLoadingPositions,
+      positionsLoaded: positionsLoaded ?? this.positionsLoaded,
       positionsError: clearPositionsError ? null : (positionsError ?? this.positionsError),
       isDropdownOpen: isDropdownOpen ?? this.isDropdownOpen,
       isSaving: isSaving ?? this.isSaving,
@@ -86,23 +91,23 @@ class PlayerFormNotifier extends Notifier<PlayerFormState> {
     try {
       final response = await ref.read(rosterServiceProvider).fetchPlayerPositions(teamUuid);
       if (response.success) {
-        PlayerPositionModel? matched = state.selectedPosition;
-        if (matched != null) {
+        // Position is optional: keep the player's saved position only if it is in the sport's list.
+        final current = state.selectedPosition;
+        PlayerPositionModel? matched;
+        if (current != null) {
           for (final p in response.positions) {
-            if (p.label.toLowerCase() == matched!.label.toLowerCase()) {
+            if (p.label.toLowerCase() == current.label.toLowerCase()) {
               matched = p;
               break;
             }
-          }
-          // If no match found in edit mode, default to first
-          if (matched == state.selectedPosition && (_config?.isEditMode ?? false) && response.positions.isNotEmpty) {
-            matched = response.positions.first;
           }
         }
         state = state.copyWith(
           positions: response.positions,
           isLoadingPositions: false,
+          positionsLoaded: true,
           selectedPosition: matched,
+          clearSelectedPosition: matched == null,
         );
       } else {
         state = state.copyWith(
@@ -147,6 +152,11 @@ class PlayerFormNotifier extends Notifier<PlayerFormState> {
     state = state.copyWith(selectedPosition: position, isDropdownOpen: false);
   }
 
+  /// Position is optional, so a chosen one can be cleared again.
+  void clearPosition() {
+    state = state.copyWith(clearSelectedPosition: true, isDropdownOpen: false);
+  }
+
   /// Returns a success message on success, null on failure (sets positionsError for errors).
   /// Throws a [PlayerFormSaveException] with a user-facing message on error.
   Future<String> save({
@@ -173,7 +183,7 @@ class PlayerFormNotifier extends Notifier<PlayerFormState> {
         firstName: firstName,
         lastName: lastName,
         jersey: jersey,
-        primaryPosition: state.selectedPosition!.key,
+        primaryPosition: state.selectedPosition?.key,
         playerId: config.playerId,
         imageBase64: imageBase64,
       );

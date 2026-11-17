@@ -18,7 +18,7 @@ class ScheduleEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'No events scheduled',
+            'No upcoming events',
             style: AppTextStyles.heading14.copyWith(
               color: AppColors.current.textPrimary.withOpacity(0.45),
             ),

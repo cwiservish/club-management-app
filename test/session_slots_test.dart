@@ -41,10 +41,10 @@ void main() {
       expect(board.slots[2].locked, isTrue);
     });
 
-    test('toSaveJson only carries date, times and field', () {
+    test('toSaveJson carries date, original_date, times and field', () {
       final slot = SlotBoard.fromJson(json).slots.first;
       expect(slot.toSaveJson(), {
-        'date': '2026-11-03', 'start_time': '17:00', 'end_time': '18:30', 'field_id': 21,
+        'date': '2026-11-03', 'original_date': '2026-11-03', 'start_time': '17:00', 'end_time': '18:30', 'field_id': 21,
       });
     });
 

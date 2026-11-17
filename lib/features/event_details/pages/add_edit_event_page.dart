@@ -1455,9 +1455,13 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       }
     }
 
+    // An occurrence dated in the past (or before the parent's range) opens on the first allowed day.
+    var initialDate = _selectedDate ?? firstDate;
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? firstDate,
+      initialDate: initialDate,
       firstDate: firstDate,
       lastDate: lastDate,
     );
@@ -2383,6 +2387,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           excludeIds: excludeIds,
           slot: SessionSlot(
             date: request.sessionStartDate,
+            // The row as it was before this edit; the date may be changed on the form or on the sheet.
+            originalDate: _formatSessionDate(DateUtils.dateOnly(widget.editEvent!.dateTime)),
             startTime: request.startTime,
             endTime: request.endTime ?? request.startTime,
             venueId: venue.venueId,

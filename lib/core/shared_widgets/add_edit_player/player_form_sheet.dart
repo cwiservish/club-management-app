@@ -66,12 +66,6 @@ class _PlayerFormSheetState extends ConsumerState<PlayerFormSheet> {
     if (!_formKey.currentState!.validate()) return;
 
     final notifier = ref.read(playerFormProvider.notifier);
-    final formState = ref.read(playerFormProvider);
-
-    if (formState.selectedPosition == null) {
-      _showError('Please select a player position');
-      return;
-    }
 
     try {
       final message = await notifier.save(
@@ -277,8 +271,11 @@ class _PlayerFormSheetState extends ConsumerState<PlayerFormSheet> {
                           validator: (val) =>
                               val == null || val.trim().isEmpty ? 'Jersey number is required' : null,
                         ),
-                        Divider(height: 1, color: colors.border),
-                        _buildDropdownField(colors, formState, config.isEditable),
+                        // Hidden when the sport has no positions
+                        if (!formState.positionsLoaded || formState.positions.isNotEmpty || formState.positionsError != null) ...[
+                          Divider(height: 1, color: colors.border),
+                          _buildDropdownField(colors, formState, config.isEditable),
+                        ],
                       ],
                     ),
                   ),
@@ -383,7 +380,6 @@ class _PlayerFormSheetState extends ConsumerState<PlayerFormSheet> {
   Widget _buildDropdownField(AppColors colors, PlayerFormState formState, bool isEditable) {
     return FormField<PlayerPositionModel>(
       initialValue: formState.selectedPosition,
-      validator: (_) => formState.selectedPosition == null ? 'Position is required' : null,
       builder: (FormFieldState<PlayerPositionModel> fieldState) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -413,7 +409,7 @@ class _PlayerFormSheetState extends ConsumerState<PlayerFormSheet> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            formState.selectedPosition?.label ?? 'Select position...',
+                            formState.selectedPosition?.label ?? 'Select position (optional)',
                             style: AppTextStyles.body16.copyWith(
                               color: formState.selectedPosition == null
                                   ? colors.textSecondary.withValues(alpha: 0.5)
@@ -486,9 +482,38 @@ class _PlayerFormSheetState extends ConsumerState<PlayerFormSheet> {
                   child: ListView.builder(
                     shrinkWrap: true,
                     padding: EdgeInsets.zero,
-                    itemCount: formState.positions.length,
+                    itemCount: formState.positions.length + 1, // first row clears the (optional) position
                     itemBuilder: (context, index) {
-                      final pos = formState.positions[index];
+                      if (index == 0) {
+                        return InkWell(
+                          onTap: () {
+                            ref.read(playerFormProvider.notifier).clearPosition();
+                            fieldState.didChange(null);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color: colors.border.withValues(alpha: 0.3), width: 0.5),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'No position',
+                                  style: AppTextStyles.body16.copyWith(
+                                    color: formState.selectedPosition == null ? colors.primary : colors.textSecondary,
+                                    fontWeight: formState.selectedPosition == null ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                ),
+                                if (formState.selectedPosition == null) Icon(Icons.check, color: colors.primary, size: 20),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                      final pos = formState.positions[index - 1];
                       final isSelected = formState.selectedPosition == pos;
                       return InkWell(
                         onTap: () {

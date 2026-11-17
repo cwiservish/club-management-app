@@ -112,6 +112,8 @@ bar for paths ending `/edit`.
 
 ## 5. Roster
 
+- **Player form** (`core/shared_widgets/add_edit_player/`): Position is optional (no validation, hint "Select position (optional)", a "No position" row clears it). The field is hidden once the positions call succeeds with an empty list (`positionsLoaded` + empty `positions`); shown while loading and on error (with Retry). `savePlayer` sends `primary_position` only when chosen, and `null` when editing with none (clears it). A saved position not in the sport's list is dropped (no more default-to-first).
+
 - `RosterMember.id` = **uuid** (profile / attendance APIs need it). `apiId` = numeric id for event APIs
   (player id; staff customer_id → staff id fallback).
 - `RosterNotifier.fetchPlayers(teamUuid, {staffType})` + `refresh({staffType})`; `_fetchSeq` drops stale fetches.
@@ -169,6 +171,16 @@ placeholder; coaches' saves show "Saved as draft"; managers (organization role 1
   that row is re-checked, Save disabled while any row clashes). A clashing row has **Remove this date** (greyed row with Undo; not offered
   when it is the only date left, nor in `readOnly`); removed rows are left out of the returned `slots`, so that date is not saved.
   `readOnly` mode is used for the manager confirm board. Widget test: `test/slot_board_sheet_test.dart`.
+- **Editable date (Nov 2026)**: every non-locked card has a tappable date chip (`_pickDate`; past dates can't be picked). Only that card is
+  re-checked (`field_availability`), a card left alone on the old date is re-checked too, cards re-sort by date, a response for a card
+  changed again meanwhile is ignored (`_version`). A date another card already has (locked ones too) shows "This date is already in your
+  schedule. Pick a different date.", skips the check and blocks Save (`_dateErr` / `_stale`). Header: "{n} of {total} dates clash at
+  {facility}. Change the date, time, or field for the red dates." (hidden at 0; total = editable cards + locked `confirm_only`). Not editable
+  for locked rows or on the confirm board (`readOnly`). `SessionSlot.originalDate` (`original_date`,
+  never changes) is sent next to `date` in every `slots` row (`toSaveJson`); locked rows keep `locked_label` ("Moved from ...") and
+  `occurrenceDate`. Server errors "... is already in your schedule" / "Date ... is in the past" come back as the normal save error.
+- **Schedule tab**: `teams/event/all` now returns only today-or-later records, so the list renders what the API returns (no client date
+  filter, no month navigation); empty state reads "No upcoming events"; `teams/event/session/calendar` is unchanged.
 - Flow: `_submitSession` in `add_edit_event_page.dart` -> for `locationType == 1` calls `_reviewBoard` (generate_slots, then
   the sheet; one clash-free date skips the sheet) -> sets `request.slots` -> saves. If the server still returns
   `data.conflicts` the fresh board is shown again (max 3 tries).
@@ -202,7 +214,7 @@ cancel, delete and confirm with real QA data.
 - **One-day type-1 session**: `generate_slots` then the Check availability sheet with the single row.
 - **One date of a series ("This date only"), type 1 with a real field**: no `generate_slots`; `field_availability` for that date / time / field with `exclude_ids: [its id]`, then always the Check availability sheet with that row (change time or field re-checks it; Save disabled while it clashes); saved with its single `slots` row.
 - **Series edit ("All upcoming")**: `session/detail` by `code` -> `data.edit` also fills `location_type/venue_id/field_id` (facility + field) and start time/duration, so unchanged edits send them back and each date keeps its own field.
-- **One occurrence ("This date only")**: `session/detail` by `id` -> `can_change_date` / `can_change_recurrence` (unreadable = false). False hides Repeats and disables the Date picker.
+- **One occurrence ("This date only")**: `session/detail` by `id` -> `can_change_date` / `can_change_recurrence` (unreadable = false). False hides Repeats and disables the Date picker. The server now returns `can_change_date: true` (any future date the series doesn't already run on, incl. after its end and for an already-moved occurrence); the Date picker opens on the first allowed day when the stored date is past. The Check availability sheet's date chip is editable here too (one `slots` row, `original_date` = the occurrence's date before the edit); server refusals ("... is in the past", "... is already in your schedule") show as the normal save error.
 - Not yet verified against live QA data (response shape of those flags assumed top-level in `data`).
 
 ## 7c. Team saved locations from Off-Site Address (built, not yet verified on emulator)

@@ -258,7 +258,7 @@ class RosterService {
     required String firstName,
     required String lastName,
     required String jersey,
-    required int primaryPosition,
+    int? primaryPosition, // optional; null when no position is chosen (sent as null when editing, so it clears)
     int? playerId,
     String? imageBase64,
   }) async {
@@ -271,7 +271,7 @@ class RosterService {
           'first_name': firstName,
           'last_name': lastName,
           'jersey': jersey,
-          'primary_position': primaryPosition,
+          if (primaryPosition != null || playerId != null) 'primary_position': primaryPosition,
           if (imageBase64 != null) 'image': imageBase64,
         }
       ]
