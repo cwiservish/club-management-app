@@ -347,7 +347,9 @@ class _EventRepeatsUntilSectionState extends State<EventRepeatsUntilSection> {
                   height: 44,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: widget.repeatUntilError != null ? const Color(0xFFFDECEA) : Colors.white,
+                    color: widget.repeatUntilError != null
+                        ? (AppColors.current.isDark ? const Color(0xFF3B2323) : const Color(0xFFFDECEA))
+                        : (AppColors.current.isDark ? inputBg : Colors.white),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: widget.repeatUntilError != null ? const Color(0xFFD32F2F) : borderColor,
