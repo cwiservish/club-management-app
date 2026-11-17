@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 import '../enums/event_type.dart';
 
+/// Location type 4 (TBD): shown as "TBD" when the server sends no location text.
+String locationDisplayText(String location, int locationType) =>
+    location.trim().isEmpty && locationType == 4 ? 'TBD' : location;
+
 /// Practice (2), Team Event (4) and Camp (5) have no Home/Away; every other event type does.
 bool eventTypeUsesHomeAway(int eventTypeKey) =>
     eventTypeKey != 2 && eventTypeKey != 4 && eventTypeKey != 5;

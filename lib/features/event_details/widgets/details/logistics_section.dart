@@ -22,7 +22,7 @@ class LogisticsSection extends StatelessWidget {
     if (lat != null && lng != null && (lat != 0.0 || lng != 0.0)) {
       uri = Uri.parse(
           'https://www.google.com/maps/search/?api=1&query=$lat,$lng');
-    } else if (event.locationName.trim().isNotEmpty) {
+    } else if (event.locationName.trim().isNotEmpty && event.locationName.trim().toUpperCase() != 'TBD') {
       uri = Uri.parse(
           'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(event.locationName)}');
     }

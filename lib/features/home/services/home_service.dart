@@ -307,7 +307,7 @@ class HomeService {
         subtitle: subtitle,
         dateTime: dateTime,
         duration: duration,
-        location: location,
+        location: locationDisplayText(location, locationTypeVal),
         type: type,
         isHome: isHome,
         opponent: (opponent?.isNotEmpty == true) ? opponent : null,

@@ -509,7 +509,7 @@ class ScheduleEvent {
       subtitle: extraLabel,
       dateTime: parsedDateTime,
       duration: computedDuration,
-      location: location,
+      location: locationDisplayText(location, locationType),
       type: domainType,
       isHome: homeAway == 1,
       opponent: opponent.isNotEmpty ? opponent : null,
