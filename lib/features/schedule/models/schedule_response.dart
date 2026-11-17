@@ -338,8 +338,9 @@ class ScheduleEvent {
       eventDate: _parseString(json['event_date'] ?? json['session_date']),
       dateLabel: _parseString(json['date_label']),
       eventType: _parseInt(json['event_type']),
-      homeAway: _parseInt(json['home_away']),
-      homeAwayLabel: _parseString(json['home_away_label']),
+      homeAway: eventTypeUsesHomeAway(_parseInt(json['event_type'])) ? _parseInt(json['home_away']) : 0,
+      homeAwayLabel:
+          eventTypeUsesHomeAway(_parseInt(json['event_type'])) ? _parseString(json['home_away_label']) : '',
       day: _parseString(json['day']),
       dayName: _parseString(json['day_name']),
       monthKey: _parseString(json['month_key']),

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:playbook365/core/models/club_event.dart';
 import 'package:playbook365/features/event_details/models/event_delete_models.dart';
 import 'package:playbook365/features/event_details/models/new_event_save_request_model.dart';
 import 'package:playbook365/features/event_details/models/session_slot_models.dart';
@@ -83,6 +84,19 @@ void main() {
           teamUuid: 't', schedulingMode: 1, eventType: 2, title: 'x', location: 'Fac',
           sessionStartDate: '2026-11-03', startTime: '17:00', duration: 90, homeAway: 1, arrivalEarly: 0,
         );
+
+    test('home_away is null for Practice / Team Event / Camp, sent for the rest', () {
+      expect([2, 4, 5].map(eventTypeUsesHomeAway), everyElement(isFalse));
+      expect([0, 1, 3].map(eventTypeUsesHomeAway), everyElement(isTrue));
+
+      final none = NewEventSaveRequest(
+        teamUuid: 't', schedulingMode: 1, eventType: 2, title: 'x', location: 'Fac',
+        sessionStartDate: '2026-11-03', startTime: '17:00', duration: 90, homeAway: 0, arrivalEarly: 0,
+      ).toJson();
+      expect(none.containsKey('home_away'), isTrue);
+      expect(none['home_away'], isNull);
+      expect(base().toJson()['home_away'], 1);
+    });
 
     test('slots and series code are only sent when set', () {
       final plain = base().toJson();

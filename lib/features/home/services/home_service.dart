@@ -273,7 +273,9 @@ class HomeService {
       final fieldIdVal = _parseInt(json['field_id']);
       final locationTypeVal = json['location_type'] != null ? _parseInt(json['location_type']) : 1;
       final status = _parseInt(json['status'] ?? 1);
-      final homeAwayKey = _parseInt(json['home_away']);
+      final eventTypeForHomeAway = _parseInt(json['event_type']);
+      // Practice / Team Event / Camp: ignore any stored value so nothing shows.
+      final homeAwayKey = eventTypeUsesHomeAway(eventTypeForHomeAway) ? _parseInt(json['home_away']) : 0;
       final isHome = homeAwayKey == 1;
       final schedulingMode = _parseInt(json['scheduling_mode'] ?? 1);
       final schedulingModeLabel = json['scheduling_mode_label']?.toString();
@@ -352,7 +354,7 @@ class HomeService {
         existingSchedulingMode: existingSchedulingMode,
         eventTypeKey: eventTypeInt,
         homeAwayKey: homeAwayKey,
-        homeAwayLabel: json['home_away_label']?.toString(),
+        homeAwayLabel: eventTypeUsesHomeAway(eventTypeInt) ? json['home_away_label']?.toString() : null,
         opponentTeamId: opponentTeamId,
         uniformTopColor: uniformTopColor,
         uniformBottomColor: uniformBottomColor,

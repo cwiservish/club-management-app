@@ -416,7 +416,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
   final GlobalKey _startTimeFieldKey = GlobalKey();
   final LayerLink _startTimeLayerLink = LayerLink();
   OverlayEntry? _timePickerOverlay;
-  int _homeAwayKey = 1; // 1=Home (default as shown in web UI), 2=Away, 3=Neutral
+  int _homeAwayKey = 0; // 0=none selected, 1=Home, 2=Away, 3=Neutral; always 0 for types without Home/Away
+  bool get _usesHomeAway => eventTypeUsesHomeAway(_eventTypeKey);
   int _arrivalTimeKey = 0; // 0=No set arrival time (from API)
 
   // Tournament/League specific state
@@ -943,9 +944,8 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       // Scheduling / event type
       _schedulingTypeKey = e.schedulingMode;
       _eventTypeKey = e.eventTypeKey;
-      _homeAwayKey = e.homeAwayKey > 0
-          ? e.homeAwayKey
-          : (dropdowns.homeAwayOptions.isNotEmpty ? 1 : 0);
+      // A stored value on Practice / Team Event / Camp is not shown and is cleared on save.
+      _homeAwayKey = eventTypeUsesHomeAway(e.eventTypeKey) ? e.homeAwayKey : 0;
       _arrivalTimeKey = e.arrivalEarly;
 
       // Date & time (dateTime already parsed by home/schedule service)
@@ -1631,6 +1631,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
           add('repeatDates', 'Select at least one date', 0);
         }
       }
+      if (_usesHomeAway && _homeAwayKey == 0) add('homeAway', 'Select home, away or neutral', 0);
       final isGame = isMultiDay || _eventTypeKey == 1 || _eventTypeKey == 3;
       if (isGame) {
         if (_selectedOpponentId.isEmpty) {
@@ -2053,7 +2054,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         duration: totalDurationMinutes,
         recurringType: recurringType,
         days: recurrenceDays,
-        homeAway: _homeAwayKey,
+        homeAway: _usesHomeAway ? _homeAwayKey : 0,
         arrivalEarly: _arrivalTimeKey,
         locationType: locData.locationType,
         venueId: locData.venueId,
@@ -2281,7 +2282,7 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         startTime: _formatStartTime24(_startTime),
         endTime: endTimeStr,
         duration: totalDurationMinutes,
-        homeAway: _homeAwayKey,
+        homeAway: _usesHomeAway ? _homeAwayKey : 0,
         arrivalEarly: _arrivalTimeKey,
         locationType: locData.locationType,
         venueId: locData.venueId,
@@ -2438,16 +2439,6 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _schedulingTypeKey == 1) setState(() => _applyTypeTitle(_eventTypeKey));
       });
-    }
-
-    // Create mode: default homeAwayKey to 1 (Home) once options load, but only if options exist
-    if (!isEditMode && dropdownState.newEventDropdowns != null && _homeAwayKey == 0) {
-      final opts = dropdownState.newEventDropdowns!.homeAwayOptions;
-      if (opts.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _homeAwayKey == 0) setState(() => _homeAwayKey = 1);
-        });
-      }
     }
 
     final subHeader = SubHeader(
@@ -3547,24 +3538,32 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         ),
         const SizedBox(height: 20),
 
-        // Home or away
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildFieldLabel('Home or away', isRequired: false),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _buildHomeOrAwayButton(const NewEventHomeAwayOption(key: 1, value: 'home', label: 'Home')),
-                const SizedBox(width: 10),
-                _buildHomeOrAwayButton(const NewEventHomeAwayOption(key: 2, value: 'away', label: 'Away')),
-                const SizedBox(width: 10),
-                _buildHomeOrAwayButton(const NewEventHomeAwayOption(key: 3, value: 'neutral', label: 'Neutral')),
+        // Home or away: hidden for Practice / Team Event / Camp
+        if (_usesHomeAway) ...[
+          Column(
+            key: _keyFor('homeAway'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildFieldLabel('Home or away', isRequired: true),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildHomeOrAwayButton(const NewEventHomeAwayOption(key: 1, value: 'home', label: 'Home')),
+                  const SizedBox(width: 10),
+                  _buildHomeOrAwayButton(const NewEventHomeAwayOption(key: 2, value: 'away', label: 'Away')),
+                  const SizedBox(width: 10),
+                  _buildHomeOrAwayButton(const NewEventHomeAwayOption(key: 3, value: 'neutral', label: 'Neutral')),
+                ],
+              ),
+              if (_fieldErrors['homeAway'] != null) ...[
+                const SizedBox(height: 6),
+                Text(_fieldErrors['homeAway']!,
+                    style: const TextStyle(fontSize: 12.5, color: Color(0xFFD32F2F), fontWeight: FontWeight.w600)),
               ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
+            ],
+          ),
+          const SizedBox(height: 20),
+        ],
 
         // Arrive how early
         Column(
@@ -3953,7 +3952,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
       child: GestureDetector(
         onTap: () {
           _closeAllDropdowns(unfocus: true);
-          setState(() => _homeAwayKey = option.key);
+          setState(() {
+            _homeAwayKey = option.key;
+            _fieldErrors.remove('homeAway');
+          });
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -3993,6 +3995,10 @@ class _AddEditEventPageState extends ConsumerState<AddEditEventPage> with Widget
         _closeAllDropdowns(unfocus: true);
         setState(() {
           _eventTypeKey = type.key;
+          if (!_usesHomeAway) {
+            _homeAwayKey = 0;
+            _fieldErrors.remove('homeAway');
+          }
           _applyTypeTitle(type.key);
         });
       },

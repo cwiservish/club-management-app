@@ -164,7 +164,7 @@ class NewEventSaveRequest {
       'schedule_game_id': scheduleGameId,
       'title': title,
       'duration': duration,
-      'home_away': homeAway,
+      'home_away': homeAway > 0 ? homeAway : null,
       'arrival_early': arrivalEarly,
       'location_type': locationType,
       'location': location,

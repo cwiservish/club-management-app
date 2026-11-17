@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 import '../enums/event_type.dart';
 
+/// Practice (2), Team Event (4) and Camp (5) have no Home/Away; every other event type does.
+bool eventTypeUsesHomeAway(int eventTypeKey) =>
+    eventTypeKey != 2 && eventTypeKey != 4 && eventTypeKey != 5;
+
 class ClubEvent {
   final String id;
   final String title;

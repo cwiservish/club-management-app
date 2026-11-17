@@ -420,7 +420,11 @@ class _EventRepeatsUntilSectionState extends State<EventRepeatsUntilSection> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: isChecked ? const Color(0xFFFEFDF5) : Colors.white,
+        color: isDark
+            ? (isChecked
+                ? Color.alphaBlend(_yellowAccent.withValues(alpha: 0.12), AppColors.current.card)
+                : AppColors.current.card)
+            : (isChecked ? const Color(0xFFFEFDF5) : Colors.white),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isChecked ? _yellowAccent : borderColor,

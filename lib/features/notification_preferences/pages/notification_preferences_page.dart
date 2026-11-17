@@ -101,7 +101,7 @@ class NotificationPreferencesPage extends ConsumerWidget {
                                   showDivider: true,
                                 ),
                                 NotificationToggleRow(
-                                  label: 'Live! score updates',
+                                  label: 'Live score updates',
                                   value: settings.liveScore,
                                   onChanged: (val) => _handleSaveAction(
                                     context,
@@ -110,7 +110,7 @@ class NotificationPreferencesPage extends ConsumerWidget {
                                   showDivider: true,
                                 ),
                                 NotificationToggleRow(
-                                  label: 'Live! game/event messages',
+                                  label: 'Live game/event messages',
                                   value: settings.liveMessages,
                                   onChanged: (val) => _handleSaveAction(
                                     context,
