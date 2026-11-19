@@ -180,11 +180,13 @@ class HomeCard extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  MapSection(
-                    latitude:  viewModel.latitude,
-                    longitude: viewModel.longitude,
-                    location:  viewModel.location,
-                  ),
+                  // TBD location (type 4): no place to show, so no map
+                  if (viewModel.locationType != 4)
+                    MapSection(
+                      latitude:  viewModel.latitude,
+                      longitude: viewModel.longitude,
+                      location:  viewModel.location,
+                    ),
                 ],
               ),
               if (viewModel.scheduleGameId != null)

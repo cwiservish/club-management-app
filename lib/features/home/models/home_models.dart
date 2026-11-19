@@ -26,6 +26,9 @@ class HomeCardViewModel {
   final String? homeAwayLabel;
   final String? eventName;
 
+  /// 4 = TBD: no place to show, so the card has no map.
+  final int locationType;
+
   /// Status 5: a coach's session waiting for a manager to confirm it.
   final bool isDraft;
 
@@ -50,6 +53,7 @@ class HomeCardViewModel {
     this.scheduleGameId,
     this.homeAwayLabel,
     this.eventName,
+    this.locationType = 1,
     this.isDraft = false,
     this.canRsvp = true,
   });
