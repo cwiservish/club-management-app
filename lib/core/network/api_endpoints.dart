@@ -12,8 +12,8 @@ abstract final class ApiEndpoints {
   ApiEndpoints._();
 
   // ─── Base ──────────────────────────────────────────────────────────────────
-  static const String baseUrl = 'https://staging.sportid.app/apps/club';
-  // static const String baseUrl = 'https://qa.sportid.app/apps/club';
+  // static const String baseUrl = 'https://staging.sportid.app/apps/club';
+  static const String baseUrl = 'https://qa.sportid.app/apps/club';
 
 
   // ─── Team ──────────────────────────────────────────────────────────────────

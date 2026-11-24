@@ -287,8 +287,10 @@ class EventLocationTabView extends StatelessWidget {
     final displayFacility = selectedVenue?.label ??
         (selectedVenue?.name.isNotEmpty == true ? selectedVenue!.name : null);
 
-    final displayField = selectedFieldItem?.label ??
-        (selectedFieldItem?.fieldName.isNotEmpty == true ? selectedFieldItem!.fieldName : null);
+    // Short field name, like the list ("our_locations" labels start with the facility name)
+    final displayField = selectedFieldItem?.fieldName.isNotEmpty == true
+        ? selectedFieldItem!.fieldName
+        : selectedFieldItem?.label;
 
     final bool hasFacilitySelected = selectedVenue != null;
     // The facility's fields plus a static last "TBD" option (field_id 0).

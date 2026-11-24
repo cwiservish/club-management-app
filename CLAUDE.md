@@ -78,8 +78,7 @@ Scheduling types: 1 Single Session, 2 Tournament, 3 League (`_schedulingTypeKey`
 **Location (type → `location_type`)**: 1 Our Facilities (venue + **required field**), 2 Saved Location,
 3 Off-Site Address (Google Places → address, city, state, country, postal_code, place_id, lat/lng), 4 TBD.
 - The tab row is built from dropdown option `location_types` (labels and count from the API, keys 1-4 map to the forms; unknown keys are skipped; empty list = four defaults).
-- Facilities come from dropdown option `venues` (fallback `our_locations`). `venues` field names already
-  include the facility name — `_venueFieldName()` avoids "FAC - FAC - Field".
+- Facilities come from dropdown option `our_locations` only; an empty list shows an empty dropdown (`venues` is ignored). Field names are short ("space 1"); `_venueFieldName()` builds "Facility - Field" for the saved location text and avoids "FAC - FAC - Field" when a name already starts with the facility.
 - The Field dropdown always ends with a static **TBD** option (`OurLocationField.tbd`, `field_id` 0, sent as `field_id: 0`); it satisfies the required field, saves the facility name as location text and skips the conflict board (nothing to clash-check).
 - Validation: `_facilityFieldError()` ("Select a field at the facility").
 

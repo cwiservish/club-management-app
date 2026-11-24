@@ -431,10 +431,9 @@ class NewEventDropdownOptions {
         .map((e) => NewEventLocationType.fromJson(e))
         .toList();
 
-    // venues (facilities with their fields); falls back to legacy our_locations
-    final venuesRaw = json['venues'] is List && (json['venues'] as List).isNotEmpty
-        ? json['venues'] as List
-        : (json['our_locations'] as List? ?? []);
+    // our_locations (facilities with their fields) feeds the Facility / Field dropdowns.
+    // Empty means no facilities: never fall back to `venues`.
+    final venuesRaw = json['our_locations'] as List? ?? [];
     final ourLocations = venuesRaw
         .whereType<Map<String, dynamic>>()
         .map((e) => OurLocationVenue.fromJson(e))
