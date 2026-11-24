@@ -28,6 +28,11 @@ class SelectedTeamNotifier extends Notifier<Team?> {
           (t) => t.uuid == _selectedTeamUuid,
           orElse: () => list.first,
         );
+        // The selected team is no longer in the list (user was removed): the first team takes over and is remembered.
+        if (found.uuid != _selectedTeamUuid) {
+          _selectedTeamUuid = found.uuid;
+          Future.microtask(() => ref.read(appStorageProvider).saveSelectedTeamUuid(found.uuid));
+        }
         return found;
       }
       return list.first;

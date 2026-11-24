@@ -56,6 +56,8 @@ add / edit), `widgets/event_location_tab_view.dart`, `widgets/event_repeats_unti
 - Hot-reload safety: new final fields on long-lived models are null-safe getters (`Team.roleLabel`,
   `NewEventDropdownOptions.uniformItems`). Do the same when adding fields.
 
+- **Team list stays current**: `UserTeamsRefresher` (`core/common_providers/user_teams_provider.dart`) calls `team/list` when Home opens and when the app returns to the foreground (once per 60 s), on pull-to-refresh and at login (`force`). It replaces the cached teams only for a valid answer (`success` + a `grid` list; failures / no network keep the cache) and only when they changed. A team the user was removed from disappears from the dropdown; if it was the selected one the first team takes over and is saved (`SelectedTeamNotifier`); a valid empty list clears the teams and the saved selection. Test: `test/user_teams_refresher_test.dart`.
+
 ---
 
 ## 4. Add / edit event (add_edit_event_page.dart)

@@ -1,13 +1,8 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/enums/event_type.dart';
 import '../../../core/models/club_event.dart';
-import '../../../core/models/team_model.dart';
-import '../../../core/local_storage/app_storage.dart';
 import '../../../core/network/api_client.dart';
-import '../../../core/network/api_endpoints.dart';
-import '../../../core/network/token_storage.dart';
 import '../../../core/common_providers/user_teams_provider.dart';
 import '../../../core/common_providers/selected_team_provider.dart';
 import '../../../core/common_providers/event_refresh_provider.dart';
@@ -319,25 +314,7 @@ class HomeNotifier extends Notifier<HomeState> {
   /// Triggers API refreshes for home data (e.g. active teams) and reloads local events.
   Future<void> refresh() async {
     try {
-      var token = ref.read(authTokenProvider);
-      if (token == null) {
-        token = await ref.read(appStorageProvider).readToken();
-        if (token != null) {
-          ref.read(authTokenProvider.notifier).setToken(token);
-        }
-      }
-
-      if (token != null) {
-        final res = await ref.read(apiClientProvider).post(
-          ApiEndpoints.clubTeamsList,
-          body: '',
-          options: Options(contentType: 'application/x-www-form-urlencoded'),
-        );
-        final grid = ((res.data as Map<String, dynamic>?)?['grid'] as List?) ?? [];
-        final teams = grid.map((e) => Team.fromJson(e as Map<String, dynamic>)).toList();
-        await ref.read(appStorageProvider).saveTeams(teams);
-        ref.invalidate(userTeamsProvider);
-      }
+      await ref.read(userTeamsRefresherProvider).refresh(force: true);
     } catch (e) {
       // Print/log the error so that developers can see it, but don't disrupt the user UI.
       debugPrint('Error refreshing home data: $e');
